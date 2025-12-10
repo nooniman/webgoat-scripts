@@ -1,0 +1,35 @@
+=== Stored XSS - phoneHome Attack ===
+
+OBJECTIVE: Post a comment that executes webgoat.customjs.phoneHome()
+
+MANUAL STEPS:
+1. In the WebGoat browser page, find the comment input box
+2. Type one of these payloads:
+
+   OPTION 1 (script tag):
+   <script>webgoat.customjs.phoneHome()</script>
+
+   OPTION 2 (img tag):
+   <img src=x onerror="webgoat.customjs.phoneHome()">
+
+   OPTION 3 (svg tag):
+   <svg onload="webgoat.customjs.phoneHome()">
+
+3. Click the edit icon (pen) next to the input box to post
+4. Open Developer Console (F12)
+5. Look in the Console tab for a message like:
+   "phoneHome Response is [random-number]"
+6. Copy ONLY the random number part
+7. Paste it in the "successMessage" input field at the bottom
+8. Click Submit
+
+AUTOMATED:
+Run: .\stored_xss.ps1
+
+The script will try multiple payloads and display the response.
+
+WHY THIS WORKS:
+- The comment is stored in the database
+- When the page loads, the comment is rendered without sanitization
+- The JavaScript executes in every visitor's browser
+- This is "Stored XSS" because the payload persists on the server

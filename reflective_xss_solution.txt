@@ -1,0 +1,48 @@
+=== Reflective XSS - JSP Code Fix ===
+
+PROBLEM:
+The original code directly outputs user input without sanitization:
+<%= request.getParameter("first_name")%>
+<%= request.getParameter("last_name")%>
+
+This allows XSS attacks like:
+?first_name=<script>alert('XSS')</script>
+
+SOLUTION:
+Use JSTL escapeXml function or OWASP Encoder to escape HTML special characters.
+
+OPTION 1 - Using JSTL (fn:escapeXml):
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+
+Then replace YOUR CODE HERE with:
+${fn:escapeXml(param.first_name)}
+${fn:escapeXml(param.last_name)}
+
+OPTION 2 - Using OWASP ESAPI Encoder:
+<%= org.owasp.encoder.Encode.forHtml(request.getParameter("first_name"))%>
+<%= org.owasp.encoder.Encode.forHtml(request.getParameter("last_name"))%>
+
+OPTION 3 - Using Apache Commons Lang:
+<%= org.apache.commons.lang3.StringEscapeUtils.escapeHtml4(request.getParameter("first_name"))%>
+<%= org.apache.commons.lang3.StringEscapeUtils.escapeHtml4(request.getParameter("last_name"))%>
+
+MOST LIKELY EXPECTED ANSWER FOR WEBGOAT:
+${fn:escapeXml(param.first_name)}
+${fn:escapeXml(param.last_name)}
+
+Or possibly:
+<%= org.owasp.encoder.Encode.forHtml(request.getParameter("first_name"))%>
+<%= org.owasp.encoder.Encode.forHtml(request.getParameter("last_name"))%>
+
+WHAT IT DOES:
+Converts special HTML characters:
+< becomes &lt;
+> becomes &gt;
+& becomes &amp;
+" becomes &quot;
+' becomes &#x27;
+
+So <script>alert('XSS')</script> becomes:
+&lt;script&gt;alert(&#x27;XSS&#x27;)&lt;/script&gt;
+
+This displays as text instead of executing as code.

