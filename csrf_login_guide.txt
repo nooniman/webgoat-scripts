@@ -1,0 +1,204 @@
+====================================================================
+     LOGIN CSRF ATTACK - QUICK GUIDE
+====================================================================
+
+Challenge: Demonstrate that WebGoat is vulnerable to Login CSRF
+
+Target: http://192.168.254.112:8001/WebGoat
+
+====================================================================
+WHAT IS LOGIN CSRF?
+====================================================================
+
+NORMAL CSRF:
+- Attacker uses YOUR session
+- Attacker makes YOU do something (transfer money, etc.)
+
+LOGIN CSRF (This Challenge):
+- Attacker tricks you into logging in as THEM
+- Your actions are tracked under ATTACKER's account
+- Attacker logs back in later to see what you did
+
+====================================================================
+THE ATTACK SCENARIO:
+====================================================================
+
+1. You (victim) are logged in as "tom"
+2. Attacker creates account "csrf-tom"
+3. Attacker sends you malicious link
+4. Link auto-logs you in as "csrf-tom" (attacker's account!)
+5. You think you're using your account, but you're using attacker's
+6. Attacker logs back in as "csrf-tom" to see your activity
+
+Real-world example: Google search history tracking
+- Attacker creates Google account
+- Tricks you into logging in as THEM
+- Your searches are saved to THEIR account
+- They log back in to see all your searches!
+
+====================================================================
+QUICK STEPS TO COMPLETE CHALLENGE:
+====================================================================
+
+OPTION 1: Using the HTML Tool (EASIEST)
+----------------------------------------
+1. Open csrf_login_attack.html in your browser
+2. Enter your current WebGoat username (e.g., "tom")
+3. Follow the step-by-step wizard
+4. It will guide you through:
+   - Creating the csrf- user
+   - Executing the login CSRF attack
+   - Completing the lesson
+
+OPTION 2: Manual Steps
+----------------------
+1. Note your current username (let's say it's "tom")
+
+2. Create the CSRF user:
+   - Open WebGoat: http://192.168.254.112:8001
+   - Logout
+   - Click "Register new user"
+   - Username: csrf-tom
+   - Password: anything (remember it!)
+   - Register
+
+3. Keep the WebGoat lesson tab open
+
+4. Execute Login CSRF:
+   - Use csrf_login_attack.html OR
+   - Create your own login form that auto-submits
+
+5. Verify:
+   - Check you're logged in as "csrf-tom" (top right of WebGoat)
+   - Go back to the original lesson tab
+   - Click "Press the button below when you are logged in as the other user"
+   - Lesson completes! ✅
+
+====================================================================
+WHY THIS IS DANGEROUS:
+====================================================================
+
+Real-world consequences:
+------------------------
+1. Search History Tracking
+   - Victim searches for sensitive topics
+   - All tracked in attacker's account
+
+2. Shopping Cart Poisoning
+   - Victim adds items to cart
+   - Items saved to attacker's account
+   - Attacker sees victim's interests/location
+
+3. Form Prefill Attacks
+   - Many sites remember form inputs
+   - Victim fills sensitive forms
+   - Data saved to attacker's account
+
+4. Activity Tracking
+   - Banking activity
+   - Medical record searches
+   - Legal research topics
+
+====================================================================
+HOW TO DEFEND AGAINST LOGIN CSRF:
+====================================================================
+
+1. CSRF Tokens on Login Forms
+   - Add unique token to login form
+   - Verify token on server side
+
+2. SameSite Cookie Attribute
+   - Set-Cookie: SameSite=Strict
+   - Prevents cookies from cross-site requests
+
+3. Referrer Checking
+   - Verify login request came from your domain
+   - Block if referrer is external
+
+4. User Notification
+   - Email user when new login detected
+   - Show last login time/location
+
+5. Frame Busting
+   - Prevent login page from being framed
+   - X-Frame-Options: DENY
+
+====================================================================
+TECHNICAL DETAILS:
+====================================================================
+
+A Login CSRF attack typically uses a hidden form:
+
+<form method="POST" action="https://victim.com/login">
+    <input type="hidden" name="username" value="csrf-victim" />
+    <input type="hidden" name="password" value="attackerPassword" />
+</form>
+<script>
+    document.forms[0].submit();
+</script>
+
+When victim visits attacker's page:
+1. Form auto-submits to victim.com/login
+2. Victim.com sets session cookie for "csrf-victim"
+3. Victim is now logged in as attacker!
+4. Subsequent actions tracked under attacker's account
+
+====================================================================
+FILES IN YOUR WORKSPACE:
+====================================================================
+
+csrf_login_attack.html  - Interactive tool for Login CSRF
+csrf_login_guide.txt    - This guide
+
+====================================================================
+TROUBLESHOOTING:
+====================================================================
+
+Issue: "I'm still logged in as my original user"
+Solution: Make sure the login form actually submitted. Check the
+         new window that opened. You should see WebGoat logged in
+         as csrf-[username].
+
+Issue: "The button click doesn't work"
+Solution: You must click the button WHILE logged in as the csrf-
+         user. Go to the new window first, verify you're logged
+         in as csrf-[username], THEN click the button in the
+         original lesson tab.
+
+Issue: "Login form doesn't submit"
+Solution: Check browser console (F12) for errors. Make sure you
+         entered the correct password for the csrf- user.
+
+Issue: "Can't create csrf- user"
+Solution: Make sure you logged out first. If username already
+         exists, try a different variation like csrf-[username]1
+
+====================================================================
+COMPLETE EXAMPLE:
+====================================================================
+
+Your username: alice
+CSRF username: csrf-alice
+
+1. Create user "csrf-alice" with password "test123"
+2. Open csrf_login_attack.html
+3. Enter "alice" as your username
+4. Click through the wizard
+5. Enter password "test123"
+6. Click "Execute Login CSRF Attack"
+7. New window opens, you're logged in as "csrf-alice"
+8. Go to original lesson tab
+9. Click the button
+10. Lesson completes! 🎉
+
+====================================================================
+REFERENCES:
+====================================================================
+
+Paper: "Robust Defenses for Cross-Site Request Forgery"
+       by Barth, Jackson, Mitchell (2008)
+       
+CWE-352: Cross-Site Request Forgery (CSRF)
+OWASP: https://owasp.org/www-community/attacks/csrf
+
+====================================================================
