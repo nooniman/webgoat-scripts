@@ -1,0 +1,559 @@
+===============================================
+  JWT TOOLKIT - TROUBLESHOOTING GUIDE
+===============================================
+
+Quick solutions to common issues when attacking JWT tokens.
+
+===============================================
+  POWERSHELL SCRIPT ISSUES
+===============================================
+
+PROBLEM: Script won't execute
+ERROR: "cannot be loaded because running scripts is disabled"
+─────────────────────────────────────────────────────────
+SOLUTION:
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy Bypass
+
+Or run once with:
+powershell -ExecutionPolicy Bypass -File jwt_automation.ps1
+
+PROBLEM: "Unexpected token" error
+───────────────────────────────────
+SOLUTION:
+Make sure you're pasting the FULL JWT token including all 3 parts.
+Format should be: xxxxx.yyyyy.zzzzz
+
+PROBLEM: Script crashes when decoding
+───────────────────────────────────────
+SOLUTION:
+Token might have invalid Base64. Check for:
+- Extra spaces
+- Line breaks
+- Missing characters
+- Copy the token again carefully
+
+===============================================
+  TOKEN FORMAT ISSUES
+===============================================
+
+PROBLEM: "Invalid JWT format"
+───────────────────────────────
+CAUSE: Token doesn't have 3 parts
+SOLUTION: JWT must have exactly 2 dots
+Correct: header.payload.signature
+Wrong: header.payload (missing signature)
+Wrong: headerpayloadsignature (no dots)
+
+PROBLEM: Token has extra characters
+─────────────────────────────────────
+CAUSE: Copied from email/URL with extra stuff
+SOLUTION: 
+- Remove "Bearer " prefix if present
+- Remove any whitespace/newlines
+- Should start with "eyJ" (Base64 encoded JSON)
+
+PROBLEM: Token too short
+─────────────────────────
+CAUSE: Incomplete copy
+SOLUTION: 
+JWT tokens are typically 200-500+ characters
+If yours is shorter, you likely copied partially
+
+===============================================
+  SIGNATURE VERIFICATION ISSUES
+===============================================
+
+PROBLEM: Server rejects tampered token
+ERROR: "Invalid signature" or "Signature verification failed"
+──────────────────────────────────────────────────────────────
+This is EXPECTED - server is properly validating signatures.
+
+TRY THESE IN ORDER:
+1. Algorithm "none" attack (PowerShell Option 6)
+2. Remove signature (PowerShell Option 7)
+3. Brute force secret (PowerShell Option 8)
+
+PROBLEM: Algorithm "none" doesn't work
+────────────────────────────────────────
+Server might reject "none" algorithm completely.
+
+TRY:
+- "None" (capital N)
+- "NONE" (all caps)
+- "nOnE" (mixed case)
+- "" (empty string)
+- null value
+
+PowerShell code to try variations:
+# Manually edit header in token
+# Change "alg": "HS256" to variations above
+
+PROBLEM: Removing signature doesn't work
+──────────────────────────────────────────
+Server might require signature to be present.
+
+TRY:
+- Keep signature but use algorithm "none"
+- Add dummy signature: header.payload.AAAA
+- Use original signature (just tamper payload)
+
+===============================================
+  BRUTE FORCE ISSUES
+===============================================
+
+PROBLEM: Can't find secret with common list
+─────────────────────────────────────────────
+Default wordlist is limited.
+
+SOLUTION 1 - Try WebGoat-specific secrets:
+- webgoat (most common!)
+- WebGoat
+- WEBGOAT
+- webgoat2025
+- goat
+
+SOLUTION 2 - Use external tools:
+# jwt_tool with large wordlist
+python jwt_tool.py TOKEN -C -d rockyou.txt
+
+# hashcat (fastest)
+hashcat -m 16500 jwt.txt rockyou.txt
+
+PROBLEM: Brute force is too slow
+──────────────────────────────────
+PowerShell brute force is slow (single-threaded).
+
+SOLUTION:
+Use specialized tools:
+- hashcat (GPU-accelerated, very fast)
+- jwt_tool (multi-threaded)
+- john the ripper (CPU-optimized)
+
+Download rockyou.txt:
+https://github.com/danielmiessler/SecLists/tree/master/Passwords
+
+PROBLEM: Found secret but can't sign token
+────────────────────────────────────────────
+PowerShell has HMAC-SHA256 support.
+
+USE:
+PowerShell Option 9 (Sign New Token)
+Enter payload: {"sub":"admin","admin":true}
+Enter secret: [found_secret]
+
+OR use jwt.io:
+1. Go to https://jwt.io
+2. Edit payload section
+3. Enter secret in "verify signature" box
+4. Copy encoded token
+
+===============================================
+  WEB REQUEST ISSUES
+===============================================
+
+PROBLEM: "Unauthorized" error
+───────────────────────────────
+CAUSE: Wrong Authorization header format
+
+CORRECT:
+Authorization: Bearer eyJhbGci...token...here
+
+WRONG:
+Authorization: JWT eyJhbGci...token...here
+Authorization: eyJhbGci...token...here
+Authorization: Token eyJhbGci...token...here
+
+SOLUTION:
+Always use "Bearer " prefix (with space after)
+
+PROBLEM: CORS error in browser
+────────────────────────────────
+CAUSE: Cross-origin request blocked
+
+SOLUTION 1 - Use cURL:
+curl -X GET http://192.168.254.112:8001/WebGoat/JWT/endpoint \
+  -H "Authorization: Bearer TOKEN"
+
+SOLUTION 2 - Use PowerShell:
+.\jwt_automation.ps1
+Option 12
+
+SOLUTION 3 - Disable CORS (Chrome):
+chrome.exe --disable-web-security --user-data-dir="C:/temp/chrome"
+
+PROBLEM: Request works but challenge not solved
+─────────────────────────────────────────────────
+CAUSE: WebGoat didn't register completion
+
+SOLUTION:
+1. Check if you're sending to correct endpoint
+2. Verify token format is accepted
+3. Check WebGoat logs for errors
+4. Try refreshing the page
+5. Submit answer in WebGoat's input field (not just API call)
+
+===============================================
+  HTML TOOL ISSUES
+===============================================
+
+PROBLEM: HTML file won't open
+───────────────────────────────
+SOLUTION:
+Right-click > Open with > Chrome/Firefox/Edge
+
+PROBLEM: Nothing happens when clicking buttons
+────────────────────────────────────────────────
+CAUSE: JavaScript error
+
+SOLUTION:
+1. Open Browser Console (F12)
+2. Check for error messages
+3. Refresh page
+4. Try different browser
+
+PROBLEM: Copy button doesn't work
+───────────────────────────────────
+CAUSE: Browser clipboard permission
+
+SOLUTION:
+Manually select and copy (Ctrl+C)
+Or enable clipboard permissions in browser
+
+PROBLEM: Token not displaying
+───────────────────────────────
+CAUSE: Token might be too long or have invalid characters
+
+SOLUTION:
+1. Check browser console for errors
+2. Try pasting in PowerShell script instead
+3. Verify token is valid JWT format
+
+===============================================
+  WEBGOAT SPECIFIC ISSUES
+===============================================
+
+PROBLEM: Can't find JWT token in WebGoat
+──────────────────────────────────────────
+WHERE TO LOOK:
+1. Browser DevTools (F12) > Application > Cookies
+2. DevTools > Network > Headers > Authorization
+3. DevTools > Network > Response (in JSON)
+4. URL parameters (?token=...)
+5. POST request body
+
+SOLUTION:
+Try logging in again and watch Network tab:
+1. Open DevTools (F12)
+2. Go to Network tab
+3. Login to WebGoat
+4. Look for "JWT" or "token" in requests
+5. Check Authorization header
+
+PROBLEM: WebGoat not accepting tampered token
+───────────────────────────────────────────────
+CAUSE: Multiple possible issues
+
+CHECKLIST:
+□ Token format correct (header.payload.signature)?
+□ Using "Bearer" prefix?
+□ Sending to correct endpoint?
+□ Required fields still in payload?
+□ JSON syntax valid?
+
+TRY:
+1. Decode tampered token to verify changes
+2. Compare with original token structure
+3. Try different attack method
+4. Check WebGoat hints
+
+PROBLEM: "Token expired" error
+────────────────────────────────
+CAUSE: Token has "exp" claim that passed
+
+SOLUTION:
+Tamper the token and change "exp" to future time:
+"exp": 9999999999
+
+PowerShell:
+Option 11 (Custom Tamper)
+Field: exp
+Value: 9999999999
+
+PROBLEM: Challenge says "incorrect" but token works
+─────────────────────────────────────────────────────
+CAUSE: WebGoat expects answer in specific format
+
+SOLUTION:
+1. Check if challenge wants token in input field
+2. Don't include "Bearer" in input field (just token)
+3. Submit through WebGoat's form, not just API
+4. Read challenge instructions carefully
+
+===============================================
+  ALGORITHM CONFUSION ISSUES
+===============================================
+
+PROBLEM: Server rejects "none" algorithm
+──────────────────────────────────────────
+CAUSE: Server explicitly blocks "none"
+
+TRY:
+- "None" (capital N)
+- "NONE" (all caps)
+- Use different attack (tampering, brute force)
+
+PROBLEM: RS256 to HS256 doesn't work
+──────────────────────────────────────
+This is an advanced attack requiring public key.
+
+REQUIREMENTS:
+1. Get server's public key
+2. Use jwt_tool or custom script
+3. Sign token with public key as HMAC secret
+
+SOLUTION:
+python jwt_tool.py TOKEN -X k -pk public.pem
+
+If public key not available, skip this attack.
+
+===============================================
+  PAYLOAD ISSUES
+===============================================
+
+PROBLEM: Don't know which field to tamper
+───────────────────────────────────────────
+SOLUTION:
+1. Decode token first (Option 1)
+2. Look for these common fields:
+   - admin (set to true)
+   - role (change to "admin")
+   - sub (change to "admin")
+   - isAdmin (set to true)
+   - username (change to "admin")
+
+PROBLEM: Tampered payload doesn't work
+────────────────────────────────────────
+CAUSE: Wrong field or wrong format
+
+TRY MULTIPLE VARIATIONS:
+- "admin": true
+- "admin": "true"
+- "admin": 1
+- "role": "admin"
+- "sub": "admin"
+
+PROBLEM: Need to add new field
+────────────────────────────────
+SOLUTION:
+PowerShell Option 11 (Custom Tamper)
+Enter new field name and value
+
+Example:
+Field: isAdmin
+Value: true
+
+===============================================
+  TESTING & DEBUGGING
+===============================================
+
+PROBLEM: Don't know if attack worked
+──────────────────────────────────────
+SOLUTION - Test the token:
+
+Browser Console (F12):
+fetch('http://192.168.254.112:8001/WebGoat/JWT/validate', {
+  headers: {'Authorization': 'Bearer YOUR_TOKEN'}
+}).then(r => r.json()).then(data => {
+  console.log('Response:', data);
+  console.log('Success:', data.admin || data.role === 'admin');
+});
+
+cURL:
+curl -v -X GET http://192.168.254.112:8001/WebGoat/JWT/endpoint \
+  -H "Authorization: Bearer TOKEN" 2>&1 | grep -E "(200|401|403)"
+
+PROBLEM: Need to see what's in tampered token
+───────────────────────────────────────────────
+SOLUTION:
+After tampering, decode it again:
+1. Copy tampered token
+2. PowerShell Option 1 (Decode)
+3. Verify changes applied correctly
+
+PROBLEM: Not sure which endpoint to use
+─────────────────────────────────────────
+COMMON WEBGOAT JWT ENDPOINTS:
+/WebGoat/JWT/admin
+/WebGoat/JWT/profile
+/WebGoat/JWT/user
+/WebGoat/JWT/validate
+/WebGoat/JWT/verify
+
+TRY ALL:
+for endpoint in admin profile user validate verify; do
+  curl -X GET http://192.168.254.112:8001/WebGoat/JWT/$endpoint \
+    -H "Authorization: Bearer TOKEN"
+done
+
+===============================================
+  EXTERNAL TOOLS ISSUES
+===============================================
+
+PROBLEM: jwt_tool not found
+─────────────────────────────
+INSTALLATION:
+git clone https://github.com/ticarpi/jwt_tool
+cd jwt_tool
+pip install pyjwt
+
+USAGE:
+python jwt_tool.py TOKEN -T
+
+PROBLEM: hashcat not installed
+────────────────────────────────
+DOWNLOAD:
+Windows: https://hashcat.net/hashcat/
+Linux: apt-get install hashcat
+
+USAGE:
+hashcat -m 16500 jwt.txt wordlist.txt
+
+PROBLEM: jwt.io not loading
+─────────────────────────────
+ALTERNATIVES:
+- Use PowerShell script
+- Use HTML tool
+- Try: https://dinochiesa.github.io/jwt/
+
+===============================================
+  WHEN ALL ELSE FAILS
+===============================================
+
+SYSTEMATIC APPROACH:
+1. Capture fresh token
+2. Decode and document structure
+3. Try each attack in order:
+   □ Tampering (admin: true)
+   □ Tampering (username: admin)
+   □ Algorithm "none"
+   □ Remove signature
+   □ Brute force common secrets
+4. Test each attempt
+5. Check WebGoat hints
+6. Read challenge instructions again
+7. Try external tools
+
+STILL STUCK?
+- Check WebGoat GitHub issues
+- Read solution write-ups (after trying yourself)
+- Review jwt_guide.txt for detailed explanations
+- Try different payload variations
+- Ensure you're on correct lesson/challenge
+
+===============================================
+  COMMON MISTAKES
+===============================================
+
+✗ Copying "Bearer " with token (remove it)
+✗ Not including all 3 parts of JWT
+✗ Forgetting to encode payload as Base64URL
+✗ Using wrong endpoint URL
+✗ Not checking browser console for errors
+✗ Giving up on tampering too quickly
+✗ Trying complex attacks before simple ones
+✗ Not decoding token first to see structure
+
+===============================================
+  VERIFICATION CHECKLIST
+===============================================
+
+Before asking for help, verify:
+□ Token has 3 parts (header.payload.signature)
+□ Token starts with "eyJ"
+□ Using "Bearer " prefix in Authorization header
+□ Tried tampering attacks first
+□ Tried algorithm "none" attacks
+□ Decoded tampered token to verify changes
+□ Tested with curl/browser console
+□ Checked WebGoat hints
+□ Read challenge instructions carefully
+□ Tried PowerShell script
+□ Tried HTML tool
+
+===============================================
+  SUCCESS INDICATORS
+===============================================
+
+YOUR ATTACK WORKED IF:
+✓ HTTP 200 response (not 401/403)
+✓ Response shows admin: true
+✓ Response shows role: admin
+✓ WebGoat challenge marked complete
+✓ Can access admin-only resources
+
+YOUR ATTACK FAILED IF:
+✗ HTTP 401 (Unauthorized)
+✗ HTTP 403 (Forbidden)
+✗ "Invalid signature" error
+✗ "Token expired" error
+✗ No response / timeout
+
+===============================================
+  QUICK FIXES
+===============================================
+
+Issue                    Quick Fix
+─────────────────────    ────────────────────────────
+Invalid format           Check for 2 dots
+Unauthorized             Try algorithm "none"
+Signature failed         Remove signature
+Token expired            Tamper "exp" to 9999999999
+Script won't run         Set-ExecutionPolicy Bypass
+Can't crack secret       Try "webgoat" or "secret"
+CORS error               Use cURL instead
+Changes not applied      Decode tampered token to verify
+
+===============================================
+  GETTING HELP
+===============================================
+
+Include in help request:
+1. Which challenge you're on
+2. What you tried (specific attacks)
+3. Error messages (exact text)
+4. Token structure (decoded)
+5. Request/response (from DevTools)
+
+DON'T share:
+- Your actual JWT token (security)
+- WebGoat credentials
+- Full solution spoilers
+
+===============================================
+  RESOURCES FOR HELP
+===============================================
+
+WebGoat GitHub:
+https://github.com/WebGoat/WebGoat/issues
+
+JWT Documentation:
+https://jwt.io
+https://datatracker.ietf.org/doc/html/rfc7519
+
+Tools:
+jwt_tool: https://github.com/ticarpi/jwt_tool
+hashcat: https://hashcat.net
+
+Learning:
+PortSwigger: https://portswigger.net/web-security/jwt
+OWASP: https://cheatsheetseries.owasp.org
+
+===============================================
+  END OF TROUBLESHOOTING GUIDE
+===============================================
+
+Remember: Most WebGoat JWT challenges can be solved with
+simple tampering or algorithm "none" attacks. Try the
+basic attacks first!
+
+Good luck! 🔐

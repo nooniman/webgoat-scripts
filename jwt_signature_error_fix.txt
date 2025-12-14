@@ -1,0 +1,204 @@
+═══════════════════════════════════════════════════════════════════════════
+  SIGNATURE VALIDATION ERROR - SOLUTION
+═══════════════════════════════════════════════════════════════════════════
+
+ERROR YOU GOT:
+"JWT signature does not match locally computed signature"
+
+MEANING: WebGoat IS checking the signature! Simple tampering won't work.
+
+═══════════════════════════════════════════════════════════════════════════
+  🎯 SOLUTION: TRY THESE 3 METHODS IN ORDER
+═══════════════════════════════════════════════════════════════════════════
+
+METHOD 1: ALGORITHM "none" ATTACK (Try This First!)
+════════════════════════════════════════════════════
+
+This removes signature verification requirement.
+
+STEP 1: Get Your Original Token
+---------------------------------
+F12 > Application > Cookies > Copy access_token
+(Get a FRESH token from WebGoat, not your tampered one)
+
+STEP 2: Use PowerShell Script
+-------------------------------
+PowerShell is still running. In the terminal:
+
+Type: 6
+Press: Enter
+Paste: YOUR_ORIGINAL_TOKEN (fresh from browser)
+Press: Enter
+
+This will:
+✓ Change algorithm to "none"
+✓ Set admin: true
+✓ Remove signature
+✓ Copy to clipboard
+
+STEP 3: Use the New Token
+---------------------------
+The token will end with a DOT like: header.payload.
+
+Use this token to reset votes:
+
+F12 > Console:
+fetch('http://192.168.254.112:8001/WebGoat/JWT/votings/reset', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_NEW_TOKEN_HERE'
+  }
+}).then(r => r.json()).then(console.log)
+
+═══════════════════════════════════════════════════════════════════════════
+
+METHOD 2: BRUTE FORCE SECRET (If Method 1 Fails)
+═════════════════════════════════════════════════
+
+The secret is probably weak. Let's crack it!
+
+STEP 1: Get Fresh Token
+-------------------------
+F12 > Application > Cookies > Copy access_token
+
+STEP 2: Brute Force
+--------------------
+PowerShell terminal:
+
+Type: 8
+Press: Enter
+Paste: YOUR_ORIGINAL_TOKEN
+Press: Enter
+
+Wait... it will test common secrets:
+- webgoat
+- secret
+- password
+- admin
+- 123456
+
+If found, you'll see: "SUCCESS! Found secret: webgoat"
+
+STEP 3: Sign New Token with Found Secret
+------------------------------------------
+PowerShell terminal:
+
+Type: 9
+Press: Enter
+Payload: {"iat":1766560664,"admin":true,"user":"Tom"}
+Press: Enter
+Secret: [THE_SECRET_THAT_WAS_FOUND]
+Press: Enter
+
+This creates a PROPERLY SIGNED token!
+
+STEP 4: Use Signed Token
+--------------------------
+F12 > Console:
+fetch('http://192.168.254.112:8001/WebGoat/JWT/votings/reset', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_SIGNED_TOKEN'
+  }
+}).then(r => r.json()).then(console.log)
+
+═══════════════════════════════════════════════════════════════════════════
+
+METHOD 3: EXTERNAL TOOL - jwt.io (If Methods 1 & 2 Fail)
+═════════════════════════════════════════════════════════
+
+Use online tool to sign properly.
+
+STEP 1: Brute Force First
+---------------------------
+(Use Method 2 Step 1-2 to find the secret)
+
+Common WebGoat secrets to try:
+- webgoat
+- secret  
+- password
+- WebGoat
+- JWT
+
+STEP 2: Go to jwt.io
+---------------------
+Open: https://jwt.io
+
+STEP 3: Edit Token
+-------------------
+In the "Decoded" section on the right:
+
+HEADER:
+{
+  "alg": "HS512",
+  "typ": "JWT"
+}
+
+PAYLOAD:
+{
+  "iat": 1766560664,
+  "admin": true,
+  "user": "Tom"
+}
+
+STEP 4: Enter Secret
+---------------------
+At the bottom right, "Verify Signature" box:
+Enter: webgoat (or whatever secret you found)
+
+STEP 5: Copy Signed Token
+---------------------------
+The "Encoded" section on the left will show properly signed token.
+Copy it!
+
+STEP 6: Use Token
+------------------
+F12 > Console:
+fetch('http://192.168.254.112:8001/WebGoat/JWT/votings/reset', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_PROPERLY_SIGNED_TOKEN'
+  }
+}).then(r => r.json()).then(console.log)
+
+═══════════════════════════════════════════════════════════════════════════
+  💡 QUICK COMMANDS
+═══════════════════════════════════════════════════════════════════════════
+
+TRY ALGORITHM "none":
+──────────────────────
+PowerShell > 6 > Paste token > Use result
+
+TRY BRUTE FORCE:
+─────────────────
+PowerShell > 8 > Paste token > Wait for secret
+PowerShell > 9 > Enter payload > Enter found secret
+
+TEST TOKEN:
+────────────
+fetch('http://192.168.254.112:8001/WebGoat/JWT/votings/reset', {
+  method: 'POST',
+  headers: {'Authorization': 'Bearer TOKEN_HERE'}
+}).then(r => r.json()).then(console.log)
+
+═══════════════════════════════════════════════════════════════════════════
+  🎯 MOST LIKELY SOLUTION
+═══════════════════════════════════════════════════════════════════════════
+
+WebGoat typically uses "webgoat" as the secret!
+
+QUICK WIN:
+1. Get fresh token from browser
+2. PowerShell > Type 8 > Paste token
+3. Wait... "Found secret: webgoat"
+4. PowerShell > Type 9
+5. Payload: {"iat":1766560664,"admin":true,"user":"Tom"}
+6. Secret: webgoat
+7. Copy the signed token
+8. Use in reset votes request
+9. DONE! ✓
+
+═══════════════════════════════════════════════════════════════════════════
+
+Your PowerShell terminal is still running and waiting for input.
+Try METHOD 1 (algorithm "none") first - it's fastest!

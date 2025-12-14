@@ -1,0 +1,198 @@
+================================================================================
+  ⭐ CORRECT SOLUTION FOR CHALLENGE 1 ⭐
+  (When document.cookie returns "")
+================================================================================
+
+✅ TESTED AND WORKING - December 2025
+
+THE PROBLEM:
+------------
+- document.cookie returns "" 
+- This means the cookie is HttpOnly
+- JavaScript CANNOT read or modify HttpOnly cookies
+- You MUST edit it manually in DevTools Application tab
+
+THE SOLUTION (PROVEN WORKING):
+-------------------------------
+
+STEP 1: Get Current Token from DevTools
+----------------------------------------
+1. Press F12 (open DevTools)
+2. Click "Application" tab (top of DevTools)
+3. Left sidebar: Click "Cookies" dropdown
+4. Click: http://192.168.254.112:8001
+5. Find row with Name: "access_token"
+6. Look at the "Value" column - that's your JWT token
+7. Copy the entire value (triple-click to select all)
+
+Example token:
+eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE3NjY1NjI5ODksImFkbWluIjoiZmFsc2UiLCJ1c2VyIjoiVG9tIn0.xSkj4A15TtrWN7U1TfwNYDMKzmEnUq32vky6IOgjletmX42Ed28RQjVGaLTAVFT43W-1e3Joy0As5lN74SyWUA
+
+STEP 2: Use Attack Token (Algorithm "none")
+--------------------------------------------
+Your working attack token:
+
+eyJhbGciOiJub25lIn0.eyJpYXQiOjE3NjY1NjI5ODksImFkbWluIjoidHJ1ZSIsInVzZXIiOiJUb20ifQ.
+
+This token contains:
+- Header: {"alg":"none"}
+- Payload: {"iat":1766562989,"admin":"true","user":"Tom"}
+- Signature: REMOVED (ends with dot)
+
+STEP 3: Replace Token in DevTools
+----------------------------------
+1. Back in browser, DevTools > Application > Cookies
+2. Find the "access_token" row
+3. Double-click on the VALUE column (not the Name)
+4. Press Ctrl+A (select all)
+5. Press Delete (clear it)
+6. Paste the new token from above (Ctrl+V)
+7. Press Enter
+
+STEP 4: Complete the Challenge
+-------------------------------
+Click the "Delete" button next to any user's name on the page
+OR
+Refresh the page (F5)
+
+✅ Challenge completes successfully!
+
+================================================================================
+  WHY JAVASCRIPT CONSOLE METHOD FAILED
+================================================================================
+
+You tried: document.cookie = 'access_token=...'
+Result: Empty string ""
+
+Reason: HttpOnly cookies cannot be read or written by JavaScript
+Solution: Must edit manually in DevTools Application > Cookies tab
+
+This is a SECURITY FEATURE to prevent XSS attacks from stealing cookies!
+
+================================================================================
+  VISUAL GUIDE
+================================================================================
+
+DevTools Application Tab looks like this:
+
+┌─────────────────────────────────────────┐
+│ Application  Console  Sources  Network  │
+├─────────────────────────────────────────┤
+│ Application                              │
+│ ├─ Storage                               │
+│ │  ├─ Local Storage                     │
+│ │  ├─ Session Storage                   │
+│ │  └─ Cookies ← Click this              │
+│ │     └─ http://192.168.254.112:8001 ← Click this
+│ │                                        │
+│ └─ Background Services                   │
+└─────────────────────────────────────────┘
+
+Then you'll see a table:
+
+┌──────────────┬────────────────────────┬────────────────┐
+│ Name         │ Value                  │ Domain         │
+├──────────────┼────────────────────────┼────────────────┤
+│ access_token │ eyJhbGci...........    │ 192.168.254... │
+│              │ ← Double-click here!   │                │
+└──────────────┴────────────────────────┴────────────────┘
+
+================================================================================
+  TROUBLESHOOTING
+================================================================================
+
+Q: I don't see "access_token" in cookies
+A: Make sure you:
+   - Are logged into WebGoat
+   - Are on the JWT challenge page
+   - Selected the correct domain (192.168.254.112:8001)
+   - Expanded the Cookies dropdown
+
+Q: After changing cookie, nothing happens
+A: Try these in order:
+   1. Click the "Delete" button next to a user
+   2. Refresh the page (F5)
+   3. Navigate away and back to the challenge
+   4. Close and reopen DevTools
+
+Q: Token keeps reverting to original
+A: The page might be resetting it. Try:
+   1. Change the cookie
+   2. IMMEDIATELY click an action (Delete/Reset)
+   3. Don't wait or navigate away
+
+Q: Still getting signature error
+A: Make sure PowerShell Option 6 created a token that:
+   - Has algorithm "none" in header
+   - Has admin "true" in payload
+   - Ends with a dot: "...payload."
+   - Has NO signature after the final dot
+
+================================================================================
+  VERIFICATION STEPS
+================================================================================
+
+After you paste the attack token in DevTools:
+
+1. CHECK THE TOKEN FORMAT:
+   Should look like: eyJhbGci...eyJpYXQ...
+   Should have exactly 2 dots
+   Should end with a dot: ...payload.
+
+2. DECODE TO VERIFY:
+   Copy the attack token
+   Go to: https://jwt.io
+   Paste in "Encoded" section
+   Header should show: {"alg":"none"}
+   Payload should show: {"admin":"true",...}
+
+3. TEST IT:
+   Click any action button on the page
+   Watch the Network tab for the request
+   Should not see signature errors anymore
+
+================================================================================
+  WHAT YOUR ATTACK TOKEN SHOULD LOOK LIKE
+================================================================================
+
+ORIGINAL TOKEN (from DevTools):
+eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE3NjY1NTg5MTksImFkbWluIjoiZmFsc2UiLCJ1c2VyIjoiVG9tIn0.Aw9FmcrOr7AmeaCDtaPem3qIgEMX2_PVj2AVW5HawfbFNyi6ShZc3agbQBwLzRvRTJn3rwlrbaFmCYKkQFkIWg
+
+ATTACK TOKEN (from PowerShell Option 6):
+eyJhbGciOiJub25lIn0.eyJpYXQiOjE3NjY1NTg5MTksImFkbWluIjoidHJ1ZSIsInVzZXIiOiJUb20ifQ.
+
+NOTICE:
+- Header changed: eyJhbGciOiJIUzUxMiJ9 → eyJhbGciOiJub25lIn0
+- Payload changed: ...ImFkbWluIjoiZmFsc2Ui... → ...ImFkbWluIjoidHJ1ZSI...
+- Signature removed: ...QFkIWg → just a dot .
+
+================================================================================
+  READY TO TRY?
+================================================================================
+
+RIGHT NOW:
+
+1. F12 > Application > Cookies > http://192.168.254.112:8001
+2. Copy access_token value
+3. PowerShell terminal > Press 6 > Paste token
+4. Copy the attack token from PowerShell
+5. DevTools > Double-click access_token value > Delete > Paste > Enter
+6. Click "Delete" button next to any user OR click "Reset Votes"
+
+✅ Done!
+
+================================================================================
+  IF THIS STILL DOESN'T WORK
+================================================================================
+
+Tell me:
+1. What do you see in DevTools > Application > Cookies?
+2. Is there an "access_token" cookie?
+3. What's the first 50 characters of that token?
+4. What happens when you click "Delete" after changing the cookie?
+5. Do you see any error in the Console tab?
+
+Also try:
+- Clear all cookies and log back in
+- Try a different user (Tom, Jerry, etc.)
+- Make sure you're on the correct challenge page

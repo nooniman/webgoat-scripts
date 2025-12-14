@@ -1,0 +1,409 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                    JWT TOOLKIT - FILE INDEX                                ║
+║                    Quick Navigation Guide                                  ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+All files located in: c:\webgoat-scripts-1\
+
+===============================================
+  🚀 START HERE
+===============================================
+
+📄 jwt_README.txt (THIS IS THE MAIN STARTING POINT!)
+   Complete overview of entire toolkit
+   Read first if you're new
+   ➜ Start here: Open this file first
+
+📄 jwt_quickstart.txt (FASTEST WAY TO GET GOING)
+   Get attacking in 5 minutes
+   Copy-paste ready commands
+   ➜ Use this when: You want to start immediately
+
+===============================================
+  🛠️ TOOLS (Use These to Attack)
+===============================================
+
+🌐 jwt_complete_toolkit.html ⭐ PRIMARY TOOL
+   Interactive web interface
+   6 tabs with visual attacks
+   No installation needed
+   ➜ Best for: Beginners, visual learners
+   ➜ Open: Double-click file
+
+⚡ jwt_automation.ps1 ⭐ PRIMARY TOOL
+   PowerShell automation script
+   12 attack methods via menu
+   Full HMAC signing support
+   ➜ Best for: Automation, serious attacks
+   ➜ Run: .\jwt_automation.ps1
+
+===============================================
+  📚 DOCUMENTATION (Read These)
+===============================================
+
+📖 jwt_guide.txt (COMPREHENSIVE GUIDE)
+   500+ lines of detailed explanations
+   All attack methods explained
+   External tools documentation
+   ➜ Read when: You want deep understanding
+   ➜ Time: 30 minutes
+
+📋 jwt_cheatsheet.txt (VISUAL REFERENCE)
+   One-page cheat sheet
+   ASCII boxes and formatting
+   All commands at a glance
+   ➜ Use when: Quick lookup needed
+   ➜ Time: 2 minutes to scan
+
+💾 jwt_payloads_library.txt (EXAMPLES)
+   30+ ready-to-use payloads
+   cURL command templates
+   Python and JavaScript examples
+   ➜ Use when: Need specific payload
+   ➜ Time: Search for what you need
+
+📝 jwt_summary.txt (TOOL OVERVIEW)
+   High-level summary
+   File comparisons
+   Learning paths
+   ➜ Read when: Understanding toolkit structure
+   ➜ Time: 10 minutes
+
+🔧 jwt_troubleshooting.txt (PROBLEM SOLVING)
+   Solutions to common issues
+   Error message explanations
+   Systematic debugging
+   ➜ Use when: Something isn't working
+   ➜ Time: Find your issue
+
+📑 jwt_file_index.txt (THIS FILE)
+   Navigation guide for all files
+   ➜ Use when: Need to find right file
+
+===============================================
+  📂 FILE USAGE FLOWCHART
+===============================================
+
+                        START
+                          ↓
+                ┌─────────┴─────────┐
+                │  Read jwt_README  │
+                └─────────┬─────────┘
+                          ↓
+            ┌─────────────┴──────────────┐
+            │ Want quick start or deep   │
+            │ understanding?             │
+            └─────┬─────────────┬────────┘
+                  │             │
+           Quick  │             │  Deep
+                  ↓             ↓
+      ┌───────────────┐   ┌──────────────┐
+      │ quickstart.txt│   │ jwt_guide.txt│
+      └───────┬───────┘   └──────┬───────┘
+              └───────┬───────────┘
+                      ↓
+            ┌─────────┴─────────┐
+            │ Choose Your Tool  │
+            └─────┬───────┬─────┘
+                  │       │
+         Visual   │       │   Automation
+                  ↓       ↓
+        ┌─────────────┐ ┌─────────────┐
+        │ toolkit.html│ │ automation  │
+        │             │ │ .ps1        │
+        └──────┬──────┘ └──────┬──────┘
+               └────────┬───────┘
+                        ↓
+              ┌─────────┴─────────┐
+              │   Attack Token    │
+              └─────────┬─────────┘
+                        ↓
+                   Stuck? → jwt_troubleshooting.txt
+                   Need payload? → jwt_payloads_library.txt
+                   Quick reference? → jwt_cheatsheet.txt
+
+===============================================
+  📊 FILE COMPARISON
+===============================================
+
+┌──────────────────────┬─────────┬───────────┬──────────────┐
+│ File                 │ Size    │ Read Time │ Use Case     │
+├──────────────────────┼─────────┼───────────┼──────────────┤
+│ jwt_README.txt       │ Large   │ 15 min    │ Overview     │
+│ jwt_quickstart.txt   │ Medium  │ 5 min     │ Fast start   │
+│ jwt_guide.txt        │ X-Large │ 30 min    │ Learn all    │
+│ jwt_cheatsheet.txt   │ Medium  │ 2 min     │ Quick lookup │
+│ jwt_payloads_*.txt   │ Large   │ As needed │ Copy-paste   │
+│ jwt_troubleshoot*.txt│ Large   │ As needed │ Fix problems │
+│ jwt_summary.txt      │ Medium  │ 10 min    │ Understand   │
+│ toolkit.html         │ N/A     │ N/A       │ Use tool     │
+│ automation.ps1       │ N/A     │ N/A       │ Use tool     │
+└──────────────────────┴─────────┴───────────┴──────────────┘
+
+===============================================
+  🎯 USE CASE → FILE MAPPING
+===============================================
+
+"I'm brand new to JWT"
+➜ jwt_README.txt → jwt_quickstart.txt → jwt_complete_toolkit.html
+
+"I want to attack NOW"
+➜ jwt_quickstart.txt → jwt_automation.ps1 (Option 2)
+
+"I need to understand JWT deeply"
+➜ jwt_guide.txt (read all sections)
+
+"I'm stuck on a challenge"
+➜ jwt_troubleshooting.txt → jwt_payloads_library.txt
+
+"I need a specific command"
+➜ jwt_cheatsheet.txt (scan for command)
+
+"I want a ready-made payload"
+➜ jwt_payloads_library.txt (search for scenario)
+
+"I want to compare tools"
+➜ jwt_summary.txt (Tool Comparison section)
+
+"Something isn't working"
+➜ jwt_troubleshooting.txt (find your issue)
+
+"I want to see all options"
+➜ jwt_cheatsheet.txt (PowerShell menu options)
+
+"I need visual interface"
+➜ jwt_complete_toolkit.html (open in browser)
+
+"I need automation"
+➜ jwt_automation.ps1 (run in PowerShell)
+
+===============================================
+  📖 READING ORDER RECOMMENDATIONS
+===============================================
+
+FOR BEGINNERS:
+───────────────
+1. jwt_README.txt (overview)
+2. jwt_quickstart.txt (essentials)
+3. jwt_cheatsheet.txt (reference)
+4. Try: jwt_complete_toolkit.html
+5. When stuck: jwt_troubleshooting.txt
+
+FOR INTERMEDIATE:
+──────────────────
+1. jwt_quickstart.txt (refresh)
+2. jwt_guide.txt (deep dive)
+3. jwt_payloads_library.txt (examples)
+4. Try: jwt_automation.ps1
+5. Reference: jwt_cheatsheet.txt
+
+FOR ADVANCED:
+──────────────
+1. jwt_guide.txt (advanced sections)
+2. jwt_payloads_library.txt (all payloads)
+3. jwt_troubleshooting.txt (edge cases)
+4. Customize: toolkit.html or automation.ps1
+
+===============================================
+  🔍 SEARCH GUIDE
+===============================================
+
+Looking for...                  Check this file:
+────────────────────────────    ─────────────────────────────
+"How do I decode a token?"      jwt_quickstart.txt
+"What's the PowerShell menu?"   jwt_cheatsheet.txt
+"Algorithm confusion attack"    jwt_guide.txt (Section 4)
+"cURL command template"         jwt_payloads_library.txt
+"Script won't run"              jwt_troubleshooting.txt
+"Become admin payload"          jwt_payloads_library.txt
+"Brute force not working"       jwt_troubleshooting.txt
+"WebGoat challenge solution"    jwt_cheatsheet.txt (bottom)
+"External tools"                jwt_guide.txt (Section 8)
+"Sign token with secret"        jwt_guide.txt (Section 5)
+
+===============================================
+  📱 MOBILE-FRIENDLY FILES
+===============================================
+
+Best for reading on mobile/tablet:
+✓ jwt_quickstart.txt (short, essential)
+✓ jwt_cheatsheet.txt (visual, scannable)
+✓ jwt_troubleshooting.txt (problem → solution)
+
+Not ideal for mobile:
+✗ jwt_complete_toolkit.html (needs browser interaction)
+✗ jwt_automation.ps1 (needs PowerShell)
+✗ jwt_guide.txt (too long)
+
+===============================================
+  💡 PRO TIPS
+===============================================
+
+TIP 1: Keep jwt_cheatsheet.txt Open
+────────────────────────────────────
+Always have it open while working for quick reference.
+
+TIP 2: Bookmark Sections
+─────────────────────────
+Use Ctrl+F to jump to sections in long files.
+
+TIP 3: Print jwt_cheatsheet.txt
+────────────────────────────────
+Physical reference card while working.
+
+TIP 4: Customize
+─────────────────
+Edit files to add your own notes/findings.
+
+TIP 5: Sequential Learning
+───────────────────────────
+Read files in order (see Reading Order above).
+
+===============================================
+  🎓 LEARNING PROGRESSION
+===============================================
+
+WEEK 1 - Basics:
+□ Read jwt_README.txt
+□ Read jwt_quickstart.txt
+□ Use jwt_complete_toolkit.html
+□ Complete 1-2 challenges
+
+WEEK 2 - Intermediate:
+□ Read jwt_guide.txt
+□ Use jwt_automation.ps1
+□ Read jwt_payloads_library.txt
+□ Complete all challenges
+
+WEEK 3 - Advanced:
+□ Study jwt_troubleshooting.txt
+□ Try external tools
+□ Create custom payloads
+□ Master all attacks
+
+===============================================
+  📁 FILE DEPENDENCIES
+===============================================
+
+jwt_complete_toolkit.html
+├─ Standalone (no dependencies)
+└─ Works in any browser
+
+jwt_automation.ps1
+├─ Requires: PowerShell 5.1+
+└─ Standalone script
+
+Documentation Files (.txt)
+├─ No dependencies
+└─ Open with any text editor
+
+Suggested Tools:
+├─ Text Editor: Notepad++, VS Code
+├─ Browser: Chrome, Firefox
+└─ Terminal: PowerShell, Windows Terminal
+
+===============================================
+  🗂️ FILE ORGANIZATION
+===============================================
+
+All files in: c:\webgoat-scripts-1\
+
+Naming Convention:
+jwt_*           = JWT-related files
+*_toolkit.*     = Interactive tool
+*_automation.*  = Script/automation
+*_guide.*       = Comprehensive doc
+*_quickstart.*  = Fast reference
+*_cheatsheet.*  = Visual reference
+*_payloads_*.*  = Examples/templates
+*_troublesh*.*  = Problem solving
+*_summary.*     = Overview
+*_README.*      = Main documentation
+*_index.*       = This navigation guide
+
+===============================================
+  📋 CHECKLIST FOR NEW USERS
+===============================================
+
+Initial Setup:
+□ Located files in c:\webgoat-scripts-1\
+□ Read jwt_README.txt
+□ Opened jwt_complete_toolkit.html successfully
+□ Ran jwt_automation.ps1 successfully
+□ Read jwt_quickstart.txt
+
+Before First Attack:
+□ Have WebGoat running (192.168.254.112:8001)
+□ Can access JWT lessons in WebGoat
+□ Have jwt_cheatsheet.txt open for reference
+□ Know where jwt_troubleshooting.txt is
+
+After First Success:
+□ Completed "Become Admin" challenge
+□ Understand token structure
+□ Comfortable with one tool (HTML or PS)
+□ Ready for more challenges
+
+===============================================
+  🔗 QUICK LINKS (File Paths)
+===============================================
+
+PRIMARY TOOLS:
+c:\webgoat-scripts-1\jwt_complete_toolkit.html
+c:\webgoat-scripts-1\jwt_automation.ps1
+
+QUICK REFERENCE:
+c:\webgoat-scripts-1\jwt_quickstart.txt
+c:\webgoat-scripts-1\jwt_cheatsheet.txt
+
+COMPREHENSIVE DOCS:
+c:\webgoat-scripts-1\jwt_README.txt
+c:\webgoat-scripts-1\jwt_guide.txt
+
+EXAMPLES & HELP:
+c:\webgoat-scripts-1\jwt_payloads_library.txt
+c:\webgoat-scripts-1\jwt_troubleshooting.txt
+
+OVERVIEW:
+c:\webgoat-scripts-1\jwt_summary.txt
+c:\webgoat-scripts-1\jwt_file_index.txt
+
+===============================================
+  ⚡ SPEED REFERENCE
+===============================================
+
+Need...                         Open...
+─────────────────────────────   ─────────────────────────
+To attack NOW                   jwt_automation.ps1
+Visual interface                jwt_complete_toolkit.html
+Quick command                   jwt_cheatsheet.txt
+Specific payload                jwt_payloads_library.txt
+Solution to problem             jwt_troubleshooting.txt
+Understanding                   jwt_guide.txt
+Overview                        jwt_README.txt
+Getting started                 jwt_quickstart.txt
+
+===============================================
+  🎯 SUCCESS PATH
+===============================================
+
+1. Read jwt_README.txt (you are here!)
+2. Read jwt_quickstart.txt
+3. Open jwt_complete_toolkit.html OR run jwt_automation.ps1
+4. Keep jwt_cheatsheet.txt open
+5. Attack tokens!
+6. When stuck: jwt_troubleshooting.txt
+7. For examples: jwt_payloads_library.txt
+8. Complete all challenges!
+
+═══════════════════════════════════════════════════════════════
+
+You now have a complete map of the JWT toolkit!
+
+Start with: jwt_README.txt (if you haven't read it)
+Then: jwt_quickstart.txt (for fast start)
+Finally: Choose your tool and begin attacking!
+
+Good luck! 🔐🎯
+
+═══════════════════════════════════════════════════════════════

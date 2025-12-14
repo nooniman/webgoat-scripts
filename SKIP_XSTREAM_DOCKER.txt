@@ -1,0 +1,93 @@
+====================================================================
+XSTREAM LESSON - DOCKER REQUIREMENT ISSUE
+====================================================================
+
+SITUATION:
+----------
+✅ You don't want to install Docker
+❌ XStream CVE-2013-7285 lesson REQUIRES Docker WebGoat
+❌ Network error when trying to access the endpoint
+
+EXPLANATION:
+------------
+The XStream lesson specifically states:
+"This lesson only works when you are using the Docker image of WebGoat."
+
+Your WebGoat instance (192.168.254.112:8001) is likely NOT running
+in Docker, so this endpoint doesn't exist or isn't accessible.
+
+====================================================================
+SOLUTION: SKIP THIS LESSON
+====================================================================
+
+✅ Recommended: Skip this lesson and move to others
+
+You have MANY other lessons available that don't need Docker:
+- SQL Injection (more variants)
+- Authentication Bypass
+- JWT attacks
+- SSRF (Server-Side Request Forgery)
+- Insecure Deserialization (other types)
+- Access Control
+- Cryptography lessons
+
+====================================================================
+WHAT YOU CAN DO:
+====================================================================
+
+OPTION 1: Use the Lesson Finder
+--------------------------------
+Open: c:\webgoat-scripts-1\webgoat_lesson_finder.html
+
+This tool will:
+- Show all available lessons in your WebGoat
+- Test if XStream endpoint exists
+- Help you find what you CAN complete
+
+OPTION 2: Read and Understand Conceptually
+-------------------------------------------
+You already have the knowledge:
+- Read: xstream_cve_guide.txt
+- Understand: How XStream deserialization works
+- Know: The exploit technique (proxy + handler + exec)
+
+This is valuable even without completing the lesson!
+
+OPTION 3: Move to Next Lesson
+------------------------------
+Tell me what lesson you want to do next, and I'll help you!
+
+Popular choices:
+- JWT (JSON Web Token) attacks
+- SSRF (Server-Side Request Forgery)
+- Insecure Deserialization
+- Authentication Bypass
+- Access Control flaws
+
+====================================================================
+QUICK TEST: Is Your WebGoat Docker-based?
+====================================================================
+
+Run this in browser console:
+
+fetch('http://192.168.254.112:8001/WebGoat/actuator/health')
+  .then(r => r.json())
+  .then(console.log)
+  .catch(e => console.log('Not available'));
+
+If it returns health info, you might have more endpoints available.
+
+====================================================================
+BOTTOM LINE:
+====================================================================
+
+Don't waste time on a lesson that requires Docker if you don't have it.
+
+✅ You've learned the CONCEPT (that's what matters!)
+✅ You have guides for reference
+✅ Move on to lessons you CAN complete
+✅ Come back to this if you ever use Docker WebGoat
+
+What lesson would you like to tackle next? 🚀
+
+====================================================================

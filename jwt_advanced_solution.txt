@@ -1,0 +1,289 @@
+═══════════════════════════════════════════════════════════════════════════
+  JWT CHALLENGE - ADVANCED SOLUTION (When Brute Force Fails)
+═══════════════════════════════════════════════════════════════════════════
+
+SITUATION: Options 6 (algorithm "none") and 8 (brute force) both failed.
+This means WebGoat is:
+1. Rejecting "none" algorithm
+2. Using a non-standard/complex secret
+
+═══════════════════════════════════════════════════════════════════════════
+  🎯 SOLUTION: LOOK AT THE ACTUAL CHALLENGE REQUIREMENTS
+═══════════════════════════════════════════════════════════════════════════
+
+The challenge says:
+"Try to change the token you receive and become an admin user by changing 
+the token and once you are admin reset the votes"
+
+KEY INSIGHT: You don't need to reset votes via API!
+You just need to become admin in the browser, then click the reset button!
+
+═══════════════════════════════════════════════════════════════════════════
+  METHOD 1: DECODE TOKEN FIRST TO SEE WHAT FIELDS EXIST
+═══════════════════════════════════════════════════════════════════════════
+
+STEP 1: Get Fresh Token
+-------------------------
+F12 > Application > Cookies > Copy access_token value
+
+STEP 2: Decode It
+------------------
+PowerShell terminal (still running):
+
+Type: 1
+Paste: YOUR_TOKEN
+Press: Enter
+
+Look at the payload structure. You might see:
+{
+  "iat": 1766560664,
+  "admin": "false",    ← Notice if it's STRING "false" not boolean
+  "user": "Tom"
+}
+
+OR:
+{
+  "iat": 1766560664,
+  "user": "Tom"        ← Notice: NO admin field at all!
+}
+
+═══════════════════════════════════════════════════════════════════════════
+  METHOD 2: CHECK IF THERE'S A DIFFERENT ENDPOINT
+═══════════════════════════════════════════════════════════════════════════
+
+WebGoat might want you to POST the token itself, not use it as auth!
+
+STEP 1: Look at the Challenge Page
+------------------------------------
+Is there an input field asking for a JWT token?
+Is there a "Submit" button?
+
+STEP 2: Try Submitting Token Directly
+---------------------------------------
+The challenge might want you to submit the tampered token as form data:
+
+F12 > Console:
+fetch('http://192.168.254.112:8001/WebGoat/JWT/votings', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({
+    jwt: 'YOUR_TAMPERED_TOKEN_HERE'
+  })
+}).then(r => r.json()).then(console.log)
+
+Or try submitting as query parameter:
+fetch('http://192.168.254.112:8001/WebGoat/JWT/votings?token=YOUR_TAMPERED_TOKEN')
+  .then(r => r.json()).then(console.log)
+
+═══════════════════════════════════════════════════════════════════════════
+  METHOD 3: CHECK THE ACTUAL LESSON PAGE FOR HINTS
+═══════════════════════════════════════════════════════════════════════════
+
+WebGoat lessons often have hints! Look for:
+1. A "?" icon or "Show Hint" button
+2. Instructions in the lesson description
+3. Example requests in the lesson
+
+Common hints might reveal:
+- The correct endpoint to use
+- The expected payload format
+- Whether signature validation is intentionally strict
+
+═══════════════════════════════════════════════════════════════════════════
+  METHOD 4: TRY THE HTML TOOLKIT WITH DIFFERENT APPROACHES
+═══════════════════════════════════════════════════════════════════════════
+
+Your HTML toolkit is already open. Try these in the HTML tool:
+
+ATTEMPT 1: Token Tampering Tab
+--------------------------------
+1. Paste your token
+2. Try "Change Role" option (not just admin: true)
+3. Try "Multiple Changes" option
+
+ATTEMPT 2: Admin Access Tab
+-----------------------------
+1. Go to "Admin Access" tab
+2. Try all 4 methods:
+   - Method 1: admin = true
+   - Method 2: username to admin
+   - Method 3: SQL Injection
+   - Method 4: Role escalation
+
+═══════════════════════════════════════════════════════════════════════════
+  METHOD 5: LOOK AT THE ACTUAL PAGE SOURCE
+═══════════════════════════════════════════════════════════════════════════
+
+The challenge page might tell you what to do!
+
+STEP 1: View Page Source
+--------------------------
+Right-click on challenge page > View Page Source
+OR
+F12 > Elements tab > Search for "voting" or "reset"
+
+STEP 2: Look for JavaScript Functions
+---------------------------------------
+Search for:
+- resetVotes()
+- checkAdmin()
+- validateToken()
+
+This might reveal the actual endpoint or method!
+
+STEP 3: Check Network Tab for Hints
+-------------------------------------
+F12 > Network > Clear
+Click around the page (Vote buttons, etc.)
+Look at what requests are being made
+
+═══════════════════════════════════════════════════════════════════════════
+  METHOD 6: USE THE CHALLENGE'S OWN INTERFACE
+═══════════════════════════════════════════════════════════════════════════
+
+Instead of calling API directly, modify token in browser and use the UI:
+
+STEP 1: Replace Cookie with Tampered Token
+--------------------------------------------
+Even though signature fails, try replacing anyway:
+
+F12 > Application > Cookies > access_token
+Delete old value
+Paste: YOUR_TAMPERED_TOKEN (from PowerShell Option 2)
+Refresh page (F5)
+
+STEP 2: Check If Page Shows Admin
+-----------------------------------
+Look for:
+- "Welcome back, Admin" (instead of Tom)
+- Admin buttons appearing
+- Different UI elements
+
+If you see admin UI, click the "Reset Votes" button on the page!
+
+═══════════════════════════════════════════════════════════════════════════
+  METHOD 7: TRY EXTENDED WORDLIST FOR BRUTE FORCE
+═══════════════════════════════════════════════════════════════════════════
+
+The secret might be more complex. Let me create an extended wordlist.
+
+PowerShell terminal:
+Type: 8
+Paste: YOUR_TOKEN
+
+Then I'll modify the script to try more secrets...
+
+Actually, let's try common WebGoat-specific secrets manually:
+
+Common Secrets to Try:
+- webgoat
+- WebGoat
+- WEBGOAT
+- webgoat2025
+- WebGoat2025
+- JWT@WebGoat
+- goat
+- Goat
+- jwt
+- JWT
+- secret
+- Secret
+- password
+- Password
+- admin
+- Admin
+
+═══════════════════════════════════════════════════════════════════════════
+  METHOD 8: CHECK IF IT'S AN RS256 TOKEN (Not HS256)
+═══════════════════════════════════════════════════════════════════════════
+
+STEP 1: Decode Token Again
+----------------------------
+PowerShell > Option 1 > Paste token
+
+Look at header "alg" field:
+- If it's "HS256" or "HS512" → Symmetric (secret-based)
+- If it's "RS256" or "RS512" → Asymmetric (public/private key)
+
+If it's RS256:
+You CAN'T brute force it (uses public key cryptography)
+You need different attacks (RS256→HS256 confusion)
+
+═══════════════════════════════════════════════════════════════════════════
+  🎯 MOST LIKELY SOLUTION
+═══════════════════════════════════════════════════════════════════════════
+
+Based on your error, I think the issue is:
+
+WebGoat wants you to:
+1. Tamper the token (which you did)
+2. Submit it to a SPECIFIC endpoint or input field
+3. NOT use it as Authorization header
+
+TRY THIS:
+---------
+
+STEP 1: Look at the challenge page carefully
+STEP 2: Is there an input field asking for JWT?
+STEP 3: Paste your tampered token there
+STEP 4: Click Submit
+
+The lesson might be checking if you CAN create a tampered token,
+not if the server accepts it!
+
+═══════════════════════════════════════════════════════════════════════════
+  ALTERNATIVE: SCREENSHOT REQUEST
+═══════════════════════════════════════════════════════════════════════════
+
+Can you provide:
+1. Screenshot of the challenge page
+2. Full decoded token (PowerShell Option 1)
+3. Any hints visible on the page
+
+This will help me give you the exact solution!
+
+═══════════════════════════════════════════════════════════════════════════
+  QUICK TEST COMMANDS
+═══════════════════════════════════════════════════════════════════════════
+
+Try these in browser console (F12 > Console):
+
+TEST 1: Submit token as POST body
+fetch('http://192.168.254.112:8001/WebGoat/JWT/votings', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({
+    token: 'YOUR_TAMPERED_TOKEN'
+  })
+}).then(r => r.json()).then(console.log)
+
+TEST 2: Submit as different parameter
+fetch('http://192.168.254.112:8001/WebGoat/JWT/votings', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({
+    jwt: 'YOUR_TAMPERED_TOKEN',
+    action: 'reset'
+  })
+}).then(r => r.json()).then(console.log)
+
+TEST 3: Submit to different endpoint
+fetch('http://192.168.254.112:8001/WebGoat/JWT/verify', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({
+    token: 'YOUR_TAMPERED_TOKEN'
+  })
+}).then(r => r.json()).then(console.log)
+
+═══════════════════════════════════════════════════════════════════════════
+  WHAT TO DO NOW
+═══════════════════════════════════════════════════════════════════════════
+
+1. Decode your token (PowerShell Option 1) and share the payload
+2. Check the challenge page - is there a text input for JWT?
+3. Look for hints on the page (? icon)
+4. Try submitting tampered token in the page's input field
+5. Share screenshot or description of the challenge interface
+
+I'll help you figure out the exact solution once we know more!

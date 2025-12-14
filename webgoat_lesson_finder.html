@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebGoat Lesson Finder</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 50px auto;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            border-bottom: 3px solid #764ba2;
+            padding-bottom: 10px;
+        }
+        .info {
+            background: #fff3e0;
+            padding: 15px;
+            border-left: 4px solid #ff9800;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        #output {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            min-height: 200px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 12px;
+        }
+        .lesson-item {
+            background: #e8f5e9;
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 3px solid #4CAF50;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 WebGoat Available Lessons Finder</h1>
+        
+        <div class="info">
+            <strong>Purpose:</strong> Find all available lessons in your WebGoat instance.<br>
+            This will help you discover which lessons you can complete without Docker.
+        </div>
+
+        <h2>Actions</h2>
+        <button onclick="findAllLessons()">📋 Find All Lessons</button>
+        <button onclick="findVulnerableComponents()">🔍 Check Vulnerable Components</button>
+        <button onclick="testXStreamEndpoint()">🧪 Test XStream Endpoint</button>
+        <button onclick="clearOutput()">🧹 Clear</button>
+
+        <h2>Results</h2>
+        <div id="output">Click a button above to start...</div>
+    </div>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            output.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function findAllLessons() {
+            log('Fetching all available lessons...', 'info');
+            
+            const endpoints = [
+                'http://192.168.254.112:8001/WebGoat/service/lessonmenu.mvc',
+                'http://192.168.254.112:8001/WebGoat/service/lessons.mvc',
+                'http://192.168.254.112:8001/WebGoat/api/lessons'
+            ];
+
+            for (const endpoint of endpoints) {
+                try {
+                    log(`Trying: ${endpoint}`, 'info');
+                    const response = await fetch(endpoint, {credentials: 'include'});
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        log('Success! Found lesson data', 'success');
+                        log(JSON.stringify(data, null, 2), 'info');
+                        
+                        // Parse and display lessons nicely
+                        if (data.categories) {
+                            log('\n=== AVAILABLE LESSONS ===\n', 'success');
+                            data.categories.forEach(cat => {
+                                log(`\n📁 ${cat.name}:`, 'info');
+                                cat.lessons.forEach(lesson => {
+                                    log(`  - ${lesson.name}`, 'info');
+                                });
+                            });
+                        }
+                        return;
+                    }
+                } catch (error) {
+                    log(`Failed: ${endpoint}`, 'error');
+                }
+            }
+            
+            log('Could not find lesson menu endpoint', 'error');
+        }
+
+        async function findVulnerableComponents() {
+            log('Searching for Vulnerable Components lessons...', 'info');
+            
+            const possibleUrls = [
+                'http://192.168.254.112:8001/WebGoat/VulnerableComponents',
+                'http://192.168.254.112:8001/WebGoat/vulnerable-components',
+                'http://192.168.254.112:8001/WebGoat/VulnerableComponents/attack',
+                'http://192.168.254.112:8001/WebGoat/vulnerable-components/XStream'
+            ];
+
+            for (const url of possibleUrls) {
+                try {
+                    log(`Testing: ${url}`, 'info');
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        credentials: 'include'
+                    });
+                    
+                    log(`Status: ${response.status}`, response.ok ? 'success' : 'error');
+                    
+                    if (response.ok) {
+                        const text = await response.text();
+                        log('Response preview: ' + text.substring(0, 200), 'info');
+                    }
+                } catch (error) {
+                    log(`Error: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function testXStreamEndpoint() {
+            log('Testing XStream endpoint with normal contact...', 'info');
+            
+            const normalContact = `<contact>
+    <id>1</id>
+    <firstName>Bruce</firstName>
+    <lastName>Mayhew</lastName>
+    <email>webgoat@owasp.org</email>
+</contact>`;
+
+            const endpoints = [
+                'http://192.168.254.112:8001/WebGoat/vulnerable-components/XStream',
+                'http://192.168.254.112:8001/WebGoat/VulnerableComponents/attack',
+                'http://192.168.254.112:8001/WebGoat/VulnerableComponents'
+            ];
+
+            for (const endpoint of endpoints) {
+                try {
+                    log(`Testing: ${endpoint}`, 'info');
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: {'Content-Type': 'application/xml'},
+                        body: normalContact
+                    });
+
+                    log(`Status: ${response.status}`, response.ok ? 'success' : 'error');
+                    const result = await response.text();
+                    log('Response: ' + result.substring(0, 300), 'info');
+                    
+                    if (response.ok) {
+                        log('✅ This endpoint works!', 'success');
+                        return;
+                    }
+                } catch (error) {
+                    log(`Error: ${error.message}`, 'error');
+                }
+            }
+            
+            log('\n⚠️ XStream endpoint not available', 'error');
+            log('This lesson requires Docker WebGoat', 'error');
+            log('Recommendation: Skip this lesson or install Docker', 'info');
+        }
+
+        function clearOutput() {
+            output.textContent = 'Output cleared.\n';
+        }
+
+        // Initialize
+        log('WebGoat Lesson Finder ready', 'success');
+        log('Use this tool to discover available lessons', 'info');
+    </script>
+</body>
+</html>

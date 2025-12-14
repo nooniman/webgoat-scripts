@@ -1,0 +1,132 @@
+====================================================================
+XSTREAM CVE-2013-7285 - NON-DOCKER WORKAROUND
+====================================================================
+
+IMPORTANT: This lesson officially requires Docker WebGoat
+However, here are alternatives if you don't want to use Docker:
+
+====================================================================
+OPTION 1: Skip This Lesson
+====================================================================
+
+If your WebGoat instance doesn't have Docker support, this lesson
+may not be available. Consider:
+
+1. Mark it as "understood conceptually" 
+2. Move to next available lesson
+3. Come back if you install Docker later
+
+====================================================================
+OPTION 2: Try Alternative Endpoints
+====================================================================
+
+The lesson might be at different URLs. Try these:
+
+Endpoint 1 (Standard):
+http://192.168.254.112:8001/WebGoat/VulnerableComponents/attack
+
+Endpoint 2 (Alternate):
+http://192.168.254.112:8001/WebGoat/vulnerable-components/attack
+
+Endpoint 3 (Direct):
+http://192.168.254.112:8001/WebGoat/VulnerableComponents.lesson
+
+Endpoint 4 (Lesson ID):
+http://192.168.254.112:8001/WebGoat/VulnerableComponents/
+
+====================================================================
+OPTION 3: Use Conceptual Understanding
+====================================================================
+
+The lesson teaches CVE-2013-7285 exploitation. Even without
+completing it, you can demonstrate understanding:
+
+KEY CONCEPTS:
+- XStream deserializes XML to Java objects unsafely
+- Dynamic proxies can trigger arbitrary code execution
+- EventHandler intercepts and redirects method calls
+- ProcessBuilder executes system commands
+- Gadget chain: sorted-set → proxy → handler → exec
+
+MITIGATION:
+- Update XStream to 1.4.7+
+- Enable security framework
+- Use whitelist mode
+- Validate all inputs
+
+====================================================================
+OPTION 4: Test Locally (If You Change Your Mind)
+====================================================================
+
+Quick Docker setup (if you reconsider):
+
+1. Install Docker Desktop for Windows
+2. Pull WebGoat:
+   docker pull webgoat/webgoat
+
+3. Run WebGoat:
+   docker run -p 8080:8080 -p 9090:9090 webgoat/webgoat
+
+4. Access at: http://localhost:8080/WebGoat
+
+====================================================================
+OPTION 5: Check Current WebGoat Lessons Available
+====================================================================
+
+Open browser console and run this to see available lessons:
+
+fetch('http://192.168.254.112:8001/WebGoat/service/lessonmenu.mvc')
+  .then(r => r.json())
+  .then(data => {
+    console.log('Available lessons:', data);
+    const vulnerable = data.categories
+      .flatMap(c => c.lessons)
+      .filter(l => l.name.toLowerCase().includes('vulnerable') || 
+                   l.name.toLowerCase().includes('component'));
+    console.log('Vulnerable Components lessons:', vulnerable);
+  });
+
+====================================================================
+RECOMMENDED ACTION:
+====================================================================
+
+Since this lesson explicitly requires Docker and you don't want to
+install it:
+
+1. ✅ Read the guide (xstream_cve_guide.txt) for conceptual knowledge
+2. ✅ Understand the exploit technique
+3. ⏭️  Skip this specific lesson for now
+4. ✅ Continue with other WebGoat lessons that don't require Docker
+5. 📝 Note this lesson for future reference if you install Docker
+
+====================================================================
+OTHER WEBGOAT LESSONS YOU CAN DO (NO DOCKER REQUIRED):
+====================================================================
+
+✅ CSRF lessons (already completed)
+✅ XXE lessons (already completed)
+✅ SQL Injection
+✅ XSS (Cross-Site Scripting)
+✅ Path Traversal
+✅ Session Management
+✅ Authentication Bypass
+✅ Insecure Deserialization (other types)
+✅ JWT attacks
+✅ SSRF
+✅ IDOR
+
+====================================================================
+SUMMARY:
+====================================================================
+
+The XStream CVE lesson won't work without Docker WebGoat.
+
+You can either:
+- Skip it (recommended if no Docker)
+- Study it conceptually (guides provided)
+- Install Docker later if interested
+
+I can help you with ANY other WebGoat lesson that doesn't need Docker!
+What would you like to work on next?
+
+====================================================================

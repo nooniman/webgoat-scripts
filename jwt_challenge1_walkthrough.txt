@@ -1,0 +1,252 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║          CHALLENGE 1: BECOME ADMIN - VISUAL WALKTHROUGH                   ║
+║          Your First JWT Attack - Follow These Exact Steps                 ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+Target: http://192.168.254.112:8001/WebGoat/JWT
+User: Tom (you're logged in as Tom)
+Goal: Become admin and reset votes
+
+═══════════════════════════════════════════════════════════════════════════
+
+STEP 1: FIND YOUR JWT TOKEN
+════════════════════════════
+
+Open WebGoat in your browser, then:
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Press F12 (Developer Tools)                                             │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Choose ONE method:
+
+METHOD A: From Cookies
+────────────────────────
+1. Click "Application" tab (or "Storage" in Firefox)
+2. Expand "Cookies" in left sidebar
+3. Click on "http://192.168.254.112:8001"
+4. Look for cookie named:
+   - "access_token" OR
+   - "token" OR
+   - "jwt" OR
+   - "Authorization"
+5. Copy the VALUE (long string starting with "eyJ...")
+
+METHOD B: From Network Headers
+────────────────────────────────
+1. Click "Network" tab
+2. Refresh the page (F5)
+3. Click on any request to WebGoat
+4. Look in "Headers" section
+5. Find "Authorization: Bearer eyJ..."
+6. Copy everything AFTER "Bearer " (the eyJ... part)
+
+Your token looks like:
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJUb20iLCJhZG1pbiI6ZmFsc2V9.signature
+
+══════════════════════════════════════════════════════════════════════════
+
+STEP 2: USE THE POWERSHELL SCRIPT
+══════════════════════════════════
+
+The script is already running! You should see this menu:
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Select an attack method:                                                │
+│ 1. Decode JWT Token                                                     │
+│ 2. Tamper JWT - Make Admin (admin: true)    ⭐ USE THIS ONE            │
+│ 3. Tamper JWT - Change Username to Admin                               │
+│ ...                                                                      │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Type: 2
+Press: Enter
+
+══════════════════════════════════════════════════════════════════════════
+
+STEP 3: PASTE YOUR TOKEN
+═════════════════════════
+
+You'll see:
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Enter JWT token:                                                        │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Paste your token (right-click > Paste)
+Press Enter
+
+The script will:
+✓ Decode your token
+✓ Change "admin": false → "admin": true
+✓ Create new tampered token
+✓ Copy it to clipboard
+
+You'll see:
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Tampered Token (admin: true):                                           │
+│ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.NEW_PAYLOAD.signature            │
+│                                                                          │
+│ Copied to clipboard!                                                    │
+└─────────────────────────────────────────────────────────────────────────┘
+
+══════════════════════════════════════════════════════════════════════════
+
+STEP 4: REPLACE TOKEN IN BROWSER
+═════════════════════════════════
+
+Go back to WebGoat browser window:
+
+METHOD A: Replace Cookie (EASIEST)
+────────────────────────────────────
+1. F12 > Application tab > Cookies
+2. Find your JWT cookie (access_token or similar)
+3. Double-click the VALUE
+4. Delete old value
+5. Ctrl+V (paste tampered token from clipboard)
+6. Press Enter
+7. Close DevTools
+8. Refresh page (F5)
+
+You should now see "Welcome back, Admin" instead of "Welcome back, Tom"!
+
+METHOD B: Use Console (ALTERNATIVE)
+─────────────────────────────────────
+1. F12 > Console tab
+2. Paste this code (replace YOUR_TAMPERED_TOKEN):
+
+document.cookie = "access_token=YOUR_TAMPERED_TOKEN; path=/";
+location.reload();
+
+3. Press Enter
+
+══════════════════════════════════════════════════════════════════════════
+
+STEP 5: RESET THE VOTES
+════════════════════════
+
+Now that you're admin, you should see a "Reset Votes" button.
+
+Click it!
+
+OR use Console:
+────────────────
+F12 > Console, paste:
+
+fetch('http://192.168.254.112:8001/WebGoat/JWT/votings/reset', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+}).then(r => r.json()).then(d => {
+  console.log('Result:', d);
+  if(d.success) alert('✓ Votes reset! Challenge complete!');
+})
+
+Press Enter
+
+══════════════════════════════════════════════════════════════════════════
+
+VERIFICATION
+════════════
+
+You'll know it worked if:
+✓ Page shows "Welcome back, Admin" (not Tom)
+✓ Votes are reset to 0
+✓ Challenge marked as complete (green checkmark)
+✓ You see admin controls/buttons
+
+══════════════════════════════════════════════════════════════════════════
+
+IF IT DOESN'T WORK - TRY THESE:
+═══════════════════════════════
+
+PLAN B: Algorithm "none"
+──────────────────────────
+PowerShell script:
+Type: 6
+Paste: Your original token
+Result: Token with no signature
+
+Replace in browser and try again
+
+PLAN C: Different Admin Field
+────────────────────────────────
+PowerShell script:
+Type: 11 (Custom Tamper)
+Enter field: isAdmin
+Enter value: true
+
+OR:
+Enter field: role  
+Enter value: admin
+
+PLAN D: Check Token Location
+──────────────────────────────
+Token might be in different place:
+- Try "Authorization" header instead of cookie
+- Check localStorage: F12 > Application > Local Storage
+- Check sessionStorage: F12 > Application > Session Storage
+
+Look for: jwt, token, access_token, auth
+
+══════════════════════════════════════════════════════════════════════════
+
+EXAMPLE FULL WALKTHROUGH
+════════════════════════
+
+Let's say your original token is:
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJUb20iLCJhZG1pbiI6ZmFsc2V9.OLD_SIG
+
+Decoded payload:
+{
+  "sub": "Tom",
+  "admin": false
+}
+
+After tampering (Option 2):
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJUb20iLCJhZG1pbiI6dHJ1ZX0.OLD_SIG
+
+Decoded payload:
+{
+  "sub": "Tom",
+  "admin": true    ← CHANGED!
+}
+
+Replace in browser → You're now admin → Reset votes → DONE! ✓
+
+══════════════════════════════════════════════════════════════════════════
+
+QUICK REFERENCE
+═══════════════
+
+Find Token:     F12 > Application > Cookies > access_token
+Attack:         PowerShell > Option 2
+Replace:        F12 > Application > Cookies > Paste new value > F5
+Reset Votes:    Click button OR console fetch()
+Success:        "Welcome back, Admin" + votes reset
+
+══════════════════════════════════════════════════════════════════════════
+
+COMMON MISTAKES TO AVOID
+═════════════════════════
+
+✗ Including "Bearer " when pasting token (remove it!)
+✗ Not refreshing page after replacing cookie
+✗ Pasting in wrong cookie (make sure it's the JWT one)
+✗ Copying only part of the token (need all 3 parts: xxx.yyy.zzz)
+✗ Not waiting for script to finish (wait for "Copied to clipboard!")
+
+══════════════════════════════════════════════════════════════════════════
+
+YOU'RE READY!
+═════════════
+
+1. F12 > Find token
+2. PowerShell > 2 > Paste token
+3. F12 > Replace cookie > F5
+4. Click "Reset Votes"
+5. Challenge complete! 🎉
+
+Next challenges use the same technique with different fields!
+
+Good luck! 🔐
