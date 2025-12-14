@@ -1,0 +1,148 @@
+===================================================================
+JWT REFRESH TOKEN - GET FRESH TOKEN (SOLUTION)
+===================================================================
+
+PROBLEM: Your refresh token (4a9a0b1eac1a34201b3c5659944e8b7...) is 
+EXPIRED and returns HTTP 401.
+
+SOLUTION: Get a FRESH refresh token by clicking the Checkout button.
+
+===================================================================
+METHOD 1: AUTOMATIC (EASIEST)
+===================================================================
+
+1. Copy and paste this ENTIRE file into browser console:
+   c:\webgoat-scripts-1\get_fresh_token_AUTO.js
+
+2. It will:
+   - Find the Checkout button
+   - Click it automatically
+   - Capture the refresh_token from the response
+   - Save it to window.myRefreshToken
+
+3. You should see:
+   SUCCESS! Got fresh refresh token!
+   Token: [long hex string]
+   Saved to: window.myRefreshToken
+
+4. Then run: jwt_refresh_ULTRA_CLEAN.js
+
+
+===================================================================
+METHOD 2: MANUAL (100% RELIABLE)
+===================================================================
+
+STEP-BY-STEP:
+
+1. Open DevTools Network tab (Press F12, click Network tab)
+
+2. Make sure "Preserve log" is checked
+
+3. Click the "Checkout" button on the WebGoat page
+
+4. In Network tab, find the request:
+   POST /WebGoat/JWT/refresh/checkout
+
+5. Click on that request
+
+6. Click the "Response" tab
+
+7. You should see JSON like:
+   {
+     "lessonCompleted": false,
+     "feedback": "User is not Tom but Jerry...",
+     "access_token": "eyJ...",
+     "refresh_token": "a4b3c2d1e0f9g8h7..."  <-- THIS ONE!
+   }
+
+8. Copy the refresh_token value (the long hex string)
+
+9. In browser console, run:
+   window.myRefreshToken = "PASTE_YOUR_TOKEN_HERE"
+
+10. Verify by running:
+    console.log(window.myRefreshToken.length)
+    
+    Should show: 64 or more (NOT 31!)
+
+11. Now run: jwt_refresh_ULTRA_CLEAN.js
+
+
+===================================================================
+WHY YOUR CURRENT TOKEN DOESN'T WORK:
+===================================================================
+
+Your token: 4a9a0b1eac1a34201b3c5659944e8b7...
+Length: 31 characters
+Status: EXPIRED
+
+Fresh tokens are usually:
+Length: 64+ characters
+Status: VALID for ~15 minutes
+
+The server returns 401 because:
+- Token is too old
+- Token format is wrong
+- Token was for a different session
+
+
+===================================================================
+TROUBLESHOOTING:
+===================================================================
+
+Q: I don't see /JWT/refresh/checkout in Network tab
+A: Clear Network tab and click Checkout button again
+
+Q: The response doesn't have refresh_token field
+A: Make sure you're on the "JWT Refresh Token" lesson page
+   URL should be: http://192.168.254.112:8001/WebGoat/start.mvc
+
+Q: I get "User is not Tom but Jerry"
+A: That's EXPECTED! That's your access token (Jerry's).
+   But the response ALSO contains the refresh_token - look for it!
+
+Q: Button doesn't exist
+A: Refresh the lesson page (F5) and try again
+
+
+===================================================================
+VERIFICATION:
+===================================================================
+
+After getting fresh token, verify:
+
+console.log('Token:', window.myRefreshToken);
+console.log('Length:', window.myRefreshToken.length);
+console.log('First 20 chars:', window.myRefreshToken.substring(0, 20));
+
+Expected output:
+Token: [64+ character hex string]
+Length: 64 (or more)
+First 20 chars: [should be different from your old token]
+
+
+===================================================================
+NEXT STEPS AFTER GETTING FRESH TOKEN:
+===================================================================
+
+1. Run: jwt_refresh_ULTRA_CLEAN.js
+2. Should see: SUCCESS! CHALLENGE COMPLETED!
+3. Tom pays $31.53 for the books
+4. Challenge solved!
+
+
+===================================================================
+QUICK COMMAND SUMMARY:
+===================================================================
+
+# Get fresh token automatically:
+[Paste entire get_fresh_token_AUTO.js file]
+
+# OR manually set token:
+window.myRefreshToken = "YOUR_FRESH_TOKEN_FROM_NETWORK_TAB"
+
+# Then execute attack:
+[Paste entire jwt_refresh_ULTRA_CLEAN.js file]
+
+# Should see:
+SUCCESS! CHALLENGE COMPLETED!

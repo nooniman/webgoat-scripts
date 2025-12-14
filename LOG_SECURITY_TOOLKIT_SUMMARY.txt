@@ -1,0 +1,108 @@
+═══════════════════════════════════════════════════════════════
+          LOG SECURITY CHALLENGE - COMPLETE TOOLKIT
+═══════════════════════════════════════════════════════════════
+
+📋 CHALLENGE SUMMARY:
+   Find admin credentials logged at server boot
+   Credentials are encoded (Base64, Hex, etc.)
+   Decode them and login as admin
+
+═══════════════════════════════════════════════════════════════
+🚀 QUICKEST WAY TO SOLVE:
+═══════════════════════════════════════════════════════════════
+
+STEP 1: Open WebGoat lesson page
+        → Navigate to "Logging Security" lesson
+        → Look for RED LOG OUTPUT BOX
+
+STEP 2: Find the encoded credentials
+        → Look for startup/boot messages
+        → Find patterns like "Admin password: XXXXX"
+
+STEP 3: Run the decoder
+        → .\quick_decode.ps1
+        → Paste the encoded string
+        → Get instant decode results
+
+STEP 4: Test the credentials
+        → Script will prompt to test
+        → Or manually login on lesson page
+
+═══════════════════════════════════════════════════════════════
+📂 FILES CREATED:
+═══════════════════════════════════════════════════════════════
+
+🎯 MAIN TOOLS:
+   .\quick_decode.ps1                    ← BEST! Copy/paste decoder
+   .\decode_admin_credentials.ps1        ← Interactive decoder + tester
+   .\find_admin_credentials.ps1          ← Auto-search for logs
+
+📖 DOCUMENTATION:
+   .\LOG_SECURITY_QUICKSTART.txt         ← Quick reference card
+   .\LOG_SECURITY_COMPLETE_GUIDE.txt     ← Full walkthrough
+   .\LOG_SECURITY_CREDENTIALS_GUIDE.txt  ← Attack strategy
+
+═══════════════════════════════════════════════════════════════
+⚡ MANUAL DECODE COMMANDS:
+═══════════════════════════════════════════════════════════════
+
+Base64:
+[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("STRING"))
+
+Hex:
+-join ("STRING" -split "(..)" | ? {$_} | % {[char][convert]::ToInt32($_,16)})
+
+═══════════════════════════════════════════════════════════════
+💡 COMMON PATTERNS:
+═══════════════════════════════════════════════════════════════
+
+Example 1: Base64 username:password
+───────────────────────────────────
+Encoded: YWRtaW46cGFzc3dvcmQxMjM=
+Decoded: admin:password123
+Login:   admin / password123
+
+Example 2: Hex encoded
+───────────────────────────────────
+Encoded: 61646d696e3a7365637265743435
+Decoded: admin:secret45
+Login:   admin / secret45
+
+Example 3: Just password encoded
+───────────────────────────────────
+Log says: "Admin password is: V2ViR29hdDIwMjU="
+Decoded: WebGoat2025
+Login:   admin / WebGoat2025
+
+═══════════════════════════════════════════════════════════════
+🎓 SECURITY LESSONS:
+═══════════════════════════════════════════════════════════════
+
+WHY THIS IS BAD:
+✗ Passwords in logs (even encoded)
+✗ Logs accessible to many people
+✗ Logs backed up/archived forever
+✗ Encoding ≠ Encryption (easily reversible)
+
+WHAT TO DO INSTEAD:
+✓ Never log passwords or secrets
+✓ Never log auth tokens or API keys
+✓ Use secure secret management (Vault, KMS)
+✓ Redact sensitive fields before logging
+✓ Implement proper access controls on logs
+✓ Use structured logging with field-level security
+
+═══════════════════════════════════════════════════════════════
+✅ SUCCESS INDICATORS:
+═══════════════════════════════════════════════════════════════
+
+When you succeed:
+→ Lesson will mark as "Completed"
+→ Feedback: "Congratulations! You have successfully..."
+→ Green checkmark appears
+
+═══════════════════════════════════════════════════════════════
+
+Ready? Run: .\quick_decode.ps1
+
+Good luck! 🎯

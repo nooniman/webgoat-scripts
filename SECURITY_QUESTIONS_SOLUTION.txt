@@ -1,0 +1,168 @@
+===================================================================
+SECURITY QUESTIONS PASSWORD RECOVERY - SOLUTION GUIDE
+===================================================================
+
+CHALLENGE: Exploit weak security questions through brute force
+TARGET: Retrieve passwords for users: tom, admin, larry
+YOUR CREDENTIALS: username=webgoat, favorite color=red
+
+===================================================================
+VULNERABILITY EXPLANATION
+===================================================================
+
+The security question "What is your favorite color?" has:
+1. LIMITED SET of possible answers (only so many colors exist)
+2. NO RATE LIMITING (can try unlimited guesses)
+3. NO ACCOUNT LOCKOUT mechanism
+4. PREDICTABLE answers (common colors like red, blue, green)
+
+This allows brute force attacks to guess the security answers.
+
+===================================================================
+METHOD 1: BROWSER CONSOLE (EASIEST)
+===================================================================
+
+1. Navigate to the Password Recovery page in WebGoat
+   URL: http://192.168.254.112:8001/WebGoat/start.mvc
+   Then go to: Authentication Bypasses > Password Reset
+
+2. Open browser console (F12)
+
+3. Copy and paste this ENTIRE file:
+   c:\webgoat-scripts-1\security_questions_attack.js
+
+4. Press Enter
+
+5. Watch the console output - it will try common colors for each user
+
+6. When it finds the correct answer, you'll see:
+   [SUCCESS] Found password for tom!
+   Security Answer: [color]
+
+===================================================================
+METHOD 2: POWERSHELL SCRIPT
+===================================================================
+
+1. Open PowerShell in: c:\webgoat-scripts-1\
+
+2. Run:
+   .\security_questions_attack.ps1
+
+3. The script will automatically brute force all three users
+
+4. Results will show which color worked for each user
+
+===================================================================
+METHOD 3: MANUAL (IF SCRIPTS FAIL)
+===================================================================
+
+For each user (tom, admin, larry), try these colors in order:
+
+1. Open browser DevTools Network tab (F12)
+
+2. Fill in the form:
+   Username: tom
+   Security Question Answer: red
+
+3. Click Submit
+
+4. Check response in Network tab
+
+5. If it says "does not match", try next color:
+   blue, green, yellow, orange, purple, pink, black, white, etc.
+
+6. Repeat until you find the correct answer
+
+Common colors to try (in order of popularity):
+- red
+- blue  
+- green
+- yellow
+- orange
+- purple
+- pink
+- black
+- white
+- gray
+
+===================================================================
+EXPECTED RESULTS
+===================================================================
+
+The script will test each user with common colors until it finds:
+
+User: tom
+Security Answer: [will be discovered]
+Password: [will be revealed in response]
+
+User: admin  
+Security Answer: [will be discovered]
+Password: [will be revealed in response]
+
+User: larry
+Security Answer: [will be discovered]
+Password: [will be revealed in response]
+
+===================================================================
+TROUBLESHOOTING
+===================================================================
+
+Q: Script shows all attempts failed
+A: Try expanding the color list or check the endpoint URL
+
+Q: Getting 401/403 errors
+A: Make sure you're logged into WebGoat and on the correct lesson page
+
+Q: Response says "User not found"
+A: Make sure you're on the Password Reset lesson, not another page
+
+Q: How do I know if I succeeded?
+A: Look for lessonCompleted:true or a password in the response
+
+===================================================================
+LEARNING POINTS
+===================================================================
+
+This attack succeeds because:
+
+1. WEAK SECURITY QUESTIONS
+   - Limited answer space (only ~30-40 common colors)
+   - Predictable answers
+   - Publicly known information (social media)
+
+2. NO RATE LIMITING
+   - Can make unlimited attempts
+   - No delay between requests
+   - No CAPTCHA or similar protection
+
+3. NO ACCOUNT LOCKOUT
+   - Account doesn't lock after failed attempts
+   - Can keep trying indefinitely
+
+PROPER DEFENSES:
+
+1. Use open-ended security questions (not multiple choice)
+2. Implement rate limiting (3-5 attempts per hour)
+3. Add account lockout after X failed attempts
+4. Use CAPTCHA after 3 failed attempts
+5. Hash security answers like passwords
+6. Consider alternatives (email verification, SMS codes, etc.)
+7. Notify user of password reset attempts
+
+===================================================================
+QUICK START COMMANDS
+===================================================================
+
+Browser Console:
+[Paste entire security_questions_attack.js file]
+
+PowerShell:
+cd c:\webgoat-scripts-1\
+.\security_questions_attack.ps1
+
+===================================================================
+NEXT CHALLENGE
+===================================================================
+
+After completing this, move to next Authentication Bypass challenge
+or continue with other WebGoat lessons.

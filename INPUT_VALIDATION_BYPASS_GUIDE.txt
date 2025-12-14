@@ -1,0 +1,167 @@
+====================================
+INPUT VALIDATION BYPASS CHALLENGE
+====================================
+
+CHALLENGE: Send values that DON'T match the regex patterns
+
+IMPORTANT: You need to VIOLATE the patterns, not match them!
+
+====================================
+REGEX PATTERNS TO VIOLATE:
+====================================
+
+Field 1: ^[a-z]{3}$
+Valid:   abc (exactly 3 lowercase)
+Invalid: ABC, 123, abcd, ab, a1b, ABC123 ✓
+
+Field 2: ^[0-9]{3}$
+Valid:   123 (exactly 3 digits)
+Invalid: abc, 12, 1234, 1a2, ABC123 ✓
+
+Field 3: ^[a-zA-Z0-9 ]*$
+Valid:   abc 123 ABC (letters, numbers, spaces only)
+Invalid: abc!, test@, #hash, special$ ✓
+
+Field 4: ^(one|two|three|four|five|six|seven|eight|nine)$
+Valid:   seven (word for digit 1-9)
+Invalid: ten, zero, 7, SEVEN, One ✓
+
+Field 5: ^\d{5}$
+Valid:   01101 (exactly 5 digits)
+Invalid: 1234, 123456, abcde, 12-34 ✓
+
+Field 6: ^\d{5}(-\d{4})?$
+Valid:   90210-1111 or 90210 (zip code)
+Invalid: 1234, abc-1234, 90210-111 ✓
+
+Field 7: ^[2-9]\d{2}-?\d{3}-?\d{4}$
+Valid:   301-604-4882 (US phone)
+Invalid: 101-234-5678 (starts with 1), abc-def-ghij ✓
+
+====================================
+ATTACK STRATEGY
+====================================
+
+Send values that:
+1. Wrong format (letters instead of numbers)
+2. Wrong length (too short or too long)
+3. Special characters (!, @, #, $)
+4. Wrong case (uppercase instead of lowercase)
+5. Values outside enumeration
+
+====================================
+RECOMMENDED PAYLOADS:
+====================================
+
+Field 1 (should be 3 lowercase):
+- ABC (uppercase)
+- 123 (numbers)
+- abcd (too long)
+- ab (too short)
+- a1b (mixed)
+→ USE: ABC or 1234 or abcd
+
+Field 2 (should be 3 digits):
+- abc (letters)
+- 12 (too short)
+- 1234 (too long)
+- 1a2 (mixed)
+→ USE: abc or 1234 or 12
+
+Field 3 (should be alphanumeric + space):
+- abc! (exclamation)
+- test@ (at sign)
+- #hash (hashtag)
+- special$ (dollar)
+→ USE: test! or abc@test or #special
+
+Field 4 (should be one/two/three...nine):
+- ten (not in list)
+- zero (not in list)
+- 7 (number instead of word)
+- SEVEN (uppercase)
+→ USE: ten or zero or 123
+
+Field 5 (should be 5 digits):
+- 1234 (too short)
+- 123456 (too long)
+- abcde (letters)
+- 12-34 (special char)
+→ USE: 1234 or 123456 or abcde
+
+Field 6 (should be 12345 or 12345-6789):
+- 1234 (too short)
+- abc-1234 (letters)
+- 90210-111 (wrong dash format)
+→ USE: 1234 or 123456789 or abc-1234
+
+Field 7 (should be 201-234-5678):
+- 101-234-5678 (starts with 1)
+- abc-def-ghij (letters)
+- 123456789 (no dashes, wrong format)
+→ USE: 101-234-5678 or abc-def-ghij
+
+====================================
+METHOD 1: BROWSER CONSOLE (EASIEST)
+====================================
+
+1. Open lesson page
+2. Press F12 → Console
+3. Run this JavaScript:
+
+// Bypass all validation
+document.querySelector('input[name="field1"]').value = 'ABC';
+document.querySelector('input[name="field2"]').value = 'abc';
+document.querySelector('input[name="field3"]').value = 'test!@#';
+document.querySelector('input[name="field4"]').value = 'ten';
+document.querySelector('input[name="field5"]').value = '1234';
+document.querySelector('input[name="field6"]').value = '123456789';
+document.querySelector('input[name="field7"]').value = '101-234-5678';
+
+// Submit
+document.querySelector('form').submit();
+
+====================================
+METHOD 2: POWERSHELL ATTACK
+====================================
+
+Run: .\bypass_input_validation.ps1
+
+Sends POST with invalid values for all fields
+
+====================================
+METHOD 3: BROWSER DEV TOOLS
+====================================
+
+1. Open lesson page
+2. F12 → Elements
+3. Find each input field
+4. Remove validation attributes:
+   - pattern="..."
+   - required
+   - Any onchange/oninput handlers
+5. Type invalid values
+6. Submit
+
+====================================
+METHOD 4: INTERCEPT WITH BURP
+====================================
+
+1. Fill form with valid values
+2. Intercept request in Burp
+3. Modify POST data to invalid values
+4. Forward
+
+====================================
+QUICK REFERENCE - INVALID VALUES:
+====================================
+
+field1=ABC           (uppercase instead of lowercase)
+field2=abc           (letters instead of digits)
+field3=test!         (special character)
+field4=ten           (not in enumeration)
+field5=1234          (4 digits instead of 5)
+field6=123456789     (wrong format)
+field7=101-234-5678  (starts with 1, not 2-9)
+
+====================================

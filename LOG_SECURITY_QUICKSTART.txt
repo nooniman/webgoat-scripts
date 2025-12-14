@@ -1,0 +1,31 @@
+╔══════════════════════════════════════════════════════════════╗
+║        LOG SECURITY - ADMIN CREDENTIALS QUICK GUIDE          ║
+╚══════════════════════════════════════════════════════════════╝
+
+📍 WHERE TO LOOK:
+   → Open the lesson page in WebGoat
+   → Look for RED BOX showing "Log output" or "Application logs"
+   → Find startup/bootstrap messages
+
+🔍 WHAT TO FIND:
+   → "Admin password: [ENCODED]"
+   → "Default credentials: [ENCODED]"
+   → "Using generated password: [ENCODED]"
+
+🔓 HOW TO DECODE:
+
+   Base64 (looks like: YWRtaW46cGFzc3dvcmQ=)
+   ────────────────────────────────────────────
+   [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("STRING"))
+
+   Hex (looks like: 61646d696e)
+   ────────────────────────────────────────────
+   -join ("STRING" -split "(..)" | ? {$_} | % {[char][convert]::ToInt32($_,16)})
+
+🚀 QUICK START:
+   .\decode_admin_credentials.ps1
+
+📖 FULL GUIDE:
+   .\LOG_SECURITY_COMPLETE_GUIDE.txt
+
+✅ SUCCESS = Login with decoded credentials!

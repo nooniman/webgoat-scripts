@@ -1,0 +1,208 @@
+====================================
+DESERIALIZATION - VulnerableTaskHolder Attack
+====================================
+
+CHALLENGE: Modify a serialized object to delay page response for exactly 5 seconds
+
+TARGET CLASS: org.dummy.insecure.framework.VulnerableTaskHolder
+
+====================================
+KEY INFORMATION FROM HINTS:
+====================================
+
+1. WebGoat contains the VulnerableTaskHolder class
+2. The class might have a version number (serialVersionUID)
+3. readObject() has security restrictions (not all actions allowed)
+4. Follow feedback from attempts to understand restrictions
+
+====================================
+ORIGINAL PAYLOAD:
+====================================
+
+Base64: rO0ABXQAVklmIHlvdSBkZXNlcmlhbGl6ZSBtZSBkb3duLCBJIHNoYWxsIGJlY29tZSBtb3JlIHBvd2VyZnVsIHRoYW4geW91IGNhbiBwb3NzaWJseSBpbWFnaW5l
+
+Decoded: "If you deserialize me down, I shall become more powerful than you can possibly imagine"
+
+This is a simple String object, NOT a VulnerableTaskHolder object.
+
+====================================
+SOLUTION APPROACH:
+====================================
+
+We need to create a serialized VulnerableTaskHolder object that:
+1. Is recognized as the correct class by WebGoat
+2. Contains data that causes a 5-second delay when deserialized
+3. Matches the expected version number
+4. Uses only "allowed" actions in readObject()
+
+====================================
+METHOD 1: Browser Console Testing
+====================================
+
+1. Open WebGoat in browser: http://192.168.254.112:8001/WebGoat
+2. Navigate to Insecure Deserialization lesson
+3. Press F12 -> Console
+4. Run this script:
+
+async function testPayload(payload) {
+    const startTime = Date.now();
+    
+    const response = await fetch('/WebGoat/InsecureDeserialization/task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'token=' + encodeURIComponent(payload),
+        credentials: 'include'
+    });
+    
+    const endTime = Date.now();
+    const elapsed = (endTime - startTime) / 1000;
+    
+    const result = await response.json();
+    console.log('Feedback:', result.feedback);
+    console.log('Time:', elapsed, 'seconds');
+    console.log('Success:', result.lessonCompleted);
+    
+    return result;
+}
+
+// Test original payload to see feedback
+testPayload('rO0ABXQAVklmIHlvdSBkZXNlcmlhbGl6ZSBtZSBkb3duLCBJIHNoYWxsIGJlY29tZSBtb3JlIHBvd2VyZnVsIHRoYW4geW91IGNhbiBwb3NzaWJseSBpbWFnaW5l');
+
+5. Read the feedback - it should tell you what's wrong
+6. Adjust based on feedback
+
+====================================
+METHOD 2: PowerShell Testing
+====================================
+
+Run the test script:
+
+    .\vulnerable_task_holder_attack.ps1
+
+This will:
+- Test the original payload
+- Show you the response/feedback
+- Help identify what's needed
+
+====================================
+EXPECTED VULNERABLETASKHOLDER STRUCTURE:
+====================================
+
+The class likely has fields like:
+
+    package org.dummy.insecure.framework;
+    
+    public class VulnerableTaskHolder implements Serializable {
+        private static final long serialVersionUID = <VERSION>;
+        
+        private String taskName;
+        private String taskAction;
+        private long delayTime;  // or similar field for delay
+        
+        private void readObject(ObjectInputStream in) {
+            // Restricted actions here
+            // Probably calls Thread.sleep(delayTime) or similar
+        }
+    }
+
+====================================
+CREATING THE PAYLOAD:
+====================================
+
+Option 1: If you can get the actual class from WebGoat
+--------------------------------------------------
+1. Extract VulnerableTaskHolder.class from WebGoat JAR
+2. Create a Java program that instantiates it with 5000ms delay
+3. Serialize it to Base64
+
+Option 2: Recreate the class structure
+--------------------------------------------------
+1. Create a matching class with same package/name
+2. Compile with same serialVersionUID
+3. Set fields to trigger 5-second delay
+4. Serialize and encode to Base64
+
+Option 3: Use ysoserial or similar tool
+--------------------------------------------------
+If the class is known, ysoserial might have a gadget for it.
+
+====================================
+COMMON SERIALIZATION PATTERNS:
+====================================
+
+Java serialization format starts with:
+- AC ED 00 05 (magic number and version)
+
+Then:
+- 72 = new class descriptor
+- 74 = string
+- 70 = class reference
+
+Our original payload starts with: rO0ABXQAVg...
+Decoded hex: AC ED 00 05 74 00 56...
+               ^magic^ ^str^ ^len^
+
+This is just a String object.
+
+We need something like:
+AC ED 00 05 73 72 00 2D org.dummy.insecure.framework.VulnerableTaskHolder...
+              ^obj ^cls^
+
+====================================
+TRIAL AND ERROR APPROACH:
+====================================
+
+1. Submit the original payload
+2. Read the error message carefully
+3. Look for clues about:
+   - Expected class name
+   - Version number mismatch
+   - Field names
+   - Allowed vs forbidden actions
+
+4. Adjust payload based on feedback
+5. Repeat until successful
+
+====================================
+WHAT TO LOOK FOR IN FEEDBACK:
+====================================
+
+The feedback might say things like:
+- "Expected VulnerableTaskHolder, got String"
+- "Version mismatch: expected 2, got 1"
+- "Action 'exec' not allowed"
+- "Delay must be exactly 5000ms"
+- "Task completed but delay was wrong"
+
+Use these hints to craft the correct payload!
+
+====================================
+NEXT STEPS:
+====================================
+
+1. Run: .\vulnerable_task_holder_attack.ps1
+2. Read the feedback message carefully
+3. Based on feedback, we'll know:
+   - The exact class structure needed
+   - The version number required
+   - What fields to set
+   - What values to use
+
+4. Then we can create the correct Java payload
+
+====================================
+HELPFUL COMMANDS:
+====================================
+
+Test a payload from PowerShell:
+    $payload = "YOUR_BASE64_HERE"
+    $body = "token=$([System.Web.HttpUtility]::UrlEncode($payload))"
+    Invoke-WebRequest -Uri "http://192.168.254.112:8001/WebGoat/InsecureDeserialization/task" -Method POST -Headers @{"Content-Type"="application/x-www-form-urlencoded";"Cookie"="JSESSIONID=25A6B220A4CB5215EBBE7B31E207B4B1"} -Body $body
+
+Decode a Base64 payload:
+    [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($payload))
+
+Examine hex dump:
+    [System.Convert]::FromBase64String($payload) | Format-Hex
+
+====================================

